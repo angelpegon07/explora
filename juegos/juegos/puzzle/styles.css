@@ -1,0 +1,214 @@
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.puzzle-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+#puzzle-board {
+    width: 700px;
+    height: 540px;
+    position: relative;
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#pieces-container {
+    width: 300px;
+    min-height: 600px;
+    border: 1px dashed #4b4b4b;
+    background-color: #fff;
+    position: relative;
+    border-radius: 10px;
+}
+
+.contenedor_puzzle {
+    width: 830px;
+    height: 600px;
+    position: relative;
+    background-image: url(img/fondo_tablero.png);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.8;
+}
+
+.puzzle-piece {
+    position: absolute;
+    cursor: move;
+    border: 1px solid #000;
+    background-size: 700px 540px;
+    transition: transform 0.2s;
+}
+
+.puzzle-piece:hover {
+    z-index: 100;
+    transform: scale(1.05);
+}
+
+#start-game {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#start-game:hover {
+    background-color: #45a049;
+}
+
+.separador {
+    width: 50px;
+    height: 600px;
+    background-color: #33333300;
+}
+
+
+.controls {
+    height: 70vh;
+    width: 85vh;
+    background-image: url(img/nivel.png);
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    text-align: center;
+    font-family: 'fuente', sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10vh;
+    color: #623214
+}
+
+
+@font-face {
+    font-family: 'fuente';
+    src: url('fuente.ttf');
+}
+
+
+.card_nivel {
+    width: 100%;
+    height: 12vh;
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.card_nivel:hover {
+    transform: scale(1.05);
+}
+
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url(img/fondo.png);
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+}
+
+#btn_ayuda,
+#btn_reiniciar,
+#btn_salir {
+    transition: transform 0.2s;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #ffffff;
+    background-color: #351b09;
+    border-color: #814924;
+    transition: transform 0.5s, background-color 0.5s;
+}
+
+
+.opciones {
+    position: absolute;
+    top: 27%;
+    right: -20px;
+    width: 120px;
+    height: 300px;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    background-color: #6b320c;
+    border-radius: 20px;
+    padding: 10px;
+    flex-direction: column;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+    border: 4px solid #4d260d;
+    color: #ffffff;
+    font-family: 'fuente', sans-serif;
+    font-size: .8rem !important;
+}
+
+#btn_ayuda:hover,
+#btn_reiniciar:hover,
+#btn_salir:hover {
+    transform: scale(1.14);
+    background-color: #814924;
+}
+
+#btn_reiniciar:focus,
+#btn_ayuda:focus {
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+}
+
+
+.contenedor_categoria {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 10px;
+    background-image: url(img/item.png);
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.contenedor_categoria:hover {
+    transform: scale(1.05);
+}
+
+.imagen_categoria {
+    width: 25%;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+
+.contenedor_principal_categorias {
+    width: 60%;
+    height: 85vh;
+    padding-left: 9%;
+    padding-top: 7%;
+    padding-right: 8%;
+}

@@ -1,0 +1,8 @@
+# Dumps de BD (GitHub rechaza archivos >100MB; explora.sql ~360MB)
+*.sql
+*.sql.gz
+*.sql.zip
+
+# Dependencias
+node_modules/
+**/node_modules/
