@@ -19,11 +19,11 @@ Fuente: inspección de cabeceras de archivos y código. No hay gestores de depen
 
 | Librería | Versión | Ubicación |
 |---|---|---|
-| jQuery | 1.11.3 (obsoleta) | `js/jquery.min.js` |
+| jQuery | 3.5.1 en raíz, perfil y juegos/index (antes 1.11.3, Fase 7B); 3.3.1/3.7.1 en juegos | `bootstrap/jquery.min.js`, `juegos/juegos/assets/bootstrap/` |
 | Bootstrap | 4.5.2 (css/js) | `bootstrap/` |
 | Bootstrap | 5.3 | `juegos/librerias/bootstrap-5.3`, `juegos/juegos/*/bootstrap` |
-| Font Awesome Free | 6.2.1 (+ copia 4.x en `fonts/`, `css/font-awesome.css`) | `fontawesome/`, `juegos/librerias/fontawesome`, `juegos/juegos/banderas-color/assets/fontawesome` (copias triplicadas) |
-| Mapplic (mapa interactivo) | plugin comercial, 3 variantes modificadas | `mapplic/mapplic.js`, `mapplic_generico.js`, `mapplic_vertientes.js` |
+| Font Awesome Free | 6.2.1 (raíz) y 6.7.2 (juegos, compartida con banderas-color); solo `css/` y `webfonts/` desde la Fase 7B | `fontawesome/`, `juegos/librerias/fontawesome` |
+| Mapplic (mapa interactivo) | plugin comercial, 2 variantes modificadas (vertientes fusionada en generico, Fase 7B) | `mapplic/mapplic.js`, `mapplic_generico.js` |
 | SweetAlert2 | 11.17.2 | `sweetalert/` |
 | driver.js (tutorial guiado) | no identificada | `driver/` |
 | Hammer.js, jquery.easing, jquery.mousewheel, html5shiv, smoothscroll | varias | `js/` |
