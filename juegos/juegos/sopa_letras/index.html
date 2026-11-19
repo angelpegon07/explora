@@ -164,7 +164,7 @@
   <div
     style="text-align: center; display: none; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.5s ease-in-out;"
     id="final" class="final">
-    <img src="../assets/images/victoria.gif" style="width: 600px;">
+    <img src="../assets/images/victoria.webp" style="width: 600px;">
     <br>
     <h1 style="font-size: 25pt; padding-bottom: 0px;" class="borde2" id="texto_final">Felicitaciones, has encontrado
       todas las palabras</h1>
@@ -291,7 +291,7 @@
               divAnimado2.style.animationDirection = 'normal';
               divAnimado2.style.display = 'block';
               setTimeout(() => {
-                divAnimado.style.backgroundImage = "url(../assets/images/normal2.gif)"
+                divAnimado.style.backgroundImage = "url(../assets/images/normal2.webp)"
                 maquina2("bienvenida", 'Hola, soy Genio. <br> Selecciona una de las siguientes categorias para jugar, y luego busca las palabras en la sopa de letras. <br> ¡Tú Puedes!', 50, 1);
               }, 3000)
             }, 2000)
@@ -336,7 +336,7 @@
         const divAnimado2 = document.querySelector('.nube');
         divAnimado2.style.animationName = 'moverabajo';
         const divAnimado = document.querySelector('.overlay');
-        divAnimado.style.backgroundImage = "url(../assets/images/normal1.gif)";
+        divAnimado.style.backgroundImage = "url(../assets/images/normal1.webp)";
         $('#fondo_blanco').fadeToggle(3000);
         setTimeout(function () {
           divAnimado.style.animationName = 'moverIzquierda';
@@ -421,7 +421,7 @@
           clearInterval(intervalo);
 
           Swal.fire({
-            html: '<img src="../assets/images/derrota.gif" style="width: 400px;"> <br> <h2 style="font-size: 2.2rem; text-align: center; line-height: 45px;">¡Opps, se ha acabado el tiempo! <br> ¿Quieres volver a intentarlo?</h2>',
+            html: '<img src="../assets/images/derrota.webp" style="width: 400px;"> <br> <h2 style="font-size: 2.2rem; text-align: center; line-height: 45px;">¡Opps, se ha acabado el tiempo! <br> ¿Quieres volver a intentarlo?</h2>',
             confirmButtonText: 'Si, jugar',
             confirmButtonColor: '#34230d',
             cancelButtonText: 'No, salir',

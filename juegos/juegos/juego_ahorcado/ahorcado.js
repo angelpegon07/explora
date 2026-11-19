@@ -151,7 +151,7 @@ function mensaje_final(tipo) {
   if (tipo == 1) {
     Swal.fire({
       position: "center",
-      imageUrl: "../assets/images/correcto.gif",
+      imageUrl: "../assets/images/correcto.webp",
       imageWidth: 250,
       imageHeight: 250,
       title: "Correcto!",
@@ -167,7 +167,7 @@ function mensaje_final(tipo) {
   } else {
     Swal.fire({
       position: "center",
-      imageUrl: "../assets/images/incorrecto.gif",
+      imageUrl: "../assets/images/incorrecto.webp",
       imageWidth: 250,
       imageHeight: 250,
       title: "Incorrecto!",
@@ -206,11 +206,11 @@ function inicio() {
     var ruta_audio = '';
     var texto_final = "";
     if (palabras_adivinadas < 6) {
-      document.getElementById("imagen_final").src = "../assets/images/derrota.gif";
+      document.getElementById("imagen_final").src = "../assets/images/derrota.webp";
       ruta_audio = '../sounds/game_over.mp3';
       texto_final = "¡Sigue intentando! <br> Has adivinado " + palabras_adivinadas + " palabras de 10";
     } else {
-      document.getElementById("imagen_final").src = "../assets/images/victoria.gif";
+      document.getElementById("imagen_final").src = "../assets/images/victoria.webp";
       ruta_audio = '../sounds/victory.mp3';
       texto_final = "¡Felicidades! <br> Has adivinado " + palabras_adivinadas + " palabras de 10";
     }
@@ -255,7 +255,7 @@ function iniciar_animacion() {
         divAnimado2.style.animationDirection = 'normal';
         divAnimado2.style.display = 'block';
         setTimeout(() => {
-          divAnimado.style.backgroundImage = "url(../assets/images/normal2.gif)"
+          divAnimado.style.backgroundImage = "url(../assets/images/normal2.webp)"
           maquina2("bienvenida", 'Hola, soy Genio. <br> A continuación selecciona una categoria y adivina la palabra siguiendo la pista, recuerda que tendras 6 intentos para intentar adivinarla. <br> ¡Tu Puedes!', 50, 1);
         }, 3000)
       }, 2000)
@@ -299,7 +299,7 @@ function cerrar_anuncio() {
     const divAnimado2 = document.querySelector('.nube');
     divAnimado2.style.animationName = 'moverabajo';
     const divAnimado = document.querySelector('.overlay');
-    divAnimado.style.backgroundImage = "url(../assets/images/normal1.gif)";
+    divAnimado.style.backgroundImage = "url(../assets/images/normal1.webp)";
     $('#fondo_blanco').fadeToggle(3000);
     setTimeout(function () {
       divAnimado.style.animationName = 'moverIzquierda';

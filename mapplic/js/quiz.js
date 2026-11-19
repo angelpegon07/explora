@@ -310,7 +310,7 @@ function mostrarResultado() {
     var aciertos = buenas;
     cerrarTest();
     $('#final').fadeToggle(1000);
-    $("#imagen_final").attr("src", aciertos < 6 ? "images/derrota.gif" : "images/victoria.gif");
+    $("#imagen_final").attr("src", aciertos < 6 ? "images/derrota.webp" : "images/victoria.webp");
     $("#texto_final").text(`Has contestado correctamente ${aciertos} preguntas de ${total}.`);
     new Audio(aciertos >= 6 ? 'sounds/victory.mp3' : 'sounds/game_over.mp3').play();
     buenas = 0;

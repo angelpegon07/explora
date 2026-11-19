@@ -318,7 +318,7 @@ function iniciarTimer() {
             Swal.fire({
                 allowOutsideClick: false,
                 allowEscapeKey: false,
-                html: '<img src="../assets/images/derrota.gif" style="width: 400px;"> <br> <h2 style="font-size: 2.2rem; font-weight: bold; text-align: center; line-height: 45px;">¡Oops, se te acabo el tiempo! <br> Has respondido correctamente ' + respondidas_correctas_adivina + ' de ' + (respondidas_correctas_adivina + respondidas_incorrectas_adivina) + ' preguntas, animo, puedes intentarlo de nuevo.</h2>',
+                html: '<img src="../assets/images/derrota.webp" style="width: 400px;"> <br> <h2 style="font-size: 2.2rem; font-weight: bold; text-align: center; line-height: 45px;">¡Oops, se te acabo el tiempo! <br> Has respondido correctamente ' + respondidas_correctas_adivina + ' de ' + (respondidas_correctas_adivina + respondidas_incorrectas_adivina) + ' preguntas, animo, puedes intentarlo de nuevo.</h2>',
                 showConfirmButton: true,
                 confirmButtonText: 'Intentar de nuevo',
                 showCancelButton: true,
