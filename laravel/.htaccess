@@ -1,0 +1,4 @@
+# Con DocumentRoot = raíz del repositorio, esta carpeta quedaría accesible por URL. Se deniega todo: protege .env
+# (credenciales), vendor/, storage/, config/ y el código de la aplicación. Solo public/ concede acceso de nuevo
+# (ver public/.htaccess), porque es el destino de la reescritura de /api/*.
+Require all denied

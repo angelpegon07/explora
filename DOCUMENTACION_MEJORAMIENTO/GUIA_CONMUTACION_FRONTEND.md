@@ -1,6 +1,6 @@
 # GUÍA PARA CONECTAR EL FRONTEND A LA API NUEVA
 
-Estado: **el frontend NO está conectado.** Esta guía reúne, en orden, lo que hay que cambiar en el sitio estático para
+Estado: **CONMUTACIÓN HECHA en la Fase 7 (2026-11-19).** Esta guía se conserva como referencia de lo que se cambió y de los riesgos que siguen vigentes; los pasos 1–11 están implementados (ver REGISTRO_CAMBIOS.md). Texto original: el frontend NO estaba conectado. Esta guía reúne, en orden, lo que hay que cambiar en el sitio estático para
 usar los endpoints de `laravel/` (ficha, quiz, sesión y avatar). Fuente: revisión de contrato de la Fase 4
 (agente de compatibilidad) contrastada con el código; las comprobaciones empíricas están marcadas.
 
@@ -46,7 +46,7 @@ Los cuerpos de respuesta son compatibles campo a campo con el legado (las 16 cla
      como sesión caducada. Las filas traen `fecha` en el mismo formato `d-m-Y H:i:s` que ya separa el JS.
    - **Aviso:** los juegos deben llamar a `GET /api/sesion` al cargar (paso 4) para tener la cookie CSRF también en modo
      invitado, porque guardar exige el token.
-   - **Pendiente de Fase 7:** el frontend sigue insertando `jugador`, `avatar` y `grado` con `innerHTML`
+   - **Hecho en la Fase 7:** el ranking ya no usa `innerHTML` (se construye con `createElement`/`textContent` y el avatar se valida). Texto original: el frontend insertaba `jugador`, `avatar` y `grado` con `innerHTML`
      (`terminar_juego.js:258`). La API nueva ya no admite HTML en datos nuevos, pero **los datos existentes en la base no
      se han saneado** y el JS debe escapar (`textContent`) igualmente (SEC-05, parte de cliente).
 10. **Retirar o bloquear en el servidor los endpoints legados equivalentes** al conmutar: `iniciarSesion.php` (devuelve
@@ -58,7 +58,7 @@ Los cuerpos de respuesta son compatibles campo a campo con el legado (las 16 cla
     respuestas de opción múltiple contarían como buenas y las de verdadero/falso como malas).
 
 ## Riesgos que conviene decidir antes
-- **Colegios detrás de una sola IP (NAT):** comparten 60 peticiones/min de lectura y 30 inicios de sesión/min. Un aula
+- **Colegios detrás de una sola IP (NAT):** comparten el límite de lectura (**300/min** desde la Fase 7; era 60) y 30 inicios de sesión/min. Un aula
   entera puede recibir 429; ajustar los límites (`RouteServiceProvider`) a la realidad o dimensionarlos por colegio.
 - **Proxy inverso:** si se coloca uno, hay que configurar `TrustProxies` con las IP del proxy (no con `*`) para que el
   límite use la IP real del cliente y no sea falsificable por `X-Forwarded-For`.
@@ -68,5 +68,9 @@ Los cuerpos de respuesta son compatibles campo a campo con el legado (las 16 cla
 
 ## Pruebas manuales recomendadas tras conectar
 Flujo completo en navegador: iniciar sesión → abrir una ficha (incluida la del departamento 10, ≈48 MB) → hacer el quiz
-→ cambiar el avatar → cerrar sesión → comprobar 401/419 con la sesión caducada. Aún **no hay pruebas de navegador**
-automatizadas (pendiente).
+→ cambiar el avatar → cerrar sesión → comprobar 401/419 con la sesión caducada. Desde la Fase 7 **sí hay pruebas de navegador automatizadas** (Playwright, 36 pruebas; ver `laravel/README.md`).
+
+## Resultado de la conmutación (Fase 7)
+- **Hecho:** pasos 1–11. Mismo origen (router de desarrollo y `.htaccess`); `js/explora-api.js` (CSRF por petición, errores 401/419/422/429, escape de HTML); `verMas.js`, `quiz.js`, `iniciarSesion.js`, `miPerfil/script.js` y `terminar_juego.js` usan la API nueva; los 7 PHP sustituidos responden 410.
+- **Desviaciones respecto a lo previsto:** `tipo_modal` se eliminó por completo (el modo se decide por el DOM); `localStorage` quedó solo como caché de compatibilidad que se sincroniza con `GET /api/sesion`; el límite de lectura pasó de 60 a 300 por minuto (`API_POR_MINUTO`) por el riesgo de aulas con IP compartida.
+- **Sigue pendiente:** subdirectorio (el cliente lo soporta, el servidor no), cabeceras de seguridad/HTTPS en el servidor real, probar los `.htaccess` con un Apache real, el test por departamento en las 5 páginas de mapas distintas de `index.html`, y pruebas en Firefox/Safari (solo se probó Chromium).

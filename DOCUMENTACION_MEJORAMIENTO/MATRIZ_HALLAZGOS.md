@@ -9,12 +9,12 @@ Todas las mejoras se resolverán **dentro de la migración incremental a Laravel
 | Prioridad | Cantidad |
 |---|---|
 | CRÍTICA | 3 |
-| ALTA | 11 |
-| MEDIA | 23 |
+| ALTA | 12 |
+| MEDIA | 25 |
 | BAJA | 6 |
-| **Total** | **43** |
+| **Total** | **46** |
 
-Por tipo: defectos comprobados (DC) 33 · riesgos potenciales (RP) 2 · oportunidades de mejora (OM) 2 · pendientes de validación (PV) 6 (algunos hallazgos combinan DC/RP con PV y se cuentan en su tipo principal).
+Por tipo: defectos comprobados (DC) 36 · riesgos potenciales (RP) 2 · oportunidades de mejora (OM) 2 · pendientes de validación (PV) 6 (algunos hallazgos combinan DC/RP con PV y se cuentan en su tipo principal).
 
 ## A. Seguridad
 
@@ -120,6 +120,18 @@ SEC-01 (ficha y quiz: sin SQL concatenado, solo ids numéricos) · SEC-07 (sin e
 ## I. Decisiones de alcance (2026-11-18)
 
 **Fase 6 (IA) aplazada** por decisión del responsable: el chat con IA y el corrector de texto se tratarán en un trabajo posterior enfocado solo en IA (ver [PENDIENTE_TRABAJO_IA.md](PENDIENTE_TRABAJO_IA.md)). Quedan **abiertos** SEC-08 (IA sin límite de uso), FUN-03 (URL del chat sin codificar), FUN-04 (salida de la IA sin validar), FUN-05 (Ollama en `localhost` desde el navegador) y SEC-11 (HTML del chat). **Riesgo residual que se acepta explícitamente:** `mapplic/php/chat.php` y `mapplic/php/chat copy.php` siguen publicados con credenciales de MySQL escritas en el código (SEC-02, parte del chat) y con SQL construido a partir de la respuesta de la IA; no se modifican. La rotación de credenciales y el retiro de `chat copy.php` se harán en el trabajo de IA.
+
+## J. Fase 7 — conmutación del frontend (2026-11-19)
+
+Hallazgos **detectados al explorar el frontend y corregidos en esta fase** (verificados con pruebas en navegador):
+
+| ID | Módulo | Descripción y evidencia | Prior. | Tipo | Estado |
+|---|---|---|---|---|---|
+| FUN-12 | M13–M21 | El modal de guardar resultado se eliminaba en plena transición de Bootstrap: quedaban `.modal-backdrop` y `modal-open` (pantalla bloqueada). En `banderas-color` (Bootstrap 4.6) se ignoraban además `data-bs-backdrop`/`data-bs-keyboard`. | MEDIA | DC | **Corregido** (`terminar_juego.js`: instancia `bootstrap.Modal`, eliminación en `hidden.bs.modal` con respaldo; probado en Bootstrap 4 y 5) |
+| FUN-13 | M03 | **El quiz solo funcionaba en `index.html`.** En las otras 5 páginas de mapas el id del departamento salía vacío (`#departamento_seleccionado` solo existe en `index.html`) y además se llamaba dos veces a `buscarPreguntas`. | ALTA | DC (por lectura estática; el nuevo comportamiento sí se probó) | **Corregido**: aviso claro con enlace al mapa de departamentos en esas 5 páginas y una sola llamada. *No se inventó funcionalidad: hacer el test por departamento en los otros mapas queda para la Fase 7B.* |
+| FUN-14 | M05 | `tipo_modal` en `localStorage` podía quedar desfasado entre páginas; `cerrarSesion` fallaba al refrescar la interfaz (error al cerrar sesión con `tipo_modal == 1`) y no refrescaba los botones en `juegos/index.html`. | MEDIA | DC | **Corregido** (se eliminó `tipo_modal`; el modo se decide por el DOM) |
+
+**Estado de hallazgos anteriores tras la fase:** SEC-05 (parte de cliente) **cerrado**: ranking e historial se construyen con `textContent`, el avatar se valida (1–35) y las filas con HTML ya guardadas en la base se muestran como texto (prueba E2E con filas hostiles sembradas). UX-01 **cerrado para el quiz** (botones reales, foco, `aria-live` con «Correcto/Incorrecto», `lang="es"` en las 6 páginas, nombres accesibles) y el modal de login. SEC-01, SEC-03, SEC-04, SEC-06 (rutas legadas) **cerrados por bloqueo**: los 7 PHP sustituidos responden 410 (Apache `.htaccess` y router de desarrollo; verificado con el router, **no** con un Apache real). **Siguen abiertos:** SEC-02 y SEC-08 del chat legado (decisión del responsable), SEC-06 (honestidad del puntaje: límite aceptado), DAT-07/REN-03 (peso de las fichas) y el resto de la Fase 7B. **Riesgo nuevo aceptado:** el contenido editorial de las fichas y del quiz se inserta como HTML por diseño (lo administra personal autorizado); si esa fuente se comprometiera habría XSS. Mitigación futura: sanitizar al guardar y/o una política CSP.
 
 ## Trazabilidad módulo → estado de auditoría
 

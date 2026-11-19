@@ -1,35 +1,83 @@
-function verMas(element){
-    var id_departamento = $(element).attr("id-departamento");
-    let loadingAlert;
+/**
+ * verMas.js
+ * =============================================================================
+ * Ficha («Ver más») de un departamento: pide la ficha a la API Laravel y la pinta
+ * en el modal #modal_sitios.
+ *
+ * Depende de jQuery, SweetAlert2 y js/explora-api.js (ExploraApi), cargado antes.
+ *
+ * SEGURIDAD: el contenido de las fichas (descripciones, historia, fauna, flora,
+ * festividades, sitios, personajes, etc.) es HTML EDITORIAL administrado por el
+ * equipo de contenidos y puede incluir etiquetas de formato, por eso se inserta
+ * con .html(). En cambio, los `id` y `href` que se construyen con ids del
+ * servidor pasan por idSeguro(), que solo admite enteros positivos, para que un
+ * valor inesperado no pueda inyectar atributos.
+ * =============================================================================
+ */
 
-    $.ajax({
-        url: 'mapplic/php/consultarInfo.php',
-        method: 'GET',
-        data: { id: id_departamento },
-        beforeSend: function() {
-            loadingAlert = Swal.fire({
-                position: "center",
-                title: "Consultando información",
-                text: "Por favor espere mientras se carga la información del departamento",
-                allowOutsideClick: false,
-                showConfirmButton: false,
-                willOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-        },
-        success: function(response) {
-            loadingAlert.close();
-            var responseData = JSON.parse(response);
-            mostrarDescripcion(responseData);
-            $('#modal_sitios').modal('show');
-        },
-        error: function(xhr, status, error) {
-            console.error('Error en la solicitud AJAX:', status, error);
-        }
-    });
+/**
+ * Convierte un id del servidor en un entero positivo seguro para usar en
+ * atributos HTML (id/href).
+ * @param {*} valor Id recibido de la API.
+ * @returns {number} Entero positivo, o 0 si el valor no es válido.
+ */
+function idSeguro(valor) {
+    var n = parseInt(valor, 10);
+    return n > 0 ? n : 0;
 }
 
+/**
+ * Abre la ficha del departamento indicado en el atributo `id-departamento`
+ * del elemento. Muestra un diálogo de carga que se cierra SIEMPRE (éxito o fallo).
+ * @param {HTMLElement} element Elemento con el atributo `id-departamento`.
+ * @returns {void}
+ */
+function verMas(element){
+    var id_departamento = $(element).attr("id-departamento");
+
+    // Solo se aceptan enteros positivos: el id viaja en la ruta de la API.
+    if (!/^[1-9][0-9]*$/.test(String(id_departamento))) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Departamento no válido',
+            text: 'No se pudo identificar el departamento seleccionado.'
+        });
+        return;
+    }
+
+    Swal.fire({
+        position: "center",
+        title: "Consultando información",
+        text: "Por favor espere mientras se carga la información del departamento",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    ExploraApi.peticion('GET', 'departamentos/' + encodeURIComponent(id_departamento) + '/ficha')
+        .done(function (data) {
+            Swal.close();
+            mostrarDescripcion(data);
+            $('#modal_sitios').modal('show');
+        })
+        .fail(function (xhr) {
+            // Sin esto el diálogo de carga (allowOutsideClick:false) bloquearía la pantalla.
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'No se pudo cargar la información del departamento. ' + ExploraApi.mensajeError(xhr)
+            });
+        });
+}
+
+/**
+ * Rellena el modal de la ficha con los datos de la API (HTML editorial: ver
+ * nota de seguridad de la cabecera) y deja activa la primera pestaña.
+ * @param {Object} data Ficha completa del departamento.
+ * @returns {void}
+ */
 function mostrarDescripcion(data){
     $('#descCapital').html(data.nombreDepartamento.capital);
     $('#contenidoDepartameto').html(data.descripcion.contenido);
@@ -94,7 +142,7 @@ function mostrarDescripcion(data){
 
     $.each(data.etnografia.lista, function(index, etnia) {
         navEtnias += `<li class="nav-item">
-                        <a style="border: 2px solid #62aeff; font-size: 11pt;  height: 100%; display: flex; align-items: center; justify-content: center;" href="#etnia${etnia.id}" data-toggle="pill" aria-selected="false"
+                        <a style="border: 2px solid #62aeff; font-size: 11pt;  height: 100%; display: flex; align-items: center; justify-content: center;" href="#etnia${idSeguro(etnia.id)}" data-toggle="pill" aria-selected="false"
                             class="nav-link rounded-0 ${active}">
                             <span class="d-none d-md-block">${etnia.nombre}</span>
                         </a>
@@ -106,7 +154,7 @@ function mostrarDescripcion(data){
     let contNavEtnias = '';
 
     $.each(data.etnografia.lista, function(index, etnia) {
-        contNavEtnias += `<div class="tab-pane fade ${active}" id="etnia${etnia.id}">
+        contNavEtnias += `<div class="tab-pane fade ${active}" id="etnia${idSeguro(etnia.id)}">
                             ${etnia.contenido}
                         </div>`;
         active = '';
@@ -123,7 +171,7 @@ function mostrarDescripcion(data){
     
     $.each(data.faunaFlora.lista_fauna, function(index, fauna) {
         navFauna += `<li class="nav-item">
-                        <a style="border: 2px solid #62aeff; font-size: 11pt;  height: 100%; display: flex; align-items: center; justify-content: center;" href="#fauna${fauna.id}" data-toggle="tab" aria-expanded="false"
+                        <a style="border: 2px solid #62aeff; font-size: 11pt;  height: 100%; display: flex; align-items: center; justify-content: center;" href="#fauna${idSeguro(fauna.id)}" data-toggle="tab" aria-expanded="false"
                             class="nav-link ${active_fauna}">
                             <span class="d-none d-md-block">${fauna.nombre}</span>
                         </a>
@@ -135,7 +183,7 @@ function mostrarDescripcion(data){
     let contNavFauna = '';
     
     $.each(data.faunaFlora.lista_fauna, function(index, fauna) {
-        contNavFauna += `<div class="tab-pane fade ${active_fauna}" id="fauna${fauna.id}">
+        contNavFauna += `<div class="tab-pane fade ${active_fauna}" id="fauna${idSeguro(fauna.id)}">
                             ${fauna.contenido}
                         </div>`;
         active_fauna = '';
@@ -152,7 +200,7 @@ function mostrarDescripcion(data){
     
     $.each(data.faunaFlora.lista_flora, function(index, flora) {
         navFlora += `<li class="nav-item">
-                        <a style="border: 2px solid #62aeff; font-size: 11pt; height: 100%; display: flex; align-items: center; justify-content: center;" href="#flora${flora.id}" data-toggle="tab" aria-expanded="false"
+                        <a style="border: 2px solid #62aeff; font-size: 11pt; height: 100%; display: flex; align-items: center; justify-content: center;" href="#flora${idSeguro(flora.id)}" data-toggle="tab" aria-expanded="false"
                             class="nav-link ${active_flora}">
                             <span class="d-none d-md-block">${flora.nombre}</span>
                         </a>
@@ -164,7 +212,7 @@ function mostrarDescripcion(data){
     let contNavFlora = '';
     
     $.each(data.faunaFlora.lista_flora, function(index, flora) {
-        contNavFlora += `<div class="tab-pane fade ${active_flora}" id="flora${flora.id}">
+        contNavFlora += `<div class="tab-pane fade ${active_flora}" id="flora${idSeguro(flora.id)}">
                             ${flora.contenido}
                         </div>`;
         active_flora = '';
@@ -214,7 +262,7 @@ function mostrarDescripcion(data){
     
     $.each(data.festividades, function(index, festividad) {
         navFestividades += `<li class="nav-item">
-                        <a style="border: 2px solid #62aeff; font-size: 11pt; height: 100%; display: flex; align-items: center; justify-content: center;" href="#festividad${festividad.id}" data-toggle="tab" aria-expanded="false"
+                        <a style="border: 2px solid #62aeff; font-size: 11pt; height: 100%; display: flex; align-items: center; justify-content: center;" href="#festividad${idSeguro(festividad.id)}" data-toggle="tab" aria-expanded="false"
                             class="nav-link ${active_festividades}">
                             <span class="d-none d-md-block">${festividad.nombre}</span>
                         </a>
@@ -226,7 +274,7 @@ function mostrarDescripcion(data){
     let contNavFestividades = '';
     
     $.each(data.festividades, function(index, festividad) {
-        contNavFestividades += `<div class="tab-pane fade ${active_festividades}" id="festividad${festividad.id}">
+        contNavFestividades += `<div class="tab-pane fade ${active_festividades}" id="festividad${idSeguro(festividad.id)}">
                             ${festividad.contenido}
                         </div>`;
         active_festividades = '';
@@ -241,7 +289,7 @@ function mostrarDescripcion(data){
     
     $.each(data.sitios, function(index, sitio) {
         navSitios += `<li class="nav-item">
-                        <a style="border: 2px solid #62aeff; font-size: 11pt;  height: 100%; display: flex; align-items: center; justify-content: center;" href="#sitio${sitio.id}" data-toggle="tab" aria-expanded="false"
+                        <a style="border: 2px solid #62aeff; font-size: 11pt;  height: 100%; display: flex; align-items: center; justify-content: center;" href="#sitio${idSeguro(sitio.id)}" data-toggle="tab" aria-expanded="false"
                             class="nav-link ${active_sitios}">
                             <span class="d-none d-md-block">${sitio.nombre}</span>
                         </a>
@@ -253,7 +301,7 @@ function mostrarDescripcion(data){
     let contNavSitios = '';
     
     $.each(data.sitios, function(index, sitio) {
-        contNavSitios += `<div class="tab-pane fade ${active_sitios}" id="sitio${sitio.id}">
+        contNavSitios += `<div class="tab-pane fade ${active_sitios}" id="sitio${idSeguro(sitio.id)}">
                             ${sitio.contenido}
                         </div>`;
         active_sitios = '';
@@ -268,7 +316,7 @@ function mostrarDescripcion(data){
     
     $.each(data.personajes, function(index, personaje) {
         navPersonajes += `<li class="nav-item">
-                        <a style="border: 2px solid #62aeff; font-size: 11pt;  height: 100%; display: flex; align-items: center; justify-content: center;" href="#persona${personaje.id}" data-toggle="tab" aria-expanded="false"
+                        <a style="border: 2px solid #62aeff; font-size: 11pt;  height: 100%; display: flex; align-items: center; justify-content: center;" href="#persona${idSeguro(personaje.id)}" data-toggle="tab" aria-expanded="false"
                             class="nav-link ${active_personajes}">
                             <span class="d-none d-md-block">${personaje.nombre}</span>
                         </a>
@@ -280,7 +328,7 @@ function mostrarDescripcion(data){
     let contNavPersonajes = '';
     
     $.each(data.personajes, function(index, personaje) {
-        contNavPersonajes += `<div class="tab-pane fade ${active_personajes}" id="persona${personaje.id}">
+        contNavPersonajes += `<div class="tab-pane fade ${active_personajes}" id="persona${idSeguro(personaje.id)}">
                             ${personaje.contenido}
                         </div>`;
         active_personajes = '';
@@ -298,6 +346,11 @@ function mostrarDescripcion(data){
     $('#modal-content-info').fadeIn();
 }
 
+/**
+ * Quita la clase `active` de todos los elementos de las listas de pestañas de la ficha (`.list-group-item`),
+ * para que al cambiar de sección solo quede marcada la elegida.
+ * @returns {void}
+ */
 function quitarActive(){
     const listItems = document.querySelectorAll('.list-group-item');
 

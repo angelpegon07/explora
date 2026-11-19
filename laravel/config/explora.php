@@ -34,6 +34,13 @@ return [
     'puntaje_max' => 1000,
     'tiempo_max' => 14400,
 
+    /*
+     * Peticiones por minuto que admite el grupo `api` (lectura pública y sesión), por usuario o por IP. Las aulas
+     * comparten una misma IP por NAT, así que 60 (valor anterior) cortaba a un curso entero; por eso el valor
+     * por defecto es 300 y se ajusta con API_POR_MINUTO.
+     */
+    'api_por_minuto' => (int) env('API_POR_MINUTO', 300),
+
     /* Resultados que puede guardar por minuto cada usuario (o cada IP, en el modo invitado). */
     'resultados_por_minuto' => (int) env('RESULTADOS_POR_MINUTO', 10),
 

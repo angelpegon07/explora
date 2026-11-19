@@ -14,11 +14,12 @@ Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del siti
 | 0 | Entorno, bases de prueba, conexión `pedigital` de solo lectura | ✔ |
 | 1 | Pruebas de caracterización del PHP legado | ✔ |
 | 2 | Migración base, modelos Eloquent, `perfiles_explora` | ✔ |
-| 3 | API de lectura: ficha de departamento y quiz | ✔ (sin conectar al frontend) |
-| 4 | Autenticación por sesión y avatar | ✔ (sin conectar al frontend) |
-| 5 | Juegos: resultados, ranking, historial | ✔ (sin conectar al frontend) |
+| 3 | API de lectura: ficha de departamento y quiz | ✔ (conectada al frontend en la Fase 7) |
+| 4 | Autenticación por sesión y avatar | ✔ (conectada al frontend en la Fase 7) |
+| 5 | Juegos: resultados, ranking, historial | ✔ (conectada al frontend en la Fase 7) |
 | 6 | Chat con IA y corrector | aplazada (trabajo aparte enfocado en IA) |
-| 7 | Frontend (Vite, accesibilidad, conmutar a la API nueva) | pendiente |
+| 7 | Conmutación segura del frontend (sesión, fichas, quiz, perfil, juegos), bloqueo de los PHP sustituidos y pruebas en navegador | ✔ |
+| 7B | Modernizar el frontend (Vite, unificar librerías, Mapplic, optimizar medios) | pendiente |
 
 ## Requisitos
 
@@ -75,7 +76,7 @@ tests/
 
 Todas las rutas responden **JSON** (incluidos 404 y errores). Prefijo `/api`.
 
-### Lectura pública (límite 60 peticiones/min)
+### Lectura pública (límite configurable, 300 peticiones/min por IP o usuario)
 
 | Método y ruta | Reemplaza a | Respuesta |
 |---|---|---|
@@ -122,9 +123,27 @@ aceptado). `fecha` se guarda como texto `d-m-Y H:i:s` en UTC, como el legado (DA
 `usuario_objeto` = `{id, nombre_usuario, login_usuario, grado_usuario, avatar_explora, tipo_usuario}`.
 **Nunca** incluye el hash de la contraseña, el correo ni el token. El hash se compara con bcrypt (los prefijos `$2a$`/`$2b$`,
 que existen en los datos reales, se aceptan como `$2y$`) y la contraseña **no se recorta** (se conservan los espacios).
-Los juegos y el historial siguen dependiendo de `localStorage` (`id_usuario`) hasta la Fase 5.
+`localStorage` ya no es la fuente de verdad: el frontend lo mantiene solo como caché de compatibilidad, sincronizada con `GET /api/sesion` (el historial y el guardado de resultados usan la sesión del servidor).
 Las peticiones que escriben deben enviar la cookie `XSRF-TOKEN` (decodificada) en la cabecera `X-XSRF-TOKEN`.
 En HTTPS, definir `SESSION_SECURE_COOKIE=true`. Pasos para conectar el frontend: [`GUIA_CONMUTACION_FRONTEND.md`](../DOCUMENTACION_MEJORAMIENTO/GUIA_CONMUTACION_FRONTEND.md).
+
+## Servir el sitio y la API (mismo origen)
+
+La sesión es una cookie `SameSite=Lax` con CSRF, así que el sitio estático y la API deben servirse desde el **mismo origen**.
+
+```bash
+# Desarrollo: router que sirve el sitio (raíz del repo) y envía /api/* a Laravel, y bloquea lo que no debe servirse
+cd laravel && PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t .. servidor-desarrollo.php
+```
+
+El router responde **410** a los 7 PHP legados sustituidos y **404** a `laravel/`, `.git`, `DOCUMENTACION_MEJORAMIENTO/`, los
+`conexion*.php`, cualquier otro `.php` (incluido el chat, que en desarrollo queda desactivado porque usaría credenciales reales)
+y a extensiones sensibles. **Producción con Apache:** ver `../DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md` (`.htaccess` en la
+raíz, `laravel/` y las carpetas `php/`).
+
+Cliente común del sitio: [`../js/explora-api.js`](../js/explora-api.js) (`window.ExploraApi`): URL de la API desde cualquier
+profundidad, cabecera `X-XSRF-TOKEN` leída de la cookie en cada petición, mensajes de error unificados, sincronización de la sesión
+y funciones para escapar HTML y validar avatares. Se incluye **después de jQuery** en todas las páginas que usan la API.
 
 ## Pruebas
 
@@ -143,6 +162,19 @@ Sin el servidor del legado, esas pruebas se **omiten** (no fallan). `phpunit.xml
 
 Estilo: `./vendor/bin/pint` (el único archivo que incumple es `bootstrap/app.php`, del esqueleto de Laravel).
 
+### Pruebas en navegador (Playwright)
+
+```bash
+npm install                        # una vez
+npx playwright install chromium    # una vez: descarga el Chromium de Playwright a ~/Library/Caches/ms-playwright (fuera del repo)
+npm run test:e2e                   # levanta el router en el puerto 8090 contra las bases *_test y corre las specs de tests/Browser
+```
+
+Las specs cubren bloqueos del servidor, sesión, ficha, quiz (por teclado, doble clic y 500 simulado), perfil, juegos y XSS en
+ranking e historial. Siembran y limpian sus propios datos (`tests/Browser/fixtures.php`) y **abortan si las bases no son `*_test`**.
+**Versión fijada:** `@playwright/test` 1.60.0, porque Playwright 1.65 ya no soporta macOS 13 con ningún navegador. Al actualizar,
+comprobar antes que el sistema operativo sea compatible. Las carpetas `test-results/` y `playwright-report/` están ignoradas.
+
 ## Variables de entorno propias
 
 | Variable | Valor por defecto | Para qué sirve |
@@ -151,6 +183,7 @@ Estilo: `./vendor/bin/pint` (el único archivo que incumple es `bootstrap/app.ph
 | `CORS_ALLOWED_ORIGINS` | vacío | Otros orígenes permitidos (separados por comas). Vacío = solo el mismo origen |
 | `QUIZ_INCLUIR_RESPUESTAS` | `true` | Enviar `correcta`/`respuesta` al navegador (ver aviso en la API del quiz) |
 | `AVATARES_MAX` | `35` | Cantidad de avatares (`juegos/images/avatars/N.png`) |
+| `API_POR_MINUTO` | `300` | Peticiones de lectura por minuto, por IP (o por usuario con sesión). Subido de 60 porque un aula entera comparte una IP (NAT) y cada página sincroniza la sesión al cargar |
 | `RESULTADOS_POR_MINUTO` | `10` | Partidas que puede guardar cada usuario (o IP, si es invitado) por minuto |
 | `PEDIGITAL_DB_*` | — | Conexión de solo lectura a la base de usuarios |
 | `LEGACY_DB_HOST/USER/PASS` | — | **Solo pruebas:** usuario MySQL con escritura únicamente sobre las bases `*_test`, usado por el arnés del legado y por las pruebas que preparan escenarios en `pedigital_test` |

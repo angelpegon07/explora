@@ -52,7 +52,7 @@ No se encontraron: PHPUnit, Pest, Pint, PHPStan, CI/CD, Docker, `.env`, archivos
 
 ## 6. Almacenamiento en cliente
 
-`localStorage`: `usuario`, `id_usuario`, `nombre`, `grado`, `avatar`, `tipo_modal`.
+`localStorage` (estado del inventario del 2026-11-18, **histórico**): `usuario`, `id_usuario`, `nombre`, `grado`, `avatar`, `tipo_modal`. Desde la Fase 7 `tipo_modal` ya no existe y el resto es solo una caché de compatibilidad.
 
 ## 7. Dependencias vulnerables / obsoletas (indicio, sin auditar)
 

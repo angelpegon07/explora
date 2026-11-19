@@ -63,8 +63,13 @@ class RouteServiceProvider extends ServiceProvider
                 ->by($usuario ? 'u'.$usuario->getAuthIdentifier() : 'ip'.$request->ip());
         });
 
+        /*
+         * Límite general de la API (`throttle:api`): `explora.api_por_minuto` (300 por defecto, variable
+         * API_POR_MINUTO) por minuto, por usuario si hay sesión y por IP si no. Es alto a propósito: en las aulas
+         * muchos estudiantes comparten la misma IP por NAT.
+         */
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(config('explora.api_por_minuto'))->by($request->user()?->id ?: $request->ip());
         });
 
         $this->routes(function () {

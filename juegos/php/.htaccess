@@ -1,0 +1,14 @@
+# Scripts legados SUSTITUIDOS por la API Laravel (/api/resultados, /api/ranking, /api/historial). Se responde 410 Gone
+# porque las versiones antiguas son inyectables y no tienen sesión (SEC-01/03/05/06). Ver GUIA_CONMUTACION_FRONTEND.md.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # [G] = 410 Gone; [NC] = sin distinguir mayúsculas.
+    RewriteRule ^(guardar_resultado|consultar_ranking|consultar_historial)\.php$ - [G,NC]
+</IfModule>
+
+# Respaldo si mod_rewrite no está cargado: denegar el acceso (403) a esos mismos archivos.
+<IfModule !mod_rewrite.c>
+    <FilesMatch "^(guardar_resultado|consultar_ranking|consultar_historial)\.php$">
+        Require all denied
+    </FilesMatch>
+</IfModule>

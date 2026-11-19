@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html style="max-height: 100vh; overflow: hidden;">
+<html lang="es" style="max-height: 100vh; overflow: hidden;">
 
 <head>
     <!-- Meta -->
@@ -241,7 +241,7 @@
             <div class="modal-content">
                 <!-- Modal body -->
                 <div class="modal-body" style="padding: 0px;">
-                    <button type="button" class="close cerrar_modal" data-dismiss="modal">&times;</button>
+                    <button type="button" class="close cerrar_modal" data-dismiss="modal" aria-label="Cerrar">&times;</button>
                     <div class="container" style="margin: 0px; max-width: 100%;">
                         <div class="row">
                             <div class="col-lg-12 row bhoechie-tab-container">
@@ -546,7 +546,7 @@
     <div id="contenedorVideo">
         <div class="content" style="background-color: #ffffff00; border: none;">
             <a style="position: absolute;color: wheat;border-radius: 50%;top: 2vh;right: 2vw;opacity: 1;font-size: 62px;z-index: 333333;"
-                type="button" onclick="cerrarVideo()">&times;</a>
+                type="button" href="#" aria-label="Cerrar" onclick="cerrarVideo(); return false;">&times;</a>
             <div
                 style="width: 100%; height: 100vh; top: 0px; left: 0px; position: absolute; display: flex; justify-content: center; align-items: center;">
                 <video controls style="width: 60%;" id="video_punto" src=""></video>
@@ -558,7 +558,7 @@
     <div id="contenedorImagenes">
         <div class="content" style="background-color: #ffffff00; border: none;">
             <a style="position: absolute;color: wheat;border-radius: 50%;top: 2vh;right: 2vw;opacity: 1;font-size: 62px;z-index: 333333;"
-                type="button" onclick="cerrarImagenes()">&times;</a>
+                type="button" href="#" aria-label="Cerrar" onclick="cerrarImagenes(); return false;">&times;</a>
             <div id="carouselExampleIndicators" style="display: flex;align-items: center;height: 100vh;"
                 class="carousel slide">
                 <ol class="carousel-indicators">
@@ -586,7 +586,7 @@
         <div class="content"
             style="background-color: #ffffff00; border: none; height: 100vh; display: flex ;justify-content: center;align-items: center;">
             <a style="position: absolute;color: wheat;border-radius: 50%;top: 2vh;right: 2vw;opacity: 1;font-size: 62px;z-index: 333333;"
-                type="button" onclick="cerrarTest()">&times;</a>
+                type="button" href="#" aria-label="Cerrar" onclick="cerrarTest(); return false;">&times;</a>
             <br>
             <div class="container-fluid">
                 <div class="modal-dialog modal-lg">
@@ -626,6 +626,7 @@
                             </button>
                             <div style="display: none; width: 100%;" class="quiz" id="quiz" data-toggle="buttons">
                             </div>
+                            <div id="quiz_anuncio" class="sr-only" aria-live="polite"></div>
                         </div>
                         <div class="modal-footer text-muted" style="justify-content: space-between;">
                             <p style="color: rgb(62, 113, 255); font-weight: bold;" id="contador_preguntas">Pregunta 0
@@ -740,6 +741,7 @@
 
     <!-- Scripts -->
     <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script src="js/explora-api.js"></script>
     <script type="text/javascript" src="js/hammer.min.js"></script>
     <script type="text/javascript" src="js/jquery.easing.js"></script>
     <script type="text/javascript" src="js/jquery.mousewheel.js"></script>

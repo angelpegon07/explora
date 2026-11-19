@@ -150,10 +150,15 @@ class QuizContractTest extends TestCase
         $this->assertNotNull($r->headers->get('X-RateLimit-Limit'));
     }
 
-    /** El grupo `throttle:api` corta a la petición 61 del minuto con 429 y cabecera Retry-After (misma ruta que la ficha). */
-    public function test_el_limite_de_60_peticiones_por_minuto_corta_a_la_61(): void
+    /**
+     * El límite del grupo `throttle:api` es configurable (`explora.api_por_minuto`): con 5 por minuto la 6.ª
+     * petición recibe 429 con cabecera Retry-After (misma ruta que la ficha). Se baja el valor para no lanzar
+     * cientos de peticiones; el limitador lee la configuración en cada petición.
+     */
+    public function test_el_limite_configurable_de_peticiones_por_minuto_corta_a_la_siguiente(): void
     {
-        for ($i = 0; $i < 60; $i++) {
+        config(['explora.api_por_minuto' => 5]);
+        for ($i = 0; $i < 5; $i++) {
             $this->quiz(2)->assertOk();
         }
         $r = $this->quiz(2)->assertStatus(429);
