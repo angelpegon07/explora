@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\FichaDepartamentoController;
+use App\Http\Controllers\Api\HistorialController;
 use App\Http\Controllers\Api\PerfilAvatarController;
 use App\Http\Controllers\Api\PreguntasDepartamentoController;
+use App\Http\Controllers\Api\RankingController;
+use App\Http\Controllers\Api\ResultadoJuegoController;
 use App\Http\Controllers\Api\SesionController;
 use App\Http\Middleware\MemoriaParaFichas;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +29,11 @@ Route::middleware('throttle:api')->prefix('departamentos')->whereNumber('id')->g
 });
 
 /*
+| Ranking de los juegos (Fase 5): público, solo lectura. Sustituye a juegos/php/consultar_ranking.php.
+*/
+Route::middleware('throttle:api')->get('ranking', RankingController::class)->name('ranking');
+
+/*
 | Sesión y perfil (Fase 4). Usan el grupo `web` además del `api`: cookie de sesión cifrada y HttpOnly, y
 | protección CSRF (el cliente debe enviar la cookie XSRF-TOKEN en la cabecera X-XSRF-TOKEN; se obtiene con
 | GET /api/sesion). El inicio de sesión tiene su propio límite de intentos (`throttle:login`).
@@ -36,4 +44,13 @@ Route::middleware('web')->group(function () {
     Route::delete('sesion', [SesionController::class, 'destroy'])->name('sesion.destroy');
 
     Route::patch('perfil/avatar', PerfilAvatarController::class)->middleware(['auth:web', 'cuenta.activa'])->name('perfil.avatar');
+
+    /*
+    | Juegos (Fase 5). Usan la sesión si existe: sin sesión rige el MODO INVITADO (FUN-09).
+    | POST /api/resultados  guarda una partida (límite `resultados`; revalida la cuenta si hay sesión).
+    | GET  /api/historial   partidas del usuario con sesión (nunca de otro).
+    */
+    Route::post('resultados', [ResultadoJuegoController::class, 'store'])
+        ->middleware(['throttle:resultados', 'cuenta.activa'])->name('resultados.store');
+    Route::get('historial', HistorialController::class)->middleware(['auth:web', 'cuenta.activa'])->name('historial');
 });

@@ -52,6 +52,17 @@ class RouteServiceProvider extends ServiceProvider
             ];
         });
 
+        /*
+         * Límite de partidas guardadas (FUN-09, modo invitado): `explora.resultados_por_minuto` (10) por minuto, por
+         * usuario si hay sesión y por IP si es invitado. Frena el relleno masivo del ranking.
+         */
+        RateLimiter::for('resultados', function (Request $request) {
+            $usuario = $request->user('web');
+
+            return Limit::perMinute(config('explora.resultados_por_minuto'))
+                ->by($usuario ? 'u'.$usuario->getAuthIdentifier() : 'ip'.$request->ip());
+        });
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });

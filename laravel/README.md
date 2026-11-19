@@ -16,7 +16,7 @@ Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del siti
 | 2 | Migración base, modelos Eloquent, `perfiles_explora` | ✔ |
 | 3 | API de lectura: ficha de departamento y quiz | ✔ (sin conectar al frontend) |
 | 4 | Autenticación por sesión y avatar | ✔ (sin conectar al frontend) |
-| 5 | Juegos: resultados, ranking, historial | pendiente |
+| 5 | Juegos: resultados, ranking, historial | ✔ (sin conectar al frontend) |
 | 6 | Chat con IA y corrector | pendiente |
 | 7 | Frontend (Vite, accesibilidad, conmutar a la API nueva) | pendiente |
 
@@ -49,8 +49,8 @@ pero conviene aplicarlas de una en una y solo en bases de prueba hasta que se au
 ```
 app/
   Http/
-    Controllers/Api/     Una clase por endpoint: ficha, preguntas, sesión, avatar
-    Requests/            Validación de entrada (LoginRequest, CambiarAvatarRequest)
+    Controllers/Api/     Una clase por endpoint: ficha, preguntas, sesión, avatar, resultado, ranking, historial
+    Requests/            Validación de entrada (Login, CambiarAvatar, GuardarResultado, Ranking; reglas compartidas en Concerns/)
     Resources/           Forma de las respuestas JSON (LISTA BLANCA de campos)
     Middleware/          MemoriaParaFichas, CuentaActiva, Authenticate (sin redirecciones)
   Models/
@@ -67,7 +67,7 @@ routes/api.php           Rutas de la API
 tests/
   Characterization/      Fijan el comportamiento ACTUAL del PHP legado (incluidos sus defectos)
   Contract/              La API nueva entrega al frontend lo mismo que el legado (33 departamentos)
-  Feature/               Modelos, perfil y autenticación
+  Feature/               Modelos, perfil, autenticación y juegos
   Legacy/                Arnés para servir una copia del legado contra bases *_test
 ```
 
@@ -87,6 +87,22 @@ Todas las rutas responden **JSON** (incluidos 404 y errores). Prefijo `/api`.
 Mientras el frontend corrija el quiz en el navegador, las opciones incluyen `correcta`/`respuesta`. **No poner
 `QUIZ_INCLUIR_RESPUESTAS=false` con el cliente actual**: sin esos campos todas las respuestas de opción múltiple contarían
 como buenas y todas las de verdadero/falso como malas (SEC-06 se cierra migrando antes la corrección al servidor).
+
+### Juegos (Fase 5)
+
+| Método y ruta | Reemplaza a | Respuesta |
+|---|---|---|
+| `POST /api/resultados` (CSRF; sesión **opcional**) | `guardar_resultado.php` | 201 `{status:'success', mensaje}`; 422 `{status:'error', mensaje, campos}`; 401 si la cuenta de la sesión se desactivó; 429 (10 por minuto por usuario o por IP) |
+| `GET /api/ranking?juego=&nivel=&categoria=` (público) | `consultar_ranking.php` | Hasta 5 filas `{jugador, avatar, grado, puntaje, tiempo}` por puntaje (desc) y tiempo (asc); 422 si algún parámetro no es válido |
+| `GET /api/historial` (sesión) | `consultar_historial.php` | Partidas del usuario de la sesión, la más reciente primero: `{id, nombre_juego, categoria, nivel, puntaje, tiempo, fecha}` (máx. 500). **Ignora cualquier `id_usuario`** |
+
+Cuerpo de `POST /api/resultados`: `juego`, `nivel`, `categoria`, `puntaje` (0–1000), `tiempo` (segundos, 0–14400) y, **solo
+para invitados**, `nombre`, `grado` (1–11) y `avatar` (`N.png`, N de 1 a 35). Con sesión, la identidad (id, nombre, grado y
+avatar) sale de la sesión y lo que envíe el cuerpo se ignora. `juego` y `nivel` son listas cerradas (`config/explora.php`:
+los 8 juegos y 4 niveles reales); `categoria` y `nombre` no admiten HTML ni comillas. **Modo invitado (FUN-09):** se puede
+jugar y guardar sin sesión (`id_usuario = 0`), con datos validados y el límite de uso. El puntaje y el tiempo los calcula el
+navegador: el servidor solo descarta valores imposibles y **no puede garantizar que sean honestos** (SEC-06, límite
+aceptado). `fecha` se guarda como texto `d-m-Y H:i:s` en UTC, como el legado (DAT-03).
 
 ### Sesión y perfil (cookie de sesión HttpOnly + CSRF)
 
@@ -135,6 +151,7 @@ Estilo: `./vendor/bin/pint` (el único archivo que incumple es `bootstrap/app.ph
 | `CORS_ALLOWED_ORIGINS` | vacío | Otros orígenes permitidos (separados por comas). Vacío = solo el mismo origen |
 | `QUIZ_INCLUIR_RESPUESTAS` | `true` | Enviar `correcta`/`respuesta` al navegador (ver aviso en la API del quiz) |
 | `AVATARES_MAX` | `35` | Cantidad de avatares (`juegos/images/avatars/N.png`) |
+| `RESULTADOS_POR_MINUTO` | `10` | Partidas que puede guardar cada usuario (o IP, si es invitado) por minuto |
 | `PEDIGITAL_DB_*` | — | Conexión de solo lectura a la base de usuarios |
 | `LEGACY_DB_HOST/USER/PASS` | — | **Solo pruebas:** usuario MySQL con escritura únicamente sobre las bases `*_test`, usado por el arnés del legado y por las pruebas que preparan escenarios en `pedigital_test` |
 | `LEGACY_BASE_URL` | `http://127.0.0.1:8081` | Servidor del legado para las pruebas (debe ser local) |

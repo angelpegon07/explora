@@ -34,11 +34,25 @@ Los cuerpos de respuesta son compatibles campo a campo con el legado (las 16 cla
 8. **`miPerfil/script.js`:** `type: 'PATCH'` (o POST con `_method=PATCH`), enviar solo `avatar` (el usuario sale de la
    sesión); quitar `JSON.parse`; añadir un callback `error` (hoy no existe) que lea `responseJSON.message` y trate 401 y
    419; no enviar si `avatar_seleccionado` está vacío.
-9. **No tocar** `terminar_juego.js`, `consultar_historial.php` ni `guardar_resultado.php` hasta la Fase 5: dependen de
-   `id_usuario` en `localStorage`. Si el login dejara de escribirlo, se rompen los juegos y el historial.
+9. **Juegos (Fase 5, ya disponible en la API):**
+   - **`juegos/js/terminar_juego.js` · guardar:** `POST ${API}/resultados` en JSON (o formulario) con los nombres nuevos:
+     `nombre_juego_query→juego`, `nivel_query→nivel`, `categoria_query→categoria`, `preguntas_correctas_query→puntaje`,
+     `tiempo_query→tiempo`, `nombre_jugador_query→nombre`, `grado_jugador_query→grado`, `avatar_jugador_query→avatar`
+     (**`id_usuario_logueado` se elimina**: lo decide la sesión). Quitar `JSON.parse`; el éxito llega como **201**.
+     Ante un 422, mostrar un aviso (los nombres con `< > ' "` ya no se aceptan) y ante 429 pedir esperar un minuto.
+   - **Ranking:** `GET ${API}/ranking?juego=&nivel=&categoria=` (antes POST); sin `JSON.parse`. Las filas ya no traen
+     `id_usuario`, que el frontend no usa.
+   - **`miPerfil/script.js` · historial:** `GET ${API}/historial` **sin** `?id_usuario=`; quitar `JSON.parse`; tratar 401/419
+     como sesión caducada. Las filas traen `fecha` en el mismo formato `d-m-Y H:i:s` que ya separa el JS.
+   - **Aviso:** los juegos deben llamar a `GET /api/sesion` al cargar (paso 4) para tener la cookie CSRF también en modo
+     invitado, porque guardar exige el token.
+   - **Pendiente de Fase 7:** el frontend sigue insertando `jugador`, `avatar` y `grado` con `innerHTML`
+     (`terminar_juego.js:258`). La API nueva ya no admite HTML en datos nuevos, pero **los datos existentes en la base no
+     se han saneado** y el JS debe escapar (`textContent`) igualmente (SEC-05, parte de cliente).
 10. **Retirar o bloquear en el servidor los endpoints legados equivalentes** al conmutar: `iniciarSesion.php` (devuelve
-    el hash y no tiene límite de intentos: SEC-04 sigue abierto por la ruta vieja) y `cambiarAvatar.php` (escribe en
-    `pedigital`, mientras la API nueva lee primero `perfiles_explora`). Mientras convivan, un cambio de avatar hecho en
+    el hash y no tiene límite de intentos: SEC-04 sigue abierto por la ruta vieja), `cambiarAvatar.php` (escribe en
+    `pedigital`, mientras la API nueva lee primero `perfiles_explora`), y `guardar_resultado.php`,
+    `consultar_ranking.php` y `consultar_historial.php` (inyectables y sin sesión: SEC-01/03/05/06). Mientras convivan, un cambio de avatar hecho en
     el legado no se verá en Laravel.
 11. **`QUIZ_INCLUIR_RESPUESTAS` debe seguir en `true`** mientras `quiz.js` corrija en el navegador (con `false`, todas las
     respuestas de opción múltiple contarían como buenas y las de verdadero/falso como malas).

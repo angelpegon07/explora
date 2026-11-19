@@ -68,3 +68,9 @@ Suite: **34 pruebas, 206 aserciones, todas correctas** con el servidor legado ac
 - **Verificación manual por HTTP real** (cookies y token CSRF reales): 10 pasos correctos.
 - **No ejecutado:** prueba en navegador con el frontend conectado; carga/ataque de fuerza bruta distribuido; pruebas con HTTPS y cookie `Secure`.
 - **Suite completa: 68 pruebas, 806 aserciones, todas correctas.**
+
+## Fase 5 — juegos
+- **19 pruebas (`JuegosTest`):** invitado guarda (formato de fecha del legado); con sesión la identidad sale de la sesión y se ignora el cuerpo (nombre, grado, avatar, `id_usuario`); sin nombre/grado/avatar con sesión; 29 entradas inválidas rechazadas con 422 sin guardar nada (juego, nivel, puntaje, tiempo, categoría, nombre, grado, avatar, incluidos HTML e inyección SQL); invitado sin datos obligatorios; los 8 juegos y 4 niveles reales; categorías con tildes y signos; límite de 10/min (429 + Retry-After); CSRF (419); cuenta desactivada (401); ranking top 5 ordenado y con solo 5 campos; filtros; parámetros inválidos/inyectados (422); ranking público y limitado; historial con sesión obligatoria, solo del usuario y ordenado, sin revelar otros campos; historial vacío; **equivalencia con el legado** del ranking y del historial. Estado: Exitoso. Escritas antes del código (fase roja verificada).
+- **Verificación manual por HTTP real:** 9 pasos correctos (guardar con CSRF, rechazo de HTML, 419 sin token, ranking, inyección rechazada, historial 401 sin sesión, guardar con sesión ignorando nombre e id, historial solo propio, ranking combinado).
+- **No ejecutado:** prueba en navegador con el frontend conectado; carga real sobre el ranking con miles de filas (no hay índice sobre `nombre_juego, nivel, categoria`, campos `text`: DAT-03).
+- **Suite completa: 99 pruebas, 1.096 aserciones, todas correctas.**

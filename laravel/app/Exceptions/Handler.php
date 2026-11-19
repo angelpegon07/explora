@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Request;
 use Throwable;
 
 /**
@@ -35,7 +36,13 @@ class Handler extends ExceptionHandler
         });
     }
 
-    /** Toda la API responde JSON (incluidos 404 y errores), aunque el cliente no envíe `Accept: application/json`. */
+    /**
+     * Toda la API responde JSON (incluidos 404 y errores), aunque el cliente no envíe `Accept: application/json`.
+     *
+     * @param  Request  $request  Petición que originó la excepción.
+     * @param  Throwable  $e  Excepción que se va a mostrar.
+     * @return bool true si la respuesta debe ser JSON (siempre en `api/*`).
+     */
     protected function shouldReturnJson($request, Throwable $e): bool
     {
         return $request->is('api/*') || parent::shouldReturnJson($request, $e);

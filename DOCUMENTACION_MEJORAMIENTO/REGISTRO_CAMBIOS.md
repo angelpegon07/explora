@@ -140,3 +140,19 @@ Regeneración del id de sesión, CSRF del cierre de sesión, límite por cuenta 
 
 ### Pendiente / decisiones
 Ver [GUIA_CONMUTACION_FRONTEND.md](GUIA_CONMUTACION_FRONTEND.md) (11 pasos y riesgos: NAT en colegios, proxy inverso, cabeceras y HTTPS). Siguen abiertos: SEC-04 y SEC-03 en el legado hasta retirar `iniciarSesion.php`/`cambiarAvatar.php`/historial/guardar resultado; prueba negativa de la guarda de `TestCase`; pruebas de navegador. Git: confirmar siempre por ruta (nunca `-A`), revisar `git diff --cached --name-only` y repetir `git add -A --dry-run` antes del commit.
+
+## Fase 5 — juegos: resultados, ranking e historial (2026-11-18)
+
+| Hallazgo | Archivos (`laravel/`) | Descripción | Pruebas | Resultado |
+|---|---|---|---|---|
+| SEC-01, SEC-03, SEC-05, SEC-06, FUN-09, FUN-01 (parcial) | `routes/api.php`, `app/Http/Controllers/Api/{ResultadoJuego,Ranking,Historial}Controller.php`, `app/Http/Requests/{GuardarResultado,Ranking}Request.php`, `app/Http/Requests/Concerns/ReglasDeJuego.php`, `app/Providers/RouteServiceProvider.php` (limitador `resultados`), `config/explora.php` | `POST /api/resultados`, `GET /api/ranking` y `GET /api/historial`. **Identidad desde la sesión** (el id de usuario, nombre, grado y avatar del cuerpo se ignoran si hay sesión); **modo invitado conservado** (FUN-09) con datos estrictos y 10 partidas/min por IP; listas cerradas para `juego` y `nivel` (los 8 juegos y 4 niveles reales, extraídos de `juegos/`), categoría y nombre sin HTML ni comillas, puntaje 0–1000 y tiempo 0–14400 s; ranking público con solo 5 campos (sin `id_usuario`); historial solo del usuario de la sesión (ignora `?id_usuario=`), orden por `id` descendente y máx. 500 filas; `fecha` en el formato del legado. Sin SQL concatenado. | Escritas antes que el código (17 en rojo): `tests/Feature/JuegosTest.php`, 19 pruebas, incluida la equivalencia de ranking e historial con el legado. Verificado por HTTP real con cookies y CSRF (9 pasos) | Exitoso |
+
+### Decisiones y límites (para el responsable)
+- **Honestidad del puntaje (SEC-06): límite aceptado.** El navegador calcula puntaje y tiempo; el servidor solo descarta valores imposibles. Evitar el fraude exige mover la lógica de los juegos al servidor (fuera del alcance de esta migración).
+- **Las peticiones inválidas también cuentan para el límite** de 10/min (el límite se evalúa antes de validar): es deliberado contra el abuso; la prueba rota la IP para probar la validación.
+- **Datos existentes sin sanear:** la validación protege las filas nuevas. Las filas ya guardadas por el legado pueden contener HTML (SEC-05); el cliente debe escapar al mostrarlas (Fase 7) y una limpieza de datos requeriría autorización.
+- **`fecha` sigue siendo texto** (`d-m-Y H:i:s`, UTC): cambiarla a `datetime` es una migración de datos (DAT-03).
+- **Grado vacío:** las cuentas sin grado (p. ej. profesores) se guardan con grado vacío; el ranking mostraría «° Grado».
+- **Zona horaria:** el legado usó la del servidor (UTC en la copia de pruebas); producción por confirmar (PV).
+
+Suite completa: **99 pruebas, 1.096 aserciones, todas correctas** (con el servidor legado activo). Sin residuos en las bases de prueba.
