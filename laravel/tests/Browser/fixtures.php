@@ -112,7 +112,7 @@ switch ($accion) {
                 'puntaje' => 1, 'tiempo' => 1, 'id_usuario' => 1, 'fecha' => '01-01-2026 10:00:00',
             ],
         ]);
-        echo "Fixtures E2E sembrados.".PHP_EOL;
+        echo 'Fixtures E2E sembrados.'.PHP_EOL;
         break;
 
     case 'limpiar':
@@ -132,7 +132,7 @@ switch ($accion) {
             });
             unlink($ruta);
         }
-        echo "Fixtures E2E limpiados.".PHP_EOL;
+        echo 'Fixtures E2E limpiados.'.PHP_EOL;
         break;
 
     case 'contar':

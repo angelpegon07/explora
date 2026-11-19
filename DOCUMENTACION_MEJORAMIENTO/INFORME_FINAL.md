@@ -16,7 +16,8 @@ Fecha: 2026-11-19 · Rama `migracion-laravel` (etiqueta de recuperación `pre-mi
 | **Abiertos por decisión** | SEC-02, SEC-08, SEC-11, FUN-03/04/05 (chat y corrector con IA: ver PENDIENTE_TRABAJO_IA.md) |
 | **Aceptados** | SEC-06 (el puntaje lo calcula el navegador; no se puede garantizar su honestidad con la arquitectura actual) |
 | **Requieren autorización sobre datos** | DAT-02, DAT-04, DAT-05, DAT-07 (imágenes base64: la ficha del depto 10 pesa ~46 MB), REN-02/REN-03 |
-| **No revisados en esta ronda** | FUN-07, FUN-10, TEC-04, DAT-06, CAL-03, CAL-04 |
+| **Cerrados en el afinado final** | FUN-10 (la opción «Volcanes» muestra «Próximamente» en vez de llevar a una página inexistente), CAL-04 parcial (`.DS_Store` fuera del repo y en `.gitignore`), Pint sin avisos en todo `laravel/` |
+| **Sin tocar (bajo impacto o requieren decisión)** | FUN-07 (enlaces `#` en el menú de juegos), TEC-04 y DAT-06 (esquema), CAL-03, CAL-04 resto (`jsons/unir.html` público con jQuery por CDN, `ViajaPED/package.json` sin uso) |
 
 ## 3. Riesgos residuales (lo que el responsable debe saber)
 1. **El chat legado sigue activo** con credenciales de MySQL (usuario con privilegios altos) escritas en `chat.php` y `chat copy.php`. Rotarlas es obligatorio antes de publicar.
