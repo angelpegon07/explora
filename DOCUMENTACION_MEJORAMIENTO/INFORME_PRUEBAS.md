@@ -81,3 +81,10 @@ Suite: **34 pruebas, 206 aserciones, todas correctas** con el servidor legado ac
 - **Prueba de mutación** sobre `quiz.js` (ver REGISTRO_CAMBIOS.md): la prueba del doble clic detecta el defecto.
 - **Inestabilidad encontrada y resuelta:** dos pruebas de perfil fallaban de forma intermitente por carreras de la propia prueba (foco de Bootstrap y cookie XSRF re-emitida); ahora esperan eventos en lugar de suponer tiempos.
 - **No ejecutado / límites:** Firefox y Safari; un Apache real; prueba de carga; la ficha del departamento 10 (≈48 MB) en navegador; prueba visual/responsive.
+
+## Prueba de los `.htaccess` con Apache real (Fase 7B, 2026-11-19)
+Apache 2.4.56 del sistema (macOS) en 127.0.0.1:8095, PHP por CGI (`php-cgi`), bases `*_test`, `AllowOverride All`. Resultado: **todo conforme**.
+- Sitio y estáticos: 200. `/laravel/` (`.env`, `composer.json`, `storage`, `vendor`), `DOCUMENTACION_MEJORAMIENTO/` y `conexion*.php`: 403. `/.git/HEAD` y `/.env`: 404.
+- Los 7 PHP sustituidos: 410. Sin listado de directorios y sin MultiViews (`/index`, `/api/sesion.php`: 404).
+- `/api/...` llega a Laravel (401 sin sesión, 404 de Laravel en rutas inexistentes, 419 sin CSRF); ciclo POST/GET/DELETE `/api/sesion` correcto (200, 200, 200, luego 401).
+- **No comprobado:** mod_php/php-fpm, cabecera `Authorization`, ausencia de `mod_rewrite` (bloque de respaldo), otros sistemas o versiones, Firefox y Safari (Playwright 1.60 no trae Firefox para macOS 13; `safaridriver` requiere activarlo con permisos de administrador).
