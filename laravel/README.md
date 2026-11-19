@@ -17,7 +17,7 @@ Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del siti
 | 3 | API de lectura: ficha de departamento y quiz | ✔ (sin conectar al frontend) |
 | 4 | Autenticación por sesión y avatar | ✔ (sin conectar al frontend) |
 | 5 | Juegos: resultados, ranking, historial | ✔ (sin conectar al frontend) |
-| 6 | Chat con IA y corrector | pendiente |
+| 6 | Chat con IA y corrector | aplazada (trabajo aparte enfocado en IA) |
 | 7 | Frontend (Vite, accesibilidad, conmutar a la API nueva) | pendiente |
 
 ## Requisitos

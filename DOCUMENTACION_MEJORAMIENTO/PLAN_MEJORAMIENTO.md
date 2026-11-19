@@ -21,7 +21,7 @@ Estrangulamiento progresivo: el sitio actual sigue funcionando mientras se const
 | **3. Lectura pública** | Fichas, quiz y mapas servidos por controladores + Resources con consultas parametrizadas y `with()`; el quiz deja de enviar la respuesta correcta (SEC-01, SEC-06, FUN-02, TEC-01, TEC-03) | Endpoints seguros, JSON uniforme | M | Fase 2 |
 | **4. Autenticación** | Login contra `pedigital.users` (solo lectura) con throttling; sesión/Sanctum; middleware y Policies; respuesta sin hash (SEC-03, SEC-04, SEC-10) | Sin IDOR; datos del usuario solo propios | M | Decisión del avatar (§6) |
 | **5. Juegos** | Resultados con Form Request y rangos validados; ranking y historial paginados; fecha `datetime`; salida escapada (SEC-05, SEC-06, FUN-01) | Ranking íntegro | M | Fase 4 |
-| **6. IA** | `ConsultaIAService` con timeout, lista blanca, rate limiting y cola; corrector pasa a endpoint servidor (SEC-08, FUN-03, FUN-04, FUN-05) | Chat y corrector estables | M | Decisión sobre Ollama |
+| **6. IA** | **APLAZADA (decisión del responsable, 2026-11-18):** el chat y el corrector se tratarán en un trabajo aparte enfocado solo en IA. Ver [PENDIENTE_TRABAJO_IA.md](PENDIENTE_TRABAJO_IA.md) | Fuera de esta migración | — | Decisión de IA |
 | **7. Frontend** | Vite + npm, una sola copia de librerías y de Mapplic parametrizado; jQuery/Bootstrap actualizados por módulo; accesibilidad del quiz; optimización de medios (SEC-09, TEC-02, REN-01/02, UX-01/02) | Menos duplicación, mejor carga | L | Fases 3–5 |
 | **8. Cierre** | Suite completa, documentación, informe; retiro del PHP legado y **despliegue** (requieren autorización expresa) | Sistema migrado | M | Todas |
 

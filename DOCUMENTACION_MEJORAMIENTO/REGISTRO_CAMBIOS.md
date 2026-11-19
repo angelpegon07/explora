@@ -156,3 +156,6 @@ Ver [GUIA_CONMUTACION_FRONTEND.md](GUIA_CONMUTACION_FRONTEND.md) (11 pasos y rie
 - **Zona horaria:** el legado usó la del servidor (UTC en la copia de pruebas); producción por confirmar (PV).
 
 Suite completa: **99 pruebas, 1.096 aserciones, todas correctas** (con el servidor legado activo). Sin residuos en las bases de prueba.
+
+## Fase 6 — aplazada por decisión del responsable (2026-11-18)
+No se implementa nada. El chat con IA y el corrector se tratarán en un trabajo aparte enfocado solo en IA; el legado (`chat.php`, `chat copy.php`, `corrector.html`) no se modifica. Riesgos que quedan abiertos y se aceptan de forma explícita: SEC-02 (credenciales en `chat.php` y `chat copy.php`), SEC-08, SEC-11, FUN-03, FUN-04, FUN-05. Resumen del trabajo futuro, con lo que ya se sabe y las decisiones pendientes: [PENDIENTE_TRABAJO_IA.md](PENDIENTE_TRABAJO_IA.md).

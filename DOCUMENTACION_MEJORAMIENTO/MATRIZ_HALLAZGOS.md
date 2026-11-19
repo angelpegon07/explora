@@ -117,6 +117,10 @@ SEC-01 (inyección en `consultarInfo`, `consultar_historial`, `consultar_ranking
 ### Estado de los hallazgos tratados por los endpoints nuevos (`/api/departamentos/{id}/ficha` y `/preguntas`)
 SEC-01 (ficha y quiz: sin SQL concatenado, solo ids numéricos) · SEC-07 (sin errores fatales ni rutas; 404 JSON) · FUN-02 (id inexistente → 404 con JSON) · TEC-03 (Content-Type JSON, Resources de lista blanca, sin columnas internas) · SEC-04 N/A. **Parcial:** TEC-01 (sin consultas en bucle, pero siguen siendo ≈19 consultas porque cada sección es una tabla) · SEC-06 (`correcta` se mantiene por compatibilidad con `quiz.js`; configurable con `QUIZ_INCLUIR_RESPUESTAS`). **No resuelto:** REN-03 (el peso es de los datos, DAT-07).
 
+## I. Decisiones de alcance (2026-11-18)
+
+**Fase 6 (IA) aplazada** por decisión del responsable: el chat con IA y el corrector de texto se tratarán en un trabajo posterior enfocado solo en IA (ver [PENDIENTE_TRABAJO_IA.md](PENDIENTE_TRABAJO_IA.md)). Quedan **abiertos** SEC-08 (IA sin límite de uso), FUN-03 (URL del chat sin codificar), FUN-04 (salida de la IA sin validar), FUN-05 (Ollama en `localhost` desde el navegador) y SEC-11 (HTML del chat). **Riesgo residual que se acepta explícitamente:** `mapplic/php/chat.php` y `mapplic/php/chat copy.php` siguen publicados con credenciales de MySQL escritas en el código (SEC-02, parte del chat) y con SQL construido a partir de la respuesta de la IA; no se modifican. La rotación de credenciales y el retiro de `chat copy.php` se harán en el trabajo de IA.
+
 ## Trazabilidad módulo → estado de auditoría
 
 | Módulo | Cobertura de esta auditoría | Estado |

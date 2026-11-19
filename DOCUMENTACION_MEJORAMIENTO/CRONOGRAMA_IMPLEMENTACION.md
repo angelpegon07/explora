@@ -10,7 +10,7 @@ Sin fechas de inicio ni personal asignado (no se conoce la disponibilidad). Dura
 | 4 | 3. Lectura pública | 3–4 días | 3 | Fichas y quiz en Laravel, SQL concatenado eliminado en lectura |
 | 5 | 4. Autenticación | 3–4 días | 3 | Login + Policies; IDOR cerrado |
 | 6 | 5. Juegos | 3–4 días | 5 | Resultados/ranking/historial seguros |
-| 7 | 6. IA | 2–3 días | 4 | Chat y corrector en servidor |
+| 7 | 6. IA — **aplazada** (trabajo aparte enfocado en IA) | — | — | Ver PENDIENTE_TRABAJO_IA.md |
 | 8 | 7. Frontend | 8–12 días | 4–6 | Vite, librerías unificadas, accesibilidad |
 | 9 | 8. Cierre | 3–4 días | todas | Informe final y propuesta de despliegue |
 
