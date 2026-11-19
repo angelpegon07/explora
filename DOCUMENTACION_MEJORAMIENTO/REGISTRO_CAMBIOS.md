@@ -195,7 +195,7 @@ Solo se probó en **Chromium** (no Firefox ni Safari). Los `.htaccess` no se pro
 - **jQuery:** páginas raíz, `miPerfil.html` y `juegos/index.html` pasan de 1.11.3 a 3.5.1 (`bootstrap/jquery.min.js`); se borra `js/jquery.min.js`.
 - **Pruebas:** `laravel/tests/Browser/mapas.spec.js` (6 páginas de mapas: sin errores de JS y abre un lugar). Playwright: 42 pruebas. Corregido un error de JS previo en `index.html` (`.mapplic-levels` nulo).
 - **Pendiente:** GIF/MP4 (~200 MB; faltan herramientas para redimensionar: `sharp` denegado), Bootstrap 4/5 por grupo, Vite.
-- **Medios (7B, cierre):** 16 GIF >1 MB convertidos a WebP animado (640 px; 800 px en laberinto): 169 MB → 47 MB, mismos fotogramas; 4 sin referencia eliminados (`normal`, `saludando`, `nave`, `nave_lenta`); referencias actualizadas. `mapplic/images/loader.gif`, `fantasma.gif` y `mario.gif` se conservan. `ventana_mundo.mp4` (29 MB) sigue igual (sin ffmpeg).
+- **Medios (7B, cierre):** 16 GIF >1 MB convertidos a WebP animado (640 px; 800 px en laberinto): 169 MB → 47 MB, mismos fotogramas; 4 sin referencia eliminados (`normal`, `saludando`, `nave`, `nave_lenta`); referencias actualizadas. `mapplic/images/loader.gif`, `fantasma.gif` y `mario.gif` se conservan. `ventana_mundo.mp4` recodificado (H.264 CRF 30, audio 64 kbps, faststart): 30,8 MB → 19,0 MB, misma duración y resolución (640x360).
 - **Bootstrap:** laberinto usa `juegos/librerias/bootstrap-5.3` (5.3.5) y se borra su copia 5.3.0. banderas-color (4.6.2) y las páginas raíz (4.5.2) se mantienen: son dos generaciones con CSS propio distinto.
 - **Pruebas:** `recursos.spec.js` (11 páginas sin 4xx/5xx). Playwright: 53. Defecto previo: laberinto pide `css/perdio_gano.png`, que nunca existió (exento en la prueba).
-- **Fuera de alcance / pendiente:** Vite, MP4, Firefox/Safari, Apache real.
+- **Fuera de alcance / pendiente:** Vite, Firefox/Safari, Apache real.
