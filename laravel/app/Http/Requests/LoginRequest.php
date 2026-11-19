@@ -35,7 +35,8 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'usuario' => ['required', 'string', 'max:45'],
+            // Sin caracteres de 4 bytes (emoji): la conexión a `pedigital` es utf8mb3 y provocaba un 500 (SQLSTATE 3988).
+            'usuario' => ['required', 'string', 'max:45', 'regex:/^[^\\x{10000}-\\x{10FFFF}]*$/u'],
             'contrasena' => ['required', 'string', 'max:200'],
         ];
     }

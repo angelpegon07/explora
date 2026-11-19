@@ -181,6 +181,8 @@
       type: verbo,
       dataType: 'json',
       headers: { Accept: 'application/json' },
+      // Sin tiempo máximo una respuesta colgada dejaba la ficha cargando para siempre; 120 s admite la ficha más pesada (~46 MB).
+      timeout: (opciones && opciones.timeout) || 120000,
       cache: !(opciones && opciones.cache === false),
       // El token se lee AQUÍ, en cada petición: cambia al iniciar y cerrar
       // sesión, y un valor guardado al cargar la página provocaría errores 419.
@@ -227,6 +229,7 @@
   function mensajeError(xhr, porDefecto) {
     var estado = xhr && Number(xhr.status) || 0;
     var respaldo = porDefecto || 'No se pudo completar la solicitud.';
+    if (estado === 0 && xhr && xhr.statusText === 'timeout') { return 'El servidor tardó demasiado en responder. Inténtelo de nuevo.'; }
     if (estado === 0) { return 'No hay conexión con el servidor.'; }
     if (estado === 419) { return 'Su sesión caducó. Vuelva a iniciar sesión.'; }
     if (estado === 429) {

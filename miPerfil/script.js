@@ -52,6 +52,9 @@ function verUsuario(usuario) {
  * @returns {void}
  */
 function mostrarAvisoSinSesion() {
+    // Se vacía la tabla: «Aún no hay partidas» junto al aviso de sesión caducada hacía creer que no había historial.
+    var tabla = document.getElementById('historial-body');
+    if (tabla) { tabla.textContent = ''; }
     if (document.getElementById('aviso-sesion')) {
         return;
     }

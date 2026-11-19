@@ -3,7 +3,11 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Exceptions\ThrottleRequestsException;
+use Illuminate\Session\TokenMismatchException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
 /**
@@ -34,6 +38,24 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+
+        // Mensajes en español para la API (antes salían los de Laravel en inglés: «Too Many Attempts.», etc.).
+        // Se conservan `message` (compatibilidad) y `mensaje` (forma del contrato de sesión).
+        $this->renderable(function (ThrottleRequestsException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return $this->respuestaApi('Demasiadas solicitudes. Espere un momento e inténtelo de nuevo.', 429, $e->getHeaders());
+            }
+        });
+        $this->renderable(function (NotFoundHttpException $e, Request $request) {
+            if ($request->is('api/*') || $request->is('api')) {
+                return $this->respuestaApi('Recurso no encontrado.', 404);
+            }
+        });
+        $this->renderable(function (TokenMismatchException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return $this->respuestaApi('Su sesión caducó. Vuelva a iniciar sesión.', 419);
+            }
+        });
     }
 
     /**
@@ -46,5 +68,22 @@ class Handler extends ExceptionHandler
     protected function shouldReturnJson($request, Throwable $e): bool
     {
         return $request->is('api/*') || parent::shouldReturnJson($request, $e);
+    }
+
+    /**
+     * Respuesta JSON de error uniforme de la API.
+     *
+     * @param  string  $mensaje  Texto en español para el usuario.
+     * @param  int  $estado  Código HTTP.
+     * @param  array<string, string>  $cabeceras  Cabeceras a conservar (p. ej. Retry-After).
+     */
+    private function respuestaApi(string $mensaje, int $estado, array $cabeceras = []): JsonResponse
+    {
+        return response()->json(
+            ['success' => false, 'message' => $mensaje, 'mensaje' => $mensaje],
+            $estado,
+            $cabeceras,
+            JSON_UNESCAPED_UNICODE
+        );
     }
 }

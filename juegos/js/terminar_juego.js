@@ -40,6 +40,15 @@ var TIEMPO_RESPALDO_CIERRE = 600;
  * @returns {void}
  */
 function avisar_jugador(mensaje, icono) {
+    // Con el modal de guardado abierto el aviso va DENTRO del modal: un Swal quedaba detrás de él (z-index) y,
+    // además, sustituía al Swal «¡Felicidades!» pendiente cuyo .then redirigía la página (banderas-color).
+    var aviso = document.getElementById('aviso_guardar');
+    if (aviso) {
+        aviso.textContent = mensaje;
+        aviso.className = 'alert ' + (icono === 'error' ? 'alert-danger' : 'alert-warning');
+        aviso.style.display = 'block';
+        return;
+    }
     if (typeof Swal !== 'undefined') {
         Swal.fire({ icon: icono || 'error', text: mensaje });
     } else {
@@ -152,6 +161,7 @@ function guardar_resultado(nombre_juego, preguntas_correctas, contador_juego, ni
                                     <h5 class="text-primary"><i class="fa-solid fa-star text-color-claro"></i><i class="fa-solid fa-star text-color-claro"></i> <span class="text-dark">${ExploraApi.escaparHtml(nivel)}</span></h5>
                                 </div>
                                 <br>
+                                <div id="aviso_guardar" role="alert" class="alert alert-warning" style="display: none; margin: 0 0 12px; text-align: center;"></div>
                                 <div style="display: flex; justify-content: center; align-items: center;">
                                     <button type="button" onclick="guardar_resultado_base_datos()" style="width: 160px;" class="btn btn-primary" id="btnGuardar">Guardar <i class="fas fa-save"></i></button>
                                     <button type="button" style="width: 160px; margin-left: 20px;" class="btn btn-danger" onclick="cerrar_modal_guardar_resultado()">Cerrar <i class="fas fa-times-circle"></i></button>
@@ -262,6 +272,7 @@ function guardar_resultado_base_datos() {
     var nombre_jugador = document.getElementById('nombre_jugador').value.trim();
     var grado_jugador = document.getElementById('grado_jugador').value;
 
+    $('#aviso_guardar').hide();
     if (nombre_jugador == '') {
         $('#nombre_jugador').addClass('is-invalid');
         avisar_jugador('Escribe tu nombre para guardar el resultado.', 'warning');

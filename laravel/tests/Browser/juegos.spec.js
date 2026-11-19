@@ -46,6 +46,8 @@ test('si /api/resultados falla (500) el botón se vuelve a habilitar', async ({ 
     await post;
     await expect(page.locator('#btnGuardar')).toBeEnabled();
     await expect(page.locator('#btnGuardar')).not.toContainText('Guardando');
+    // El aviso debe verse DENTRO del modal (un Swal quedaba detrás de él y no se veía).
+    await expect(page.locator('#aviso_guardar')).toBeVisible();
 });
 
 /** Casos de cierre del modal: uno por versión de Bootstrap. */

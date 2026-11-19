@@ -642,7 +642,7 @@ function mostrar_finalJuego() {
     }
 
     setTimeout(() => {
-        contador_juego = contador_juego - 4;
+        contador_juego = Math.max(0, contador_juego - 4); // sin negativos: la API rechaza tiempos < 0
         guardar_resultado("laberinto", preguntas_correctas, contador_juego, nivel_seleccionado, categoria_query);
     }, 4000);
 

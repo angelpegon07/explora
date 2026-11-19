@@ -88,3 +88,13 @@ Apache 2.4.56 del sistema (macOS) en 127.0.0.1:8095, PHP por CGI (`php-cgi`), ba
 - Los 7 PHP sustituidos: 410. Sin listado de directorios y sin MultiViews (`/index`, `/api/sesion.php`: 404).
 - `/api/...` llega a Laravel (401 sin sesión, 404 de Laravel en rutas inexistentes, 419 sin CSRF); ciclo POST/GET/DELETE `/api/sesion` correcto (200, 200, 200, luego 401).
 - **No comprobado:** mod_php/php-fpm, cabecera `Authorization`, ausencia de `mod_rewrite` (bloque de respaldo), otros sistemas o versiones, Firefox y Safari (Playwright 1.60 no trae Firefox para macOS 13; `safaridriver` requiere activarlo con permisos de administrador).
+
+## Ronda de pruebas de navegador con 3 agentes (2026-11-19)
+Áreas: mapas y fichas/quiz (escritorio y móvil), sesión/perfil/7 juegos, seguridad y robustez. **Sin regresiones de mapas.** Defectos nuevos hallados y corregidos (pruebas: `DefectosQaTest`, `juegos.spec.js`):
+- Juegos: los avisos del modal de guardar quedaban detrás del modal y, en banderas-color, un `Swal` sustituía al «Felicidades» y redirigía la página → ahora el aviso va dentro del modal (`#aviso_guardar`).
+- Laberinto: tiempo negativo (<4 s) daba 422 → `Math.max(0, …)`.
+- Login con emoji → 500 (SQLSTATE 3988, `pedigital` es utf8mb3) → 422 por validación.
+- Ids enormes en `/api/departamentos/{id}/…` → 500 → ahora 404 (`[0-9]{1,9}`).
+- 429/419/404 de la API en inglés → español (`Handler`); peticiones sin tiempo máximo → 120 s; historial engañoso con sesión caducada → se vacía.
+**Previos, no corregidos (no son de la migración):** menú «Volcanes» comentado en las páginas; fuente sin límite en los botones de accesibilidad; desborde horizontal por el panel `#opciones_mapa`; 404 de `ventana_mundo.mp3` y de `puzzle/mapa/` (carpeta inexistente); errores de consola de panzoom/tag-it/ahorcado; sopa de letras y perfil poco usables en móvil; `X-Powered-By` con versión (se resuelve en el servidor con `expose_php=Off`).
+Resultado final: PHPUnit 121 (1.143 aserciones), Playwright 53/53, Pint limpio.

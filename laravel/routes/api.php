@@ -24,8 +24,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('throttle:api')->prefix('departamentos')->whereNumber('id')->group(function () {
     Route::get('{id}/ficha', FichaDepartamentoController::class)
         ->middleware(MemoriaParaFichas::class)
+        ->where('id', '[0-9]{1,9}')
         ->name('departamentos.ficha');
-    Route::get('{id}/preguntas', PreguntasDepartamentoController::class)->name('departamentos.preguntas');
+    Route::get('{id}/preguntas', PreguntasDepartamentoController::class)
+        ->where('id', '[0-9]{1,9}')->name('departamentos.preguntas');
 });
 
 /*
