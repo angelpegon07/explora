@@ -198,4 +198,5 @@ Solo se probó en **Chromium** (no Firefox ni Safari). Los `.htaccess` no se pro
 - **Medios (7B, cierre):** 16 GIF >1 MB convertidos a WebP animado (640 px; 800 px en laberinto): 169 MB → 47 MB, mismos fotogramas; 4 sin referencia eliminados (`normal`, `saludando`, `nave`, `nave_lenta`); referencias actualizadas. `mapplic/images/loader.gif`, `fantasma.gif` y `mario.gif` se conservan. `ventana_mundo.mp4` recodificado (H.264 CRF 30, audio 64 kbps, faststart): 30,8 MB → 19,0 MB, misma duración y resolución (640x360).
 - **Bootstrap:** laberinto usa `juegos/librerias/bootstrap-5.3` (5.3.5) y se borra su copia 5.3.0. banderas-color (4.6.2) y las páginas raíz (4.5.2) se mantienen: son dos generaciones con CSS propio distinto.
 - **Pruebas:** `recursos.spec.js` (11 páginas sin 4xx/5xx). Playwright: 53. Defecto previo: laberinto pide `css/perdio_gano.png`, que nunca existió (exento en la prueba).
-- **Fuera de alcance / pendiente:** Vite, Firefox/Safari, Apache real.
+- **Build ligero:** `laravel/build-sitio.mjs` (`npm run build:sitio`) genera `dist/` minificando JS/CSS con el esbuild de Vite, sin módulos ni cambios en HTML; el router acepta `EXPLORA_RAIZ_SITIO` y las 53 pruebas pasan también contra `dist/`. Migrar a módulos ES/Vite completo queda descartado por riesgo.
+- **Fuera de alcance / pendiente:** Firefox/Safari, Apache real.

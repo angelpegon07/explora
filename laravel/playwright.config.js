@@ -37,7 +37,7 @@ export default defineConfig({
     },
 
     webServer: {
-        command: 'php -S 127.0.0.1:8090 -t .. servidor-desarrollo.php',
+        command: `php -S 127.0.0.1:8090 -t ${process.env.EXPLORA_RAIZ_SITIO || '..'} servidor-desarrollo.php`,
         // Directorio del proyecto Laravel (laravel/); la raíz del sitio es su carpeta padre (-t ..).
         cwd: import.meta.dirname,
         url: 'http://127.0.0.1:8090/index.html',

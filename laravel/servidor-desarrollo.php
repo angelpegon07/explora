@@ -95,7 +95,8 @@ function explora_leer_variable(string $clave): ?string
     return null;
 }
 
-$raiz = realpath(dirname(__DIR__));
+// EXPLORA_RAIZ_SITIO permite servir el sitio construido (dist/) con el mismo router; por defecto, la raíz del repositorio.
+$raiz = realpath(getenv('EXPLORA_RAIZ_SITIO') ?: dirname(__DIR__));
 $ruta = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
 
 // 1) Rutas con byte nulo, «..» o barra invertida: intento de salir de la raíz o de confundir al servidor.

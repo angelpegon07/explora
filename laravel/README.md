@@ -145,6 +145,22 @@ Cliente común del sitio: [`../js/explora-api.js`](../js/explora-api.js) (`windo
 profundidad, cabecera `X-XSRF-TOKEN` leída de la cookie en cada petición, mensajes de error unificados, sincronización de la sesión
 y funciones para escapar HTML y validar avatares. Se incluye **después de jQuery** en todas las páginas que usan la API.
 
+## Build ligero del sitio (`dist/`)
+
+`npm run build:sitio` (desde `laravel/`) ejecuta [build-sitio.mjs](build-sitio.mjs): copia el sitio estático a `../dist/` y
+minifica los JS/CSS propios con esbuild (motor de Vite). **No empaqueta ni usa módulos**: los scripts son clásicos con jQuery
+global, así que los nombres, rutas y el orden de carga no cambian y las páginas HTML no se tocan. No entran en `dist/`: PHP
+legado, `laravel/`, documentación, dumps y `.md`. Despliegue: superponer `dist/` sobre la raíz del sitio
+(`rsync -a dist/ /ruta/del/sitio/`), sin reemplazar `laravel/` ni los PHP. `dist/` está en `.gitignore`.
+
+Para probar el build con el mismo router y las pruebas de navegador:
+
+```bash
+npm run build:sitio && EXPLORA_RAIZ_SITIO="$(cd ../dist && pwd)" npm run test:e2e
+```
+
+El ahorro de la minificación es pequeño (~1 MB sobre ~300 MB): el peso real estaba en los medios (ver REGISTRO_CAMBIOS.md).
+
 ## Pruebas
 
 ```bash
