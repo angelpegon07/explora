@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html style="max-height: 100vh; overflow: hidden;">
+<html lang="es" style="max-height: 100vh; overflow: hidden;">
 
     <head>
         <!-- Meta -->
@@ -150,7 +150,7 @@
     <body style="overflow: hidden; max-height: 100vh;">
 
         <div id="dato_interes" class="dato_interes">
-            <img src="img/pensando.gif" width="200px" id="pensando_gif" alt="">
+            <img src="img/pensando.webp" width="200px" id="pensando_gif" alt="">
             <div class="dato_interes_header">
                 <h2>Dato de interes</h2>
                 <i onclick="mostrarCerrarDatoInteres()" class="btn_cerrar_dato_interes fa-solid fa-circle-xmark"></i>
@@ -315,7 +315,7 @@
 
         <div id="contenedorVideo">
             <div class="content" style="background-color: #ffffff00; border: none;">
-                <a style="position: absolute;color: wheat;border-radius: 50%;top: 2vh;right: 2vw;opacity: 1;font-size: 62px;z-index: 333333;" type="button"  onclick="cerrarVideo()">&times;</a>
+                <a style="position: absolute;color: wheat;border-radius: 50%;top: 2vh;right: 2vw;opacity: 1;font-size: 62px;z-index: 333333;" type="button"  href="#" aria-label="Cerrar" onclick="cerrarVideo(); return false;">&times;</a>
                 <div style="width: 100%; height: 100vh; top: 0px; left: 0px; position: absolute; display: flex; justify-content: center; align-items: center;">
                     <video  controls style="width: 60%;" id="video_punto" src=""></video>
                 </div>    
@@ -325,7 +325,7 @@
 
         <div id="contenedorImagenes">
             <div class="content" style="background-color: #ffffff00; border: none;">
-                <a style="position: absolute;color: wheat;border-radius: 50%;top: 2vh;right: 2vw;opacity: 1;font-size: 62px;z-index: 333333;" type="button"  onclick="cerrarImagenes()">&times;</a>
+                <a style="position: absolute;color: wheat;border-radius: 50%;top: 2vh;right: 2vw;opacity: 1;font-size: 62px;z-index: 333333;" type="button"  href="#" aria-label="Cerrar" onclick="cerrarImagenes(); return false;">&times;</a>
                 <div id="carouselExampleIndicators" style="display: flex;align-items: center;height: 100vh;" class="carousel slide">
                     <ol class="carousel-indicators">
                     </ol>
@@ -348,7 +348,7 @@
 
         <div id="contenedorTest">
             <div class="content" style="background-color: #ffffff00; border: none; height: 100vh; display: flex ;justify-content: center;align-items: center;">
-                <a style="position: absolute;color: wheat;border-radius: 50%;top: 2vh;right: 2vw;opacity: 1;font-size: 62px;z-index: 333333;" type="button"  onclick="cerrarTest()">&times;</a>
+                <a style="position: absolute;color: wheat;border-radius: 50%;top: 2vh;right: 2vw;opacity: 1;font-size: 62px;z-index: 333333;" type="button"  href="#" aria-label="Cerrar" onclick="cerrarTest(); return false;">&times;</a>
                 <br>
                 <div class="container-fluid">
                     <div class="modal-dialog modal-lg">
@@ -367,6 +367,7 @@
                             </div>
                             <div class="modal-body quizmodal" style="display: flex; justify-content: center; align-items: center; text-align: center;">
                                 <h2>Esta función solo está disponible para el mapa general, por favor seleccione el mapa general para poder utilizar esta función</h2>
+                                <div id="quiz_anuncio" class="sr-only" aria-live="polite"></div>
                             </div>
                             <div class="modal-footer text-muted" style="justify-content: space-between;">
                                 <p style="color: rgb(62, 113, 255); font-weight: bold;" id="contador_preguntas">Pregunta 0 de 10</p>
@@ -446,7 +447,7 @@
         </div>
 
         <div style="display: none; text-align: center;" id="final" class="final">
-            <img id="imagen_final" style="height: 55vh;" src="images/derrota.gif" alt="">
+            <img id="imagen_final" style="height: 55vh;" src="images/derrota.webp" alt="">
             <br>
             <hr>
             <div class="row" style="padding: 7vh;">
@@ -468,7 +469,8 @@
         </div>
 
         <!-- Scripts -->
-        <script type="text/javascript" src="js/jquery.min.js"></script>
+        <script type="text/javascript" src="bootstrap/jquery.min.js"></script>
+        <script src="js/explora-api.js"></script>
         <script type="text/javascript" src="js/hammer.min.js"></script>
         <script type="text/javascript" src="js/jquery.easing.js"></script>
         <script type="text/javascript" src="js/jquery.mousewheel.js"></script>

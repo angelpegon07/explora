@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------------------------------------------------
+# Explora: configuración de Apache para la RAÍZ del repositorio (DocumentRoot = raíz del repo).
+# Requiere AllowOverride All y mod_rewrite. Guía completa: DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md
+# ---------------------------------------------------------------------------------------------------------------
+
+# Sin listado de directorios (evita exponer el contenido de carpetas sin index) y sin negociación de contenido
+# (MultiViews haría que /api/x resolviera a un archivo x.* por sorpresa).
+Options -Indexes -MultiViews
+
+# Nunca servir el repositorio Git ni archivos .env (credenciales), en cualquier nivel de la ruta.
+RedirectMatch 404 /\.(git|env)
+
+# Los archivos de conexión del PHP legado contienen credenciales de MySQL escritas en el código.
+<FilesMatch "^conexion.*\.php$">
+    Require all denied
+</FilesMatch>
+
+# Volcados, copias y archivos de proyecto que nunca deben descargarse.
+<FilesMatch "\.(sql|gz|zip|md|sh|lock|log|bak)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Todo /api/... lo atiende Laravel. Se reescribe (no se usa Alias) para que Laravel vea la ruta COMPLETA con el
+    # prefijo «api»; con Alias vería la ruta sin él y no encontraría las rutas de routes/api.php.
+    RewriteRule ^api(/|$) laravel/public/index.php [L]
+</IfModule>

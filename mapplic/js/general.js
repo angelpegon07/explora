@@ -11,7 +11,8 @@ function seleccionarTipoMapa(tipo) {
     } else if (tipo == 'parques_naturales') {
         window.location.href = 'parques_naturales.html';
     } else if (tipo == 'volcanes') {
-        window.location.href = 'volcanes.html';
+        // El mapa de volcanes no existe todavía (antes redirigía a una página inexistente: FUN-10).
+        if (window.Swal) Swal.fire({ icon: 'info', title: 'Próximamente', text: 'El mapa de volcanes estará disponible pronto.' });
     } else if (tipo == 'etnias') {
         window.location.href = 'etnias.html';
     }

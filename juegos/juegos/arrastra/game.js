@@ -349,7 +349,7 @@ function iniciarContador(minutos) {
             clearInterval(intervalo);
 
             Swal.fire({
-                html: '<img src="../assets/images/derrota.gif" style="width: 400px;"> <br> <h2 style="font-size: 1.8rem;">¡Opps, se ha acabado el tiempo! <br> ¿Quieres volver a intentarlo?</h2>',
+                html: '<img src="../assets/images/derrota.webp" style="width: 400px;"> <br> <h2 style="font-size: 1.8rem;">¡Opps, se ha acabado el tiempo! <br> ¿Quieres volver a intentarlo?</h2>',
                 confirmButtonText: 'Si, jugar',
                 confirmButtonColor: '#34230d',
                 cancelButtonText: 'No, salir',

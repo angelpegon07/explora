@@ -6,3 +6,7 @@
 # Dependencias
 node_modules/
 **/node_modules/
+
+# Salida del build ligero (npm run build:sitio)
+dist/
+.DS_Store

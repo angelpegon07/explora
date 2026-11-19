@@ -36,7 +36,7 @@
                         <i class="fas fa-history"></i> Mi Historial
                     </a>
                     <hr>
-                    <a style="color: white; background-color: #dd6118 !important; border: 3px solid #974514 !important;" class="nav-link" id="link-cerrar-sesion" href="#" onclick="cerrarSesion()"> 
+                    <a style="color: white; background-color: #dd6118 !important; border: 3px solid #974514 !important;" class="nav-link" id="link-cerrar-sesion" href="#" aria-label="Cerrar sesión" onclick="cerrarSesion()"> 
                         <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                     </a>
                 </div>
@@ -126,7 +126,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLabel">Cambiar Avatar</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -140,7 +140,8 @@
     </div>
 
 
-    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="bootstrap/jquery.min.js"></script>
+    <script src="js/explora-api.js"></script>
     <script src="bootstrap/bootstrap.min.js"></script>
     <script src="miPerfil/script.js"></script>
     <script>
@@ -156,13 +157,11 @@
                 cancelButtonText: 'No, cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    localStorage.removeItem('usuario');
-                    localStorage.removeItem('nombre');
-                    localStorage.removeItem('grado');
-                    localStorage.removeItem('avatar');
-                    localStorage.removeItem('id_usuario');
-
-                    window.location.href = 'index.html';
+                    // Se avisa al servidor y, pase lo que pase, se limpia la caché local.
+                    ExploraApi.peticion('DELETE', 'sesion').always(function () {
+                        ExploraApi.limpiarSesionLocal();
+                        window.location.href = 'index.html';
+                    });
                 }
             });
         }

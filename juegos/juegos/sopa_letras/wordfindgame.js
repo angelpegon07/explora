@@ -347,7 +347,7 @@
 
         setTimeout(() => {
           Swal.fire({
-            html: '<img src="../assets/images/derrota.gif" style="width: 400px;"> <br> <h2 style="font-size: 2.2rem;">Te diste por vencido, no te preocupes, puedes intentarlo de nuevo</h2>',
+            html: '<img src="../assets/images/derrota.webp" style="width: 400px;"> <br> <h2 style="font-size: 2.2rem;">Te diste por vencido, no te preocupes, puedes intentarlo de nuevo</h2>',
             confirmButtonText: 'Intentar de nuevo',
             cancelButtonText: 'Salir',
             showCancelButton: true,

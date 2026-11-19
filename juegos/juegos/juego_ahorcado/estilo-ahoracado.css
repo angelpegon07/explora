@@ -345,7 +345,7 @@ img {
 
 
 .overlay {
-  background-image: url(../assets/images/normal1.gif);
+  background-image: url(../assets/images/normal1.webp);
   background-size: 90% 100%;
   top: 0;
   left: 0;
@@ -369,7 +369,7 @@ img {
   height: 0;
   overflow: hidden;
   z-index: -1;
-  content: url("../assets/images/normal1.gif") url("../assets/images/normal2.gif")
+  content: url("../assets/images/normal1.webp") url("../assets/images/normal2.webp")
 }
 
 @keyframes moverDerecha {

@@ -293,3 +293,44 @@ label .glyphicon {
   left: 0px;
   background-color: #000000d9;
 }
+
+/* Opciones del quiz (botones): foco visible con buen contraste para quien navega con teclado. */
+button.opcion-quiz {
+  padding: 18px 60px;
+  white-space: normal;
+  transition: all 0.2s ease-in;
+  text-align: left;
+  position: relative;
+}
+button.opcion-quiz:focus-visible {
+  outline: 4px solid #ffbf00;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 7px #1a1a1a;
+}
+button.opcion-quiz:disabled {
+  cursor: default;
+}
+button.opcion-quiz .btn-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 10px;
+  background: rgba(0, 0, 0, 0.15);
+  height: 100%;
+}
+
+/* Texto solo para lectores de pantalla (equivale al .sr-only de Bootstrap 4); lo usa #quiz_anuncio. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
