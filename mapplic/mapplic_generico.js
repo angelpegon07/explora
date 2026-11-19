@@ -30,7 +30,9 @@
 			minscale: 1.5,
 			startscale: 1.5,
 			skin: '',
-			zoom: true
+			zoom: true,
+			// 'generico' (por defecto) o 'vertientes': esta última no marca el tooltip con id ni pone los títulos de la lista en mayúsculas.
+			variante: 'generico'
 		};
 
 		self.init = function(el, params) {
@@ -111,7 +113,8 @@
 				this.el2.appendTo(this.el);
 				
 				this.audio = $('<audio></audio>').addClass('mapplic-tooltip-audio').appendTo(this.el);
-				this.content = $('<div></div>').addClass('mapplic-tooltip-content').attr('id', 'contenido_texto').appendTo(this.el);
+				this.content = $('<div></div>').addClass('mapplic-tooltip-content').appendTo(this.el);
+				if (self.o.variante !== 'vertientes') this.content.attr('id', 'contenido_texto');
 				this.desc = $('<div></div>').addClass('mapplic-tooltip-description').appendTo(this.content);
 				this.link = $('<a>More</a>').addClass('mapplic-tooltip-link').attr('href', '#').hide().appendTo(this.el);
 				this.triangle = $('<div></div>').addClass('mapplic-tooltip-triangle').prependTo(this.el);
@@ -552,7 +555,8 @@
 					}).appendTo(item);
 
 					if (data.thumbnail) $('<img>').attr('src', data.thumbnail).addClass('mapplic-list-thumbnail').appendTo(link);
-					$('<h4></h4>').text(data.title).css('text-transform', 'uppercase').appendTo(link)
+					var titulo = $('<h4></h4>').text(data.title).appendTo(link);
+					if (self.o.variante !== 'vertientes') titulo.css('text-transform', 'uppercase');
 					$('<span></span>').html(data.about).appendTo(link);
 					var category = $('.mapplic-list-category[data-category="' + data.category + '"]');
 

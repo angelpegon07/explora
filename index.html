@@ -754,7 +754,8 @@
     <script>
 
         setTimeout(() => {
-            document.querySelector('.mapplic-levels').style.display = 'none';
+            const niveles = document.querySelector('.mapplic-levels');
+            if (niveles) niveles.style.display = 'none';
         }, 800)
 
         var acc = document.getElementsByClassName("accordion");
