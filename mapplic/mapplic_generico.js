@@ -204,7 +204,7 @@
 					else this.shift = pinselect.height() + 10;
 
 					// Loading & positioning
-					$('img', this.el).load(function() {
+					$('img', this.el).on('load', function() {
 						s.position();
 					});
 					this.position();

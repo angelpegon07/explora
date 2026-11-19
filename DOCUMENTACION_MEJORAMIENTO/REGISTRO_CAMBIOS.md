@@ -188,3 +188,10 @@ Organización (pedido del responsable): el líder (Opus) diseñó, revisó cada 
 
 ### Límites y pendientes
 Solo se probó en **Chromium** (no Firefox ni Safari). Los `.htaccess` no se probaron con un Apache real. Sitio en subdirectorio: el cliente lo soporta, el servidor no. Nombre del juego «laberinto» en minúsculas se conserva (renombrarlo partiría los rankings existentes). Fase 7B (Vite, unificar Bootstrap/jQuery/Font Awesome, Mapplic, medios de 11 MB) y el retiro definitivo de los PHP legados quedan pendientes; el despliegue real requiere autorización aparte.
+
+## Fase 7B (parcial, 2026-11-19)
+- **Font Awesome:** de ~83 MB a ~3 MB (solo `css/` y `webfonts/`; sin js/svgs/sprites/metadata/less/scss). banderas-color usa la copia de `juegos/librerias/fontawesome`.
+- **Mapplic:** `mapplic_vertientes.js` fusionado en `mapplic_generico.js` con la opción `variante: 'vertientes'` (sin id `contenido_texto` ni títulos en mayúsculas). `.load(fn)` → `.on('load', fn)` (compatibilidad jQuery 3).
+- **jQuery:** páginas raíz, `miPerfil.html` y `juegos/index.html` pasan de 1.11.3 a 3.5.1 (`bootstrap/jquery.min.js`); se borra `js/jquery.min.js`.
+- **Pruebas:** `laravel/tests/Browser/mapas.spec.js` (6 páginas de mapas: sin errores de JS y abre un lugar). Playwright: 42 pruebas. Corregido un error de JS previo en `index.html` (`.mapplic-levels` nulo).
+- **Pendiente:** GIF/MP4 (~200 MB; faltan herramientas para redimensionar: `sharp` denegado), Bootstrap 4/5 por grupo, Vite.
