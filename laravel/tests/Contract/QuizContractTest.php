@@ -2,7 +2,6 @@
 
 namespace Tests\Contract;
 
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -16,42 +15,6 @@ class QuizContractTest extends TestCase
     private function quiz(int|string $id)
     {
         return $this->getJson("/api/departamentos/$id/preguntas");
-    }
-
-    /** Proyección del legado a los campos que el contrato conserva. */
-    private function proyectarLegado(array $l): array
-    {
-        $preguntas = array_map(function ($p) {
-            $opc = array_map(fn ($o) => $p['tipo_pregunta'] === 'multiple'
-                ? ['id' => $o['id'], 'opcion' => $o['opcion'], 'correcta' => $o['correcta']]
-                : ['id' => $o['id'], 'respuesta' => $o['respuesta']], $p['opciones']);
-
-            return ['id' => $p['id'], 'tipo_pregunta' => $p['tipo_pregunta'], 'pregunta' => $p['pregunta'],
-                'origen_pregunta' => $p['origen_pregunta'], 'opciones' => $opc];
-        }, $l['preguntas']);
-
-        return ['departamento' => $l['departamento'], 'preguntas' => $preguntas];
-    }
-
-    /**
-     * Contrato: preguntas, opciones, `correcta`/`respuesta` y departamento coinciden con buscarPreguntas.php en los 33
-     * departamentos; necesita el servidor legado.
-     */
-    public function test_equivale_al_legado_en_los_33_departamentos(): void
-    {
-        $base = $this->legadoDisponible();
-        $fallos = [];
-        for ($id = 1; $id <= 33; $id++) {
-            $legado = Http::timeout(60)->get($base.'/mapplic/php/buscarPreguntas.php', ['id' => $id])->json();
-            $nuevo = $this->quiz($id);
-            $nuevo->assertOk();
-            $a = $this->normalizar($this->proyectarLegado($legado));
-            $b = $this->normalizar($nuevo->json());
-            if (($d = $this->primeraDiferencia($a, $b)) !== null) {
-                $fallos[] = "dep $id: $d";
-            }
-        }
-        $this->assertSame([], $fallos, implode("\n", $fallos));
     }
 
     /**

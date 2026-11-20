@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Explora\PerfilExplora;
 use App\Models\Explora\ResultadoJuego;
 use App\Models\Pedigital\Usuario;
-use Illuminate\Support\Facades\Http;
 use Tests\Concerns\RespaldaPerfiles;
 use Tests\TestCase;
 
@@ -296,61 +295,5 @@ class JuegosTest extends TestCase
     public function test_el_historial_sin_resultados_es_una_lista_vacia(): void
     {
         $this->actingAs(Usuario::findOrFail(3), 'web')->getJson('/api/historial')->assertOk()->assertExactJson([]);
-    }
-
-    // ------------------------------------------------------------------ equivalencia con el legado
-
-    /**
-     * El ranking nuevo equivale al de consultar_ranking.php (mismo orden y campos visibles) con los mismos datos.
-     * Necesita el servidor legado (tests/Legacy/serve.sh).
-     */
-    public function test_el_ranking_equivale_al_del_legado(): void
-    {
-        $base = $this->legadoDisponible();
-        foreach ([[5, 100], [9, 300], [3, 200], [8, 10], [7, 90], [6, 40]] as $i => [$puntaje, $tiempo]) {
-            $this->sembrar(['puntaje' => $puntaje, 'tiempo' => $tiempo, 'jugador' => "Jugador $i", 'avatar' => ($i + 1).'.png', 'grado' => (string) (($i % 11) + 1)]);
-        }
-        $legado = Http::asForm()->post($base.'/juegos/php/consultar_ranking.php', [
-            'nombre_juego' => 'laberinto', 'nivel' => 'Principiante', 'categoria' => $this->categoria,
-        ])->json();
-        $nuevo = $this->getJson('/api/ranking?'.http_build_query(['juego' => 'laberinto', 'nivel' => 'Principiante', 'categoria' => $this->categoria]))->json();
-
-        $proyectar = fn ($filas) => array_map(fn ($f) => [
-            (string) $f['jugador'], (string) $f['avatar'], (string) $f['grado'], (string) $f['puntaje'], (string) $f['tiempo'],
-        ], $filas);
-        $this->assertSame($proyectar($legado), $proyectar($nuevo));
-    }
-
-    /** El historial nuevo equivale al de consultar_historial.php (mismos resultados, orden y campos que lee el frontend). */
-    public function test_el_historial_equivale_al_del_legado(): void
-    {
-        $base = $this->legadoDisponible();
-        $this->sembrar(['id_usuario' => 1, 'puntaje' => 1, 'fecha' => '01-01-2026 10:00:00']);
-        $this->sembrar(['id_usuario' => 1, 'puntaje' => 2, 'fecha' => '02-01-2026 11:30:00']);
-
-        $legado = Http::get($base.'/juegos/php/consultar_historial.php', ['id_usuario' => 1])->json();
-        $nuevo = $this->actingAs(Usuario::findOrFail(1), 'web')->getJson('/api/historial')->json();
-
-        $proyectar = fn ($filas) => array_map(fn ($f) => [
-            (string) $f['nombre_juego'], (string) $f['categoria'], (string) $f['nivel'], (string) $f['puntaje'], (string) $f['tiempo'], (string) $f['fecha'],
-        ], $filas);
-        $this->assertSame($proyectar($legado), $proyectar($nuevo));
-    }
-
-    /**
-     * Omite la prueba si el servidor del legado no responde y devuelve su URL base.
-     *
-     * @return string URL base (LEGACY_BASE_URL).
-     */
-    private function legadoDisponible(): string
-    {
-        $base = rtrim(env('LEGACY_BASE_URL', 'http://127.0.0.1:8081'), '/');
-        try {
-            Http::timeout(3)->get($base.'/mapplic/php/chat.php');
-        } catch (\Throwable) {
-            $this->markTestSkipped('Servidor legado no disponible: ejecute tests/Legacy/serve.sh');
-        }
-
-        return $base;
     }
 }

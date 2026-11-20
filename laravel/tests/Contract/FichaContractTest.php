@@ -3,7 +3,6 @@
 namespace Tests\Contract;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -17,28 +16,6 @@ class FichaContractTest extends TestCase
     private function ficha(int|string $id)
     {
         return $this->getJson("/api/departamentos/$id/ficha");
-    }
-
-    /**
-     * Contrato: para cada departamento la ficha nueva debe tener exactamente las mismas claves y valores que
-     * consultarInfo.php (menos columnas internas); necesita el servidor legado.
-     */
-    public function test_equivale_al_legado_en_los_33_departamentos(): void
-    {
-        $base = $this->legadoDisponible();
-        $fallos = [];
-        for ($id = 1; $id <= 33; $id++) {
-            $legado = Http::timeout(120)->get($base.'/mapplic/php/consultarInfo.php', ['id' => $id])->json();
-            $nuevo = $this->ficha($id);
-            $nuevo->assertOk();
-            $a = $this->normalizar($this->sinInternas($legado));
-            $b = $this->normalizar($nuevo->json());
-            if (($d = $this->primeraDiferencia($a, $b)) !== null) {
-                $fallos[] = "dep $id: $d";
-            }
-            unset($legado, $nuevo, $a, $b);
-        }
-        $this->assertSame([], $fallos, implode("\n", $fallos));
     }
 
     /**

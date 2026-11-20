@@ -77,10 +77,16 @@ alcance del chat, si el corrector sigue existiendo.
 - Endpoints `/api/chat` y `/api/corrector` con Form Request, Resource, `throttle`, usando los modelos Eloquent existentes.
 - El corrector pasa a Blade y deja de hablar con Ollama desde el navegador.
 
-### Fase 15 — Contenido restante y retiro del legado
-- `lineaTiempo` (GSAP + `eventos.json`) a Blade; `ViajaPED` (React) se compila con Vite como entrada propia o se deja como sub-aplicación estática (decisión al llegar).
-- Eliminar `mapplic/php/*`, `juegos/php/*` (incluido `chat copy.php`), los HTML de la raíz y el cliente viejo del chat.
-- **Rotar las credenciales de MySQL** expuestas en `chat.php` (requiere autorización y coordinación con quien administra el servidor).
+### Fase 15 — Contenido restante y retiro del legado — ✔ HECHA (2026-11-20)
+**Hecha:** `lineaTiempo` y `ViajaPED` a Blade (`PaginaEstaticaController`, `config/paginas_estaticas.php`, vistas `paginas/<slug>`; URL canónica con barra,
+regla en `.htaccess` y en el router; `ViajaPED` NO se compiló con Vite: nunca usó React, es JS clásico y quedó como página estática con su `script.js`);
+retirados con `git rm` los 7 PHP legados sustituidos por la API, los 3 `conexion*.php`, los 2 `.htaccess` de `php/` (su 410 pasó a una ruta de Laravel,
+`config/servicios_retirados.php`), el arnés de pruebas (`tests/Legacy`, `tests/Characterization` y las 5 pruebas «API = legado»), `ViajaPED/package*.json`
+y `jsons/unir.html`. La historia completa está en la etiqueta `pre-retiro-legado`. Detalle en `REGISTRO_CAMBIOS.md`.
+**Quedó SIN tocar, a propósito (decisión del responsable, sección 9):** `mapplic/php/chat.php`, `chat copy.php`, `mapplic/js/chat.js` (y los parciales de chat) y
+`corrector.html`; por tanto el «cliente viejo del chat» y los dos `chat*.php` **no se eliminaron** y la Fase 15 NO cumple todavía la definición de «terminado» de la
+sección 7 (queda PHP plano en `mapplic/php/`). **Rotar las credenciales de MySQL** sigue pendiente: es decisión del responsable (siguen en `chat*.php` y en el historial de git,
+también las de los `conexion*.php` retirados); no se ejecutó.
 
 ### Fase 16 — Datos y cierre (con autorización sobre datos)
 DAT-02/04/05/07: fecha a `datetime`, claves foráneas, imágenes base64 a archivos (la ficha del depto 10 pesa ~46 MB). Pruebas en

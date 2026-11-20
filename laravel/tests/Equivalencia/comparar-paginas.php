@@ -1,7 +1,7 @@
 <?php
 
 /**
- * COMPUERTA DE EQUIVALENCIA (Fases 10 a 13): compara el HTML ORIGINAL de cada página migrada a Blade (los archivos
+ * COMPUERTA DE EQUIVALENCIA (Fases 10 a 15): compara el HTML ORIGINAL de cada página migrada a Blade (los archivos
  * estáticos que ya no existen en el árbol de trabajo, recuperados de git) con el HTML que renderiza ahora Laravel.
  *
  * Páginas comparadas y su REFERENCIA por defecto (el commit donde vive su HTML original):
@@ -10,6 +10,8 @@
  *   - `juegos` (portal, ruta `/juegos`, SIN sesión) -> bb4b68b (Fase 11; el último commit con `public/juegos/index.html`).
  *   - los 7 juegos (`/juegos/juegos/<slug>/`, slugs de config/juegos.php) -> b97b191 (Fase 12; el último commit con sus
  *     `public/juegos/juegos/<slug>/index.html`). Ver «JUEGOS (Fase 13)» más abajo.
+ *   - `lineaTiempo` y `ViajaPED` (rutas `/lineaTiempo/` y `/ViajaPED/`, slugs de config/paginas_estaticas.php) -> 25acea1 (Fase 14
+ *     de la migración: el último commit con sus `public/<slug>/index.html`). Ver «PÁGINAS ESTÁTICAS (Fase 15)» más abajo.
  * Cada original se lee con `git show <referencia>:laravel/public/<archivo>` (`index.html`, `<slug>.html`, `juegos/index.html`).
  *
  * El PERFIL (`/perfil`) NO se compara por texto: el original era un formulario vacío que rellenaba el JS y la vista
@@ -23,7 +25,7 @@
  *     php tests/Equivalencia/comparar-paginas.php [--ver-diferencias] [--ref=<pagina>:<commit>]...
  *
  *   - `--ref=<pagina>:<commit>`: cambia la referencia de UNA página (repetible; `<pagina>` es `index`, `juegos` o el slug de un
- *     mapa o de un juego),
+ *     mapa, de un juego o de una página estática),
  *     p. ej. `--ref=index:0c60734 --ref=etnias:0c7c594`. `--ref=*:<commit>` la cambia en todas.
  *   - `--ver-diferencias`: imprime también cada diferencia ADMITIDA (siempre se imprimen las NO admitidas).
  *
@@ -83,6 +85,16 @@
  *     ya salía como UTF-8 por cabecera HTTP). sopa_letras y juego_ahorcado conservan su ausencia de `<meta viewport>`.
  *   - Portal: los siete enlaces a un juego pasan de `…/<slug>/index.html` a `…/<slug>/` (URL canónica con barra, Fase 13).
  *   - Ninguna otra (ids, clases, onclick, modales, orden de CSS y JS) puede cambiar.
+ *
+ * PÁGINAS ESTÁTICAS (Fase 15: `lineaTiempo`, `ViajaPED`). Se comparan con su `index.html` original (25acea1) con los pasos 1 a 7,
+ * 9 y 10 de los juegos (URL relativas resueltas contra la carpeta, `<title>` aparte). No tienen JS ni CSS inline (se comprueba:
+ * si el original tuviera algún `<script>` sin `src` o `<style>`, la comparación lo vería como diferencia). Diferencias ADMITIDAS:
+ *   - URL absolutas con asset() (paso 7), `<title>` movido tras `<meta charset>` (paso 9).
+ *   - Los `<script src>` se comparan APARTE: se extraen de ambos lados y se exige la MISMA lista en el MISMO orden (lineaTiempo
+ *     cargaba gsap y ScrollTrigger a mitad del `<body>`; ahora todos van al final, tras el HTML que usa `script.js`).
+ *   - ViajaPED: un `</div>` sobrante del original (sin apertura; el navegador lo ignoraba).
+ *   - Las seis páginas del mapa y la portada: el enlace del menú circular pasa de `lineaTiempo/index.html` y `ViajaPED/index.html`
+ *     a la URL canónica con barra (`lineaTiempo/`, `ViajaPED/`; `/…/index.html` redirige con 301).
  */
 
 use App\Models\Pedigital\Usuario;
@@ -110,6 +122,7 @@ const REFERENCIA_INDEX = '0c60734';
 const REFERENCIA_MAPAS = '0c7c594';
 const REFERENCIA_JUEGOS = 'bb4b68b';
 const REFERENCIA_PAGINAS_JUEGO = 'b97b191';
+const REFERENCIA_PAGINAS_ESTATICAS = '25acea1';
 
 // Páginas a comparar: nombre => [ruta que se pide a Laravel, archivo original en laravel/public/, referencia git,
 // carpeta contra la que se resuelven las URL relativas del original (null = ninguna: el original ya colgaba de la raíz)].
@@ -121,6 +134,10 @@ $paginas['juegos'] = ['/juegos', 'juegos/index.html', REFERENCIA_JUEGOS, 'juegos
 // Fase 13: las siete páginas de juego (la carpeta del original es la misma que sirve la URL canónica con barra).
 foreach (config('juegos') as $slugJuego) {
     $paginas[$slugJuego] = ['/juegos/juegos/'.$slugJuego.'/', 'juegos/juegos/'.$slugJuego.'/index.html', REFERENCIA_PAGINAS_JUEGO, 'juegos/juegos/'.$slugJuego.'/'];
+}
+// Fase 15: lineaTiempo y ViajaPED (carpetas con assets; la URL canónica lleva barra final).
+foreach (config('paginas_estaticas') as $slugEstatico) {
+    $paginas[$slugEstatico] = ['/'.$slugEstatico.'/', $slugEstatico.'/index.html', REFERENCIA_PAGINAS_ESTATICAS, $slugEstatico.'/'];
 }
 
 foreach (array_slice($argv, 1) as $a) {
@@ -409,7 +426,43 @@ foreach ($paginas as $slug => [$rutaPagina, $archivoOriginal, $referencia, $base
 
     $admitidas = [];
     $esJuego = in_array($slug, config('juegos'), true);
+    $esEstatica = in_array($slug, config('paginas_estaticas'), true);
     $contenido = $respuesta->getContent();
+
+    if ($esEstatica) {
+        // Los `<script src>` se comparan aparte (ver «PÁGINAS ESTÁTICAS» en la cabecera): misma lista y mismo orden.
+        $extraerScripts = static function (string $html, ?string $base): array {
+            $lista = [];
+            $html = preg_replace_callback('#<script\s+src="([^"]*)"\s*></script>#i', static function ($m) use (&$lista, $base) {
+                $lista[] = $base === null ? str_replace('http://localhost/', '', $m[1]) : resolverRelativa($m[1], $base);
+
+                return '';
+            }, $html);
+
+            return [$html, $lista];
+        };
+        [$original, $scriptsOriginal] = $extraerScripts($original, $baseOriginal);
+        [$contenido, $scriptsRender] = $extraerScripts($contenido, null);
+        if ($scriptsOriginal !== $scriptsRender) {
+            echo "    NO ADMITIDA  $slug: scripts del original [".implode(', ', $scriptsOriginal).'] y del render ['.implode(', ', $scriptsRender)."]\n";
+            $fallos++;
+        } else {
+            $admitidas[] = '- (scripts '.implode(' < ', $scriptsRender).': mismo orden; el HTML intermedio se compara aparte)';
+        }
+        if (preg_match('#<style\b|<script\b(?![^>]*\bsrc=)#i', $original)) {
+            echo "    NO ADMITIDA  $slug: el original tiene <style> o <script> inline y esta comparación no lo cubre\n";
+            $fallos++;
+        }
+    }
+    if ($esJuego || $esEstatica) {
+        // Paso 9 (también para las páginas estáticas): se compara aparte el PRIMER <title> del original con el del render.
+        preg_match('#<title>(.*?)</title>#s', $original, $tituloOriginal);
+        preg_match('#<title>(.*?)</title>#s', $contenido, $tituloRender);
+        if (($tituloOriginal[1] ?? 'a') !== html_entity_decode($tituloRender[1] ?? 'b')) {
+            echo "    NO ADMITIDA  $slug: <title> original «".($tituloOriginal[1] ?? '').'» y renderizado «'.($tituloRender[1] ?? '')."»\n";
+            $fallos++;
+        }
+    }
 
     if ($esJuego) {
         // Pasos 8 y 9 (ver cabecera): se reintegra el CSS/JS extraído y se comparan aparte los <title>.
@@ -437,12 +490,6 @@ foreach ($paginas as $slug => [$rutaPagina, $archivoOriginal, $referencia, $base
             echo "    NO ADMITIDA  $slug: el <style> inline del original no tiene su <link estilo-pagina.css> en el render\n";
             $fallos++;
         }
-        preg_match('#<title>(.*?)</title>#s', $original, $tituloOriginal);
-        preg_match('#<title>(.*?)</title>#s', $contenido, $tituloRender);
-        if (($tituloOriginal[1] ?? 'a') !== html_entity_decode($tituloRender[1] ?? 'b')) {
-            echo "    NO ADMITIDA  $slug: <title> original «".($tituloOriginal[1] ?? '').'» y renderizado «'.($tituloRender[1] ?? '')."»\n";
-            $fallos++;
-        }
         $titulosExtra = substr_count($original, '<title>') - 1;
         if ($titulosExtra > 0) {
             $admitidas[] = "- ($titulosExtra <title> duplicado(s) del original, el layout emite uno)";
@@ -462,8 +509,8 @@ foreach ($paginas as $slug => [$rutaPagina, $archivoOriginal, $referencia, $base
         }
     }
 
-    $a = normalizar($original, $baseOriginal, $esJuego, $esJuego);
-    $b = normalizar($contenido, null, $esJuego, $esJuego);
+    $a = normalizar($original, $baseOriginal, $esJuego || $esEstatica, $esJuego || $esEstatica);
+    $b = normalizar($contenido, null, $esJuego || $esEstatica, $esJuego || $esEstatica);
 
     // Admitida: coordilleras no tenía #final. Se compara el resto y se informa del bloque añadido.
     $tenia = quitarBloqueFinal($a)[1];
@@ -483,7 +530,8 @@ foreach ($paginas as $slug => [$rutaPagina, $archivoOriginal, $referencia, $base
     //  - `- <div class="modal-body quizmodal">`: la apertura sin estilo del `.quizmodal` anidado (cuatro mapas).
     $anidado = in_array($slug, ['coordilleras', 'etnias', 'parques_naturales', 'vertientes'], true);
     $cupos = [
-        '- </div>' => $slug === 'juegos' || $esJuego ? 0 : 1 + ($anidado ? 1 : 0) + ($slug === 'vertientes' ? 1 : 0) + ($slug === 'index' ? 1 : 0),
+        // (Fase 15: ViajaPED traía un `</div>` sobrante tras `.container`; lineaTiempo no.)
+        '- </div>' => $slug === 'ViajaPED' ? 1 : ($slug === 'juegos' || $esJuego || $esEstatica ? 0 : 1 + ($anidado ? 1 : 0) + ($slug === 'vertientes' ? 1 : 0) + ($slug === 'index' ? 1 : 0)),
         '- <div class="modal-body quizmodal">' => $anidado ? 1 : 0,
     ];
 
@@ -501,7 +549,14 @@ foreach ($paginas as $slug => [$rutaPagina, $archivoOriginal, $referencia, $base
             $exactas['+ <html lang="es">'] = 1;
             $exactas['+ <meta charset="utf-8">'] = 1;
         }
+    } elseif ($esEstatica) {
+        // Sin diferencias exactas: solo las ya descritas (scripts aparte, título aparte, `</div>` sobrante de ViajaPED).
     } elseif ($slug !== 'juegos') {
+        // Fase 15: el menú circular enlaza a las URL canónicas con barra de lineaTiempo y ViajaPED.
+        $exactas['- <a id="btn_menu_linea_tiempo" href="lineaTiempo/index.html" target="_blank" class="menu-item itemm5">'] = 1;
+        $exactas['+ <a id="btn_menu_linea_tiempo" href="lineaTiempo/" target="_blank" class="menu-item itemm5">'] = 1;
+        $exactas['- <a id="btn_menu_viaja_ped" href="ViajaPED/index.html" target="_blank" class="menu-item itemm6">'] = 1;
+        $exactas['+ <a id="btn_menu_viaja_ped" href="ViajaPED/" target="_blank" class="menu-item itemm6">'] = 1;
         $exactas['- <a id="btn_menu_juegos" href="juegos/index.html" target="_blank" class="menu-item itemm2">'] = 1;
         $exactas['+ <a id="btn_menu_juegos" href="juegos" target="_blank" class="menu-item itemm2">'] = 1;
     } else {

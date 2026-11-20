@@ -19,7 +19,8 @@ DirectoryIndex index.php index.html
 # profundidad: ninguno debería existir bajo el docroot.
 RedirectMatch 404 /\.(git|env)
 
-# Los archivos de conexión del PHP legado contienen credenciales de MySQL escritas en el código.
+# Los archivos `conexion*.php` del PHP legado (credenciales de MySQL escritas en el código) se ELIMINARON del repositorio en
+# la Fase 15. Esta regla se mantiene como defensa en profundidad: si alguien volviera a copiar uno, no se serviría.
 <FilesMatch "^conexion.*\.php$">
     Require all denied
 </FilesMatch>
@@ -52,13 +53,25 @@ RedirectMatch 404 /\.(git|env)
     # lo vigila tests/Feature/JuegosPaginasTest. `/juegos/juegos/<slug>/index.html` ya no existe y cae en la regla genérica.
     RewriteRule ^juegos/juegos/(laberinto|banderas-color|puzzle|sopa_letras|juego_ahorcado|arrastra|completa)/?$ index.php [L]
 
+    # Línea de tiempo y ViajaPED (Fase 15): igual que los juegos, son CARPETAS reales (JS, CSS, JSON, imágenes) sin index.html
+    # desde que su HTML pasó a Blade. Esta regla manda al front controller EXACTAMENTE `/lineaTiempo/` y `/ViajaPED/` (y
+    # sus formas sin barra, que la ruta de Laravel redirige 301 a la canónica CON barra: el JS de la página carga
+    # `eventos.json`, `data.json` e `img/…` relativos a ella). Respeta mayúsculas. No afecta a los archivos de esas carpetas
+    # (el patrón termina en el slug) ni habilita listados (`-Indexes` sigue vigente). La lista debe coincidir con
+    # config/paginas_estaticas.php: lo vigila tests/Feature/PaginasEstaticasTest. `<slug>/index.html` ya no existe: cae en la
+    # regla genérica y Laravel lo redirige (301).
+    RewriteRule ^(lineaTiempo|ViajaPED)/?$ index.php [L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
     # Front controller de Laravel: todo lo que no sea un archivo o carpeta real (p. ej. /api/...) lo atiende
-    # index.php, que ve la ruta COMPLETA con el prefijo «api».
+    # index.php, que ve la ruta COMPLETA con el prefijo «api». También recoge las 7 URL de los PHP legados retirados
+    # (`/mapplic/php/iniciarSesion.php`, `/juegos/php/guardar_resultado.php`…), que ya no existen como archivo: Laravel
+    # responde 410 Gone (routes/web.php, lista en config/servicios_retirados.php). `/mapplic/php/chat.php` SÍ existe y lo
+    # sigue sirviendo PHP (el chat queda fuera de esta fase; ver DESPLIEGUE_APACHE.md).
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]

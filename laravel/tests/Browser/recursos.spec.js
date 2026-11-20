@@ -10,6 +10,7 @@ const PAGINAS = [
     '/juegos/juegos/arrastra/', '/juegos/juegos/banderas-color/',
     '/juegos/juegos/completa/', '/juegos/juegos/juego_ahorcado/',
     '/juegos/juegos/laberinto/', '/juegos/juegos/puzzle/', '/juegos/juegos/sopa_letras/',
+    '/lineaTiempo/', '/ViajaPED/',
 ];
 
 for (const ruta of PAGINAS) {

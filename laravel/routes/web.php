@@ -3,10 +3,16 @@
 use App\Http\Controllers\InicioController;
 use App\Http\Controllers\JuegoController;
 use App\Http\Controllers\MapaTematicoController;
+use App\Http\Controllers\PaginaEstaticaController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PortalJuegosController;
+use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
 |--------------------------------------------------------------------------
@@ -116,3 +122,57 @@ Route::get('/juegos/juegos/{slug}', JuegoController::class)
 
 Route::get('/juegos/juegos/{slug}/index.html', [JuegoController::class, 'redirigirACanonica'])
     ->where('slug', $patronJuegos);
+
+/*
+|--------------------------------------------------------------------------
+| Línea de tiempo y ViajaPED (Fase 15)
+|--------------------------------------------------------------------------
+|
+| Últimas páginas propias que seguían siendo HTML estático: `/lineaTiempo/` y `/ViajaPED/` (respetando mayúsculas). Misma
+| mecánica que los juegos (Fase 13): son CARPETAS reales con sus assets y rutas relativas (`fetch('eventos.json')`,
+| `data.json`, `img/…`, `url(img/fondo.png)`), por lo que la URL canónica lleva SIEMPRE barra final, la forma sin barra
+| redirige (301) y `public/.htaccess` y `servidor-desarrollo.php` envían a Laravel exactamente esa URL (los archivos de la
+| carpeta se siguen sirviendo directamente). Los slugs salen de config/paginas_estaticas.php y `where()` los fija como
+| lista cerrada: cualquier otro nombre da el 404 normal de Laravel. El `index.html` antiguo se eliminó y redirige (301).
+*/
+$patronPaginasEstaticas = implode('|', array_map(static fn (string $slug): string => preg_quote($slug, '#'), config('paginas_estaticas')));
+
+// OJO: el parámetro se llama `pagina` y no `slug` A PROPÓSITO: Laravel indexa las rutas por su URI literal (`{slug}`) y una
+// segunda `/{slug}` (la de los mapas temáticos, arriba) la PISARÍA en silencio.
+Route::get('/{pagina}', PaginaEstaticaController::class)
+    ->where('pagina', $patronPaginasEstaticas)
+    ->name('pagina-estatica');
+
+Route::get('/{pagina}/index.html', [PaginaEstaticaController::class, 'redirigirACanonica'])
+    ->where('pagina', $patronPaginasEstaticas);
+
+/*
+|--------------------------------------------------------------------------
+| PHP legado retirado: 410 Gone (Fase 15)
+|--------------------------------------------------------------------------
+|
+| Los 7 scripts PHP que sustituyó la API (`/mapplic/php/{iniciarSesion,cambiarAvatar,consultarInfo,buscarPreguntas}.php` y
+| `/juegos/php/{guardar_resultado,consultar_ranking,consultar_historial}.php`) se eliminaron del repositorio. Como ya no
+| existen como archivo, Apache enviaría esas URL al 404 de Laravel; esta ruta mantiene para los clientes antiguos el mismo
+| `410 Gone` + JSON que daba la regla de los `.htaccess` retirados y que sigue dando el router de desarrollo.
+|
+|  - La lista sale de config/servicios_retirados.php (una sola fuente de verdad, también la lee el router de desarrollo).
+|  - `(?i:…)` hace la comparación insensible a mayúsculas, como el `[NC]` de antes: `/MAPPLIC/PHP/CONSULTARINFO.PHP` también da 410.
+|  - `Route::any` cubre todos los métodos HTTP (GET, POST, PUT, PATCH, DELETE, OPTIONS; HEAD sin cuerpo).
+|  - Se desactivan los middlewares del grupo `web`: sin sesión ni cookies (nada de `Set-Cookie`) y, sobre todo, sin CSRF, que
+|    convertiría un POST antiguo en un 419. Es una respuesta fija, sin datos de la petición, sin cabeceras ni trazas internas.
+|  - `mapplic/php/chat.php` y `chat copy.php` NO están en la lista: esta ruta no los toca (Apache sirve el archivo; el
+|    router de desarrollo, que los desactiva a propósito, responde 404).
+*/
+$patronRetirados = '(?i:'.implode('|', array_map(static fn (string $ruta): string => preg_quote($ruta, '#'), config('servicios_retirados'))).')';
+
+Route::any('/{servicio}', static fn () => response()->json(['status' => 'error', 'mensaje' => 'Servicio retirado'], 410, [], JSON_UNESCAPED_UNICODE))
+    ->where('servicio', $patronRetirados)
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        VerifyCsrfToken::class,
+    ])
+    ->name('servicio-retirado');

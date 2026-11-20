@@ -10,7 +10,6 @@ use App\Models\Pedigital\Usuario;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use LogicException;
 use Tests\TestCase;
 
@@ -167,34 +166,5 @@ class ModelosExploraTest extends TestCase
         // Defensa en profundidad: aunque se esquive el modelo, el usuario MySQL solo tiene SELECT.
         $this->expectException(QueryException::class);
         DB::connection('pedigital')->table('users')->where('id', 1)->update(['avatar_explora' => 9]);
-    }
-
-    /**
-     * Los modelos devuelven lo mismo que consultarInfo.php en los departamentos 1, 2 y 7; necesita el servidor legado.
-     */
-    public function test_equivalencia_con_el_endpoint_legado_en_tres_departamentos(): void
-    {
-        $base = rtrim(env('LEGACY_BASE_URL', 'http://127.0.0.1:8081'), '/');
-        try {
-            Http::timeout(3)->get($base.'/mapplic/php/chat.php');
-        } catch (\Throwable) {
-            $this->markTestSkipped('Servidor legado no disponible: ejecute tests/Legacy/serve.sh');
-        }
-        foreach ([1, 2, 7] as $id) {
-            $legado = Http::timeout(60)->get($base.'/mapplic/php/consultarInfo.php', ['id' => $id])->json();
-            $dep = Departamento::with('descripcion')->findOrFail($id);
-            $d = $dep->descripcion;
-            $this->assertSame($legado['nombreDepartamento']['nombre'], $dep->nombre);
-            $this->assertSame($legado['descripcion']['id'], (string) $d->id);
-            $this->assertSame($legado['clima']['clima'], $d->climaDetalle?->clima);
-            $this->assertSame($legado['historia']['historia'], $d->historia?->historia);
-            $this->assertSame($legado['capital']['capital'], $d->capital?->capital);
-            $this->assertCount(count($legado['sitios']), $d->sitios);
-            $this->assertCount(count($legado['festividades']), $d->festividades);
-            $this->assertCount(count($legado['personajes']), $d->personajes);
-            $this->assertCount(count($legado['faunaFlora']['lista_fauna']), $d->fauna);
-            $this->assertCount(count($legado['faunaFlora']['lista_flora']), $d->flora);
-            $this->assertCount(count($legado['etnografia']['lista']), $d->etnias);
-        }
     }
 }

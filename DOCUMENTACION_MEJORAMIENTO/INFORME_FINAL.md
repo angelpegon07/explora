@@ -21,7 +21,7 @@ Fecha: 2026-11-19 · Rama `migracion-laravel` (etiqueta de recuperación `pre-mi
 
 ## 3. Riesgos residuales (lo que el responsable debe saber)
 1. **El chat legado sigue activo** con credenciales de MySQL (usuario con privilegios altos) escritas en `chat.php` y `chat copy.php`. Rotarlas es obligatorio antes de publicar.
-2. Los 3 `conexion*.php` tienen cambios locales ajenos sin confirmar.
+2. ~~Los 3 `conexion*.php` tienen cambios locales ajenos sin confirmar.~~ (Fase 15: los 3 `conexion*.php` se eliminaron del repositorio; siguen en la etiqueta `pre-retiro-legado`.)
 3. Probado solo en Chromium y con Apache por CGI; faltan Firefox, Safari y mod_php/php-fpm.
 4. El contenido editorial de las fichas se inserta como HTML por diseño: si esa fuente se comprometiera habría XSS.
 5. Los datos antiguos con HTML siguen en la base (ahora se muestran como texto, pero no se limpiaron).
@@ -31,3 +31,8 @@ Fecha: 2026-11-19 · Rama `migracion-laravel` (etiqueta de recuperación `pre-mi
 - Autorizar el despliegue (ver PROPUESTA_DESPLIEGUE.md).
 - Abrir el trabajo de IA (chat y corrector) como proyecto aparte.
 - Decidir la migración de datos (fecha a `datetime`, FK, imágenes base64 a archivos).
+
+## 5. Nota de la Fase 15 (2026-11-20): credenciales en el historial de git
+Las contraseñas de MySQL escritas en los archivos `conexion*.php` (retirados en la Fase 15) y en `chat.php` / `chat copy.php` (que se mantienen) **siguen en el historial
+de git** y en la etiqueta `pre-retiro-legado`: borrar los archivos no las invalida. Su **rotación (y, si se decide, la limpieza del historial) es decisión del
+responsable** y no se ha ejecutado. Mientras el chat siga aplazado, `chat*.php` se ejecuta sin protección bajo Apache (ver `DESPLIEGUE_APACHE.md`).

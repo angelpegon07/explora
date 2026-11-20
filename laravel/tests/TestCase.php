@@ -14,7 +14,8 @@ abstract class TestCase extends BaseTestCase
 
     /**
      * Guarda de seguridad: las pruebas escriben datos, así que SIEMPRE exigen que las conexiones `mysql` y `pedigital`
-     * apunten a bases *_test de un servidor local y que LEGACY_BASE_URL (el arnés del legado) sea también local.
+     * apunten a bases *_test de un servidor local. (Hasta la Fase 15 también exigía que LEGACY_BASE_URL, el arnés del PHP legado,
+     * fuera local; el arnés se retiró y ya no hay pruebas que lo usen.)
      * Si no se cumple, aborta con una excepción antes de ejecutar cualquier prueba.
      */
     protected function setUp(): void
@@ -29,11 +30,6 @@ abstract class TestCase extends BaseTestCase
             if (! in_array($cfg['host'], ['127.0.0.1', 'localhost', '::1'], true)) {
                 throw new RuntimeException("Pruebas abortadas: la conexión '$conexion' no es local.");
             }
-        }
-
-        $legado = (string) env('LEGACY_BASE_URL', 'http://127.0.0.1:8081');
-        if (! in_array(parse_url($legado, PHP_URL_HOST), ['127.0.0.1', 'localhost', '::1'], true)) {
-            throw new RuntimeException('Pruebas abortadas: LEGACY_BASE_URL debe ser un servidor local.');
         }
     }
 }

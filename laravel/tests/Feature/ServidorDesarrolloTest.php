@@ -283,14 +283,76 @@ class ServidorDesarrolloTest extends TestCase
     }
 
     /**
-     * Una carpeta con index.html se sirve con «/» final y se redirige (301) si se pide sin ella. Desde la Fase 13 ya no
-     * queda ninguna carpeta de juego con `index.html` (son vistas Blade): el ejemplo es `/lineaTiempo/`.
+     * Una carpeta con index.html se sirve con «/» final y se redirige (301) si se pide sin ella. Desde la Fase 15 ya no queda
+     * ninguna carpeta PROPIA con `index.html` (todas son vistas Blade); el único ejemplo es la demo de terceros de la sopa de
+     * letras (`wordfind-master/example/`), que no se toca. Si algún día se elimina, la prueba se omite.
      */
     public function test_las_carpetas_con_index_html_se_sirven_y_redirigen(): void
     {
-        $this->assertSame(200, $this->pedir('/lineaTiempo/')[0]);
-        $this->assertSame(301, $this->pedir('/lineaTiempo', $location)[0]);
-        $this->assertSame('/lineaTiempo/', $location);
+        $carpeta = '/juegos/juegos/sopa_letras/wordfind-master/example';
+        if (! is_file(dirname(__DIR__, 2).'/public'.$carpeta.'/index.html')) {
+            $this->markTestSkipped('Ya no queda ninguna carpeta con index.html servida como archivo.');
+        }
+        $this->assertSame(200, $this->pedir($carpeta.'/')[0]);
+        $this->assertSame(301, $this->pedir($carpeta, $location)[0]);
+        $this->assertSame($carpeta.'/', $location);
+    }
+
+    /**
+     * Fase 15: `/lineaTiempo/` y `/ViajaPED/` (lista de config/paginas_estaticas.php) las atiende Laravel. Con barra -> 200 con
+     * la vista; sin barra -> 301 a la forma con barra conservando la consulta; `/index.html` -> 301 (lo emite Laravel). Los
+     * archivos estáticos de cada carpeta se sirven tal cual con su content-type y las subcarpetas no se listan.
+     */
+    public function test_linea_de_tiempo_y_viajaped_se_sirven_desde_laravel(): void
+    {
+        $titulos = ['lineaTiempo' => 'Línea de Tiempo Histórica', 'ViajaPED' => 'Épocas Históricas'];
+        $this->assertSame(array_keys($titulos), array_values(require dirname(__DIR__, 2).'/config/paginas_estaticas.php'));
+
+        foreach ($titulos as $slug => $titulo) {
+            [$codigo, $tipo, $cuerpo] = $this->pedir("/$slug/");
+            $this->assertSame(200, $codigo, $slug);
+            $this->assertStringContainsString('text/html', $tipo, $slug);
+            $this->assertStringContainsString("<title>$titulo</title>", $cuerpo, $slug);
+
+            $this->assertSame(301, $this->pedir("/$slug?a=1", $location)[0], $slug);
+            $this->assertSame("/$slug/?a=1", $location, $slug);
+
+            $this->assertSame(301, $this->pedir("/$slug/index.html", $location)[0], $slug);
+            $this->assertSame($this->base."/$slug/", $location, $slug);
+        }
+        // Los archivos de cada carpeta siguen sirviéndose directamente (con su content-type) y se leen con rutas relativas.
+        $estaticos = [
+            '/lineaTiempo/eventos.json' => 'json',
+            '/lineaTiempo/script.js' => 'javascript',
+            '/lineaTiempo/styles.css' => 'text/css',
+            '/lineaTiempo/all.min.css' => 'text/css',
+            '/lineaTiempo/gsap.min.js' => 'javascript',
+            '/lineaTiempo/ScrollTrigger.min.js' => 'javascript',
+            '/lineaTiempo/favicon.png' => 'image/png',
+            '/lineaTiempo/img/explora.png' => 'image/png',
+            '/ViajaPED/data.json' => 'json',
+            '/ViajaPED/script.js' => 'javascript',
+            '/ViajaPED/styles.css' => 'text/css',
+            '/ViajaPED/img/fondo.png' => 'image/png',
+            '/ViajaPED/epocas/antigua.svg' => 'image/svg+xml',
+        ];
+        foreach ($estaticos as $ruta => $tipoEsperado) {
+            [$codigo, $tipo] = $this->pedir($ruta);
+            $this->assertSame(200, $codigo, $ruta);
+            $this->assertStringContainsString($tipoEsperado, $tipo, $ruta);
+        }
+        // Las subcarpetas no se listan (el router da 404; Apache, 403 por -Indexes).
+        foreach (['/lineaTiempo/img/', '/lineaTiempo/img', '/lineaTiempo/webfonts/', '/ViajaPED/img/', '/ViajaPED/epocas/', '/ViajaPED/fonts'] as $ruta) {
+            [$codigo, , $cuerpo] = $this->pedir($ruta);
+            $this->assertContains($codigo, [403, 404], $ruta);
+            $this->assertStringNotContainsString('explora.png', $cuerpo, $ruta);
+        }
+        // Distinción de mayúsculas (como Apache) y carpetas hermanas sin vista: no llegan a Laravel.
+        foreach (['/lineatiempo/', '/LINEATIEMPO/', '/viajaped/', '/jsons/', '/miPerfil/'] as $ruta) {
+            $this->assertContains($this->pedir($ruta)[0], [403, 404], $ruta);
+        }
+        // La carpeta ViajaPED/node_modules (si existe en local, sin versionar) tampoco se lista.
+        $this->assertContains($this->pedir('/ViajaPED/node_modules/')[0], [403, 404]);
     }
 
     /**
@@ -355,22 +417,18 @@ class ServidorDesarrolloTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0:string}> Los 7 PHP legados sustituidos por la API.
+     * @return array<string, array{0:string}> Los 7 PHP legados sustituidos por la API (lista única de config/servicios_retirados.php).
      */
     public static function phpSustituidos(): array
     {
-        $rutas = [
-            '/mapplic/php/iniciarSesion.php', '/mapplic/php/cambiarAvatar.php', '/mapplic/php/consultarInfo.php',
-            '/mapplic/php/buscarPreguntas.php', '/juegos/php/guardar_resultado.php',
-            '/juegos/php/consultar_ranking.php', '/juegos/php/consultar_historial.php',
-        ];
+        $rutas = array_map(static fn (string $r): string => '/'.$r, require dirname(__DIR__, 2).'/config/servicios_retirados.php');
 
         return array_combine($rutas, array_map(static fn (string $r): array => [$r], $rutas));
     }
 
     /**
-     * Los PHP sustituidos responden 410 con JSON `{"status":"error","mensaje":"Servicio retirado"}` y NO se
-     * ejecutan (el legado devolvía hashes y era inyectable).
+     * Los PHP sustituidos responden 410 con JSON `{"status":"error","mensaje":"Servicio retirado"}`. Desde la Fase 15 sus
+     * archivos ya no existen: el 410 lo da el propio router (en Apache, la ruta de Laravel; ver ServiciosRetiradosTest).
      *
      * @dataProvider phpSustituidos
      */
@@ -398,9 +456,15 @@ class ServidorDesarrolloTest extends TestCase
         $rutas = [
             // PATH_INFO: php -S ejecutaría consultarInfo.php si el router devolviera false.
             '/mapplic/php/consultarInfo.php/x.css',
-            // Chat legado: desactivado en desarrollo (credenciales de MySQL escritas en el código).
+            // Chat legado: desactivado en desarrollo (credenciales de MySQL escritas en el código). Fuera de la Fase 15: el
+            // archivo sigue en el repositorio, pero este servidor nunca lo ejecuta y NO es un 410 (no es un servicio retirado).
             '/mapplic/php/chat.php',
+            '/mapplic/php/chat%20copy.php',
+            '/MAPPLIC/PHP/CHAT.PHP',
+            // `conexion*.php` se eliminaron en la Fase 15 (404 por inexistentes; antes, por bloqueo).
             '/mapplic/php/conexion.php',
+            '/mapplic/php/conexion_pedigital.php',
+            '/juegos/php/conexion.php',
             // Ya no existen bajo el docroot (Fase 9): dan 404 por inexistentes, no por un bloqueo por nombre.
             '/laravel/.env',
             '/laravel/composer.json',

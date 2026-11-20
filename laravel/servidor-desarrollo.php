@@ -24,7 +24,8 @@
  *  3. Segmentos ocultos (`.git`, `.env`, `.htaccess`…)   -> 404 (defensa en profundidad: no deberían existir).
  *  4. Cualquier segmento acabado en .php/.phtml/.phar/.phpN -> el router responde él mismo, NUNCA `false`: si
  *     devolviera `false`, `php -S` ejecutaría el PHP legado (incluso con PATH_INFO, p. ej. `/x.php/a.css`).
- *     Los 7 scripts sustituidos por la API dan 410 JSON; cualquier otro PHP da 404. En DESARROLLO el chat
+ *     Los 7 scripts sustituidos por la API (config/servicios_retirados.php; sus archivos se eliminaron en la Fase 15)
+ *     dan 410 JSON; cualquier otro PHP da 404 (también `conexion*.php`, que ya no existen). En DESARROLLO el chat
  *     (`mapplic/php/chat.php` y `chat copy.php`) queda DESACTIVADO a propósito: usa credenciales reales de MySQL
  *     escritas en el código y no debe ejecutarse desde este servidor.
  *  5. Extensiones sensibles (sql, gz, zip, md, sh, lock, log, bak) -> 404.
@@ -36,7 +37,8 @@
  *     portal de juegos, igual que la regla `RewriteRule ^juegos/?$ index.php` de Apache. EXCEPCIÓN (Fase 13): las siete
  *     carpetas `/juegos/juegos/<slug>/` listadas en config/juegos.php: con «/» final -> Laravel (vista del juego); sin ella
  *     -> 301 a la forma con barra; `/juegos/juegos/<slug>/index.html` (ya inexistente) lo redirige Laravel. Los archivos de
- *     esas carpetas se sirven como siempre y las demás carpetas sin index.html siguen dando 404.
+ *     esas carpetas se sirven como siempre y las demás carpetas sin index.html siguen dando 404. EXCEPCIÓN (Fase 15): lo mismo
+ *     para `/lineaTiempo/` y `/ViajaPED/` (config/paginas_estaticas.php; equivalen a la regla `^(lineaTiempo|ViajaPED)/?$`).
  *  7. Ruta que NO existe como archivo ni carpeta (y que pasó los filtros anteriores) -> Laravel, igual que el
  *     `RewriteRule ^ index.php` de `public/.htaccess` en Apache. Así funcionan las páginas Blade (`/climatico`),
  *     sus redirecciones (`/climatico.html` -> 301) y el 404 propio de Laravel para lo desconocido. Una ruta con «/»
@@ -172,12 +174,9 @@ foreach ($minusculas as $s) {
 // 4) Cualquier segmento ejecutable por PHP: se responde aquí y nunca se devuelve false.
 foreach ($minusculas as $s) {
     if (preg_match('/\.(php|phtml|phar|php[0-9])$/', $s)) {
-        $retirados = [
-            'mapplic/php/iniciarsesion.php', 'mapplic/php/cambiaravatar.php',
-            'mapplic/php/consultarinfo.php', 'mapplic/php/buscarpreguntas.php',
-            'juegos/php/guardar_resultado.php', 'juegos/php/consultar_ranking.php',
-            'juegos/php/consultar_historial.php',
-        ];
+        // Lista de los 7 servicios retirados (Fase 15): la misma fuente que las rutas 410 de Laravel, en minúsculas porque la
+        // comparación no distingue mayúsculas. Los archivos ya no existen: el 410 lo da este router (en Apache, Laravel).
+        $retirados = array_map('strtolower', require __DIR__.'/config/servicios_retirados.php');
 
         return in_array(implode('/', $minusculas), $retirados, true)
             ? explora_responder_retirado()
@@ -226,6 +225,21 @@ if (count($segmentos) === 3 && $segmentos[0] === 'juegos' && $segmentos[1] === '
         $consulta = (string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY);
         http_response_code(301);
         header('Location: /'.implode('/', array_map('rawurlencode', $segmentos)).'/'.($consulta !== '' ? '?'.preg_replace('/[\r\n]/', '', $consulta) : ''));
+
+        return true;
+    }
+
+    return explora_delegar_en_laravel(false);
+}
+if (count($segmentos) === 1 && in_array($segmentos[0], require __DIR__.'/config/paginas_estaticas.php', true)) {
+    // Línea de tiempo y ViajaPED (Fase 15): CARPETAS reales sin index.html (su HTML es una vista Blade). Equivale a la regla
+    // `^(lineaTiempo|ViajaPED)/?$` de public/.htaccess; la lista sale de config/paginas_estaticas.php y se compara con
+    // distinción de mayúsculas, como Apache. Con barra final -> Laravel (con la guarda `_test`); sin ella -> 301 a la forma
+    // con barra, porque `eventos.json`, `data.json` o `img/…` se cargan relativos a la URL de la página.
+    if (! str_ends_with($ruta, '/')) {
+        $consulta = (string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY);
+        http_response_code(301);
+        header('Location: /'.rawurlencode($segmentos[0]).'/'.($consulta !== '' ? '?'.preg_replace('/[\r\n]/', '', $consulta) : ''));
 
         return true;
     }

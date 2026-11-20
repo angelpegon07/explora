@@ -37,3 +37,10 @@ SEC-02 (parte del chat), SEC-08, SEC-11, FUN-03, FUN-04, FUN-05 en [MATRIZ_HALLA
 - **Chat con IA: aplazado.** No se trabaja por ahora. `mapplic/php/chat.php`, `chat copy.php` y `mapplic/js/chat.js` siguen tal cual (riesgos SEC-02/SEC-08/SEC-11 abiertos y aceptados por el responsable).
 - **Corrector de texto: NO se implementa en Explora.** Se desarrollará únicamente en el proyecto **biblioteca** (allí existe el servicio Python/Hunspell auditado en `biblioteca/DOCUMENTACION_MEJORAMIENTO/AUDITORIA_CORRECTOR_PYTHON.md`). `public/corrector.html` queda como está (sigue llamando a Ollama desde el navegador; riesgos FUN-05/SEC-11 abiertos).
 - Consecuencia: la antigua Fase 14 queda **cancelada para este repositorio**.
+
+## Estado del legado tras la Fase 15 (2026-11-20)
+Con el retiro de los 7 scripts sustituidos por la API (etiqueta `pre-retiro-legado`), **lo único que queda del PHP legado son `public/mapplic/php/chat.php` y
+`chat copy.php`** (más su cliente `mapplic/js/chat.js` y los parciales de chat, y `public/corrector.html`). No se tocaron por la decisión de arriba. Consecuencias:
+- Ya no hay `.htaccess` en `mapplic/php/` (nunca bloqueó el chat): **bajo Apache el chat se ejecuta sin ninguna protección** adicional; solo el router de desarrollo lo bloquea (404).
+- Los `conexion*.php` ya no existen, pero **las credenciales de MySQL siguen escritas en `chat.php`/`chat copy.php` y todas (también las de los `conexion*.php`) permanecen en el historial de git**. Su rotación es decisión del responsable; no se ejecutó.
+- Al retomar el chat, el cierre sigue siendo: retirar `chat.php`, `chat copy.php` y `chat.js` y rotar las credenciales.

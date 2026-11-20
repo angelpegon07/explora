@@ -21,13 +21,27 @@ const PRIVADOS = [
     '/laravel/composer.json',
     '/.git/HEAD',
     '/DOCUMENTACION_MEJORAMIENTO/REGISTRO_CAMBIOS.md',
+    // Fase 15: `conexion*.php` ya no existen (404 por inexistentes).
     '/mapplic/php/conexion.php',
+    '/mapplic/php/conexion_pedigital.php',
     '/juegos/php/conexion.php',
+    // El chat con IA queda fuera de la Fase 15 (el archivo sigue en el repositorio): el router de desarrollo NUNCA lo ejecuta
+    // (usa credenciales de MySQL escritas en el código) y NO es un servicio «retirado»: 404, no 410.
+    '/mapplic/php/chat.php',
+    '/mapplic/php/chat%20copy.php',
     // PATH_INFO: `php -S` ejecutaría el script legado si el router devolviera false.
     '/mapplic/php/consultarInfo.php/x.css',
     // Mayúsculas: el sistema de archivos de macOS no distingue y podría llegar al script.
     '/MAPPLIC/PHP/CONSULTARINFO.PHP/x.css',
 ];
+
+// Fase 15: sus archivos ya no existen; el router de desarrollo sigue dando el 410 (en Apache lo da la ruta de Laravel).
+for (const ruta of SUSTITUIDOS) {
+    test(`410 JSON en ${ruta.toUpperCase()} (mayúsculas)`, async ({ request }) => {
+        const r = await request.get(ruta.toUpperCase());
+        expect(r.status()).toBe(410);
+    });
+}
 
 for (const ruta of SUSTITUIDOS) {
     // Comprueba que el PHP legado (inyectable y sin sesión) ya no se ejecuta: 410 con JSON de error, con GET y POST.
@@ -51,7 +65,7 @@ for (const ruta of PRIVADOS) {
     });
 }
 
-for (const ruta of ['/', '/perfil', '/juegos', '/juegos/']) {
+for (const ruta of ['/', '/perfil', '/juegos', '/juegos/', '/lineaTiempo/', '/ViajaPED/']) {
     // Comprueba que el router sigue sirviendo la portada (Laravel) y las páginas estáticas legítimas.
     test(`200 en ${ruta}`, async ({ request }) => {
         const r = await request.get(ruta);

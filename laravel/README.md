@@ -1,8 +1,9 @@
 # Explora — migración a Laravel 10
 
 Nueva base de código de **Explora Colombia y aprende** (sitio educativo sobre geografía, cultura e historia de
-Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del sitio original (`public/mapplic/php`,
-`public/juegos/php`), que siguen funcionando mientras se migra cada módulo.
+Colombia). Reemplazó **de forma incremental** los 12 scripts PHP planos del sitio original. Desde la **Fase 15** los 7
+sustituidos por la API se eliminaron (siguen en la etiqueta git `pre-retiro-legado`; ver «Retiro del PHP legado»); solo quedan
+`public/mapplic/php/chat.php` y `chat copy.php` (el chat con IA queda fuera de este repositorio).
 
 > Contexto, auditorías, decisiones y registro de cambios: [`../DOCUMENTACION_MEJORAMIENTO/`](../DOCUMENTACION_MEJORAMIENTO/)
 > (empezar por `REGISTRO_CAMBIOS.md` e `IMPLEMENTACION_MEJORAS.md`).
@@ -25,6 +26,8 @@ Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del siti
 | 11 | Portada (`/`): mapa general + ficha de departamento + quiz en Blade, con los mismos layout y parciales; `/index.html` redirige a `/` | ✔ |
 | 12 | Perfil (`/perfil`) y portal de juegos (`/juegos`) en Blade con la sesión pintada en servidor | ✔ |
 | 13 | Los 7 juegos (`/juegos/juegos/<slug>/`) en Blade con un layout común de juego | ✔ |
+| 14 | Chat y corrector con IA | cancelada en este repositorio (chat aplazado; el corrector se desarrolla en otro proyecto) |
+| 15 | `lineaTiempo` y `ViajaPED` en Blade; retiro del PHP legado sustituido (7 scripts) y de las pruebas que dependían de él | ✔ |
 
 ## Requisitos
 
@@ -54,7 +57,7 @@ pero conviene aplicarlas de una en una y solo en bases de prueba hasta que se au
 
 ```
 public/                  ÚNICO documento raíz (Fase 9): index.php (front controller), .htaccess y todo el sitio estático
-                         (*.html, *.json, css/, js/, mapplic/, juegos/, images/, maps*/…; el PHP legado en mapplic/php y juegos/php).
+                         (*.html, *.json, css/, js/, mapplic/, juegos/, images/, maps*/…; del PHP legado solo queda mapplic/php/chat*.php).
                          Desde la Fase 11 no hay `index.html`: la portada `/` es una vista Blade. Desde la Fase 12 tampoco
                          `miPerfil.html` ni `juegos/index.html` (perfil y portal de juegos son vistas Blade); las carpetas
                          `miPerfil/` y `juegos/` siguen existiendo con sus CSS/JS.
@@ -65,6 +68,7 @@ app/
     Controllers/PerfilController.php        Perfil `/perfil`, pintado en servidor con la sesión (Fase 12)
     Controllers/PortalJuegosController.php  Portal de juegos `/juegos`, barra según la sesión del servidor (Fase 12)
     Controllers/JuegoController.php         Las 7 páginas de juego `/juegos/juegos/<slug>/`; la forma sin barra redirige (Fase 13)
+    Controllers/PaginaEstaticaController.php  `/lineaTiempo/` y `/ViajaPED/` (carpetas con assets); la forma sin barra y `index.html` redirigen (Fase 15)
     Controllers/MapaTematicoController.php  Un único método (`__invoke`) para los 5 mapas temáticos (Fase 10)
     Controllers/Api/     Una clase por endpoint: ficha, preguntas, sesión, avatar, resultado, ranking, historial
     Requests/            Validación de entrada (Login, CambiarAvatar, GuardarResultado, Ranking; reglas compartidas en Concerns/)
@@ -81,6 +85,8 @@ app/
   Providers/RouteServiceProvider   Limitadores de peticiones (`login`, `api`)
 config/explora.php       Opciones propias (respuestas del quiz, cantidad de avatares)
 config/juegos.php        Lista cerrada de los 7 slugs de juego (arreglo PHP plano: también lo lee `servidor-desarrollo.php`) (Fase 13)
+config/paginas_estaticas.php  Lista cerrada de las 2 páginas con carpeta de assets, `lineaTiempo` y `ViajaPED` (arreglo plano: también lo lee `servidor-desarrollo.php`) (Fase 15)
+config/servicios_retirados.php  Los 7 PHP legados retirados que responden 410 (arreglo plano: también lo lee `servidor-desarrollo.php`) (Fase 15)
 config/mapas.php         Un arreglo por mapa temático (clave = slug de la URL): título, JSON, carpeta de imágenes, tutorial, variante y CSS
 resources/views/
   layouts/sitio.blade.php   Doctype, <head> y scripts comunes (todo con asset()); secciones `titulo`, `contenido`, `hojas_orden` (orden de
@@ -91,6 +97,7 @@ resources/views/
   partials/                 Bloques reutilizables de portada y mapas: mapa-contenedor, panel-contenido, chat (variante `chatCompleto`),
                             modal-pantalla-completa (`relleno`), modal-tipo-mapa, multimedia (video/imágenes), test-quiz (portada),
                             test-aviso (mapas), ficha-departamento, lightbox-imagen, menu-circular, menu-accesibilidad, final
+  paginas/                  lineaTiempo.blade.php y ViajaPED.blade.php (layout `base`; Fase 15)
   mapas/                    tematico.blade.php (la página), estilos.blade.php (CSS por mapa) y dato-interes.blade.php (solo climatico)
 routes/web.php           `GET /` (portada), `GET /index.html` -> 301 a `/`, `GET /{slug}` (lista cerrada desde config/mapas.php) y `GET /{slug}.html` -> 301
 public/js/mapa-comun.js  JS común de portada y mapas (acordeón, modales, pestañas de la ficha, visores, accesibilidad); lee `window.EXPLORA_MAPA`
@@ -99,20 +106,22 @@ public/js/mapa-tematico.js  JS de los mapas temáticos (dato de interés y opcio
 database/migrations/     Migración base (esquema real, idempotente) y perfiles_explora
 routes/api.php           Rutas de la API
 tests/
-  Characterization/      Fijan el comportamiento ACTUAL del PHP legado (incluidos sus defectos)
-  Contract/              La API nueva entrega al frontend lo mismo que el legado (33 departamentos)
-  Feature/               Modelos, perfil, autenticación, juegos, servidor de desarrollo y mapas temáticos
-  Equivalencia/          comparar-paginas.php: compara el HTML original de cada mapa con el renderizado (compuerta de la Fase 10)
-  Legacy/                Arnés para servir una copia del legado contra bases *_test
+  Contract/              Forma de la ficha y del quiz que consume el frontend (33 departamentos; ya sin comparar con el legado)
+  Feature/               Modelos, perfil, autenticación, juegos, servidor de desarrollo, mapas, juegos, páginas estáticas y 410 retirados
+  Equivalencia/          comparar-paginas.php: compara el HTML original de cada página migrada con el renderizado (compuerta)
+  Browser/               Playwright (npm run test:e2e)
 ```
+(Desde la Fase 15 no existen `tests/Characterization/` ni `tests/Legacy/`: ver «Retiro del PHP legado».)
 
 ## API
+
+En la columna «Reemplaza a», cada script PHP legado **ya no existe** (Fase 15): su URL responde 410 Gone (ver «Retiro del PHP legado»).
 
 Todas las rutas responden **JSON** (incluidos 404 y errores). Prefijo `/api`.
 
 ### Lectura pública (límite configurable, 300 peticiones/min por IP o usuario)
 
-| Método y ruta | Reemplaza a | Respuesta |
+| Método y ruta | Reemplaza a (retirado, ahora 410) | Respuesta |
 |---|---|---|
 | `GET /api/departamentos/{id}/ficha` | `consultarInfo.php` | 16 secciones con las claves que lee `mapplic/verMas.js`; 404 `{error}` si no existe |
 | `GET /api/departamentos/{id}/preguntas` | `buscarPreguntas.php` | `{preguntas:[{id,tipo_pregunta,pregunta,origen_pregunta,opciones}], departamento:{id,nombre,capital}}` |
@@ -125,7 +134,7 @@ como buenas y todas las de verdadero/falso como malas (SEC-06 se cierra migrando
 
 ### Juegos (Fase 5)
 
-| Método y ruta | Reemplaza a | Respuesta |
+| Método y ruta | Reemplaza a (retirado, ahora 410) | Respuesta |
 |---|---|---|
 | `POST /api/resultados` (CSRF; sesión **opcional**) | `guardar_resultado.php` | 201 `{status:'success', mensaje}`; 422 `{status:'error', mensaje, campos}`; 401 si la cuenta de la sesión se desactivó; 429 (10 por minuto por usuario o por IP) |
 | `GET /api/ranking?juego=&nivel=&categoria=` (público) | `consultar_ranking.php` | Hasta 5 filas `{jugador, avatar, grado, puntaje, tiempo}` por puntaje (desc) y tiempo (asc); 422 si algún parámetro no es válido |
@@ -175,10 +184,10 @@ por defecto de `artisan serve` dejaba un «Not Found» en `/juegos` y en `/juego
 tenías `artisan serve` en marcha, reinícialo** para que lo use.
 
 El router entrega `/` a Laravel (la portada es una vista Blade desde la Fase 11) y responde **410**
-a los 7 PHP legados sustituidos y **404** a `.git`, `.env`, los `conexion*.php`, cualquier otro `.php` (incluido el chat, que en desarrollo queda desactivado porque usaría credenciales reales)
+a las 7 URL de los PHP legados retirados (`config/servicios_retirados.php`) y **404** a `.git`, `.env`, `conexion*.php` (ya no existen), cualquier otro `.php` (incluido el chat, que en desarrollo queda desactivado porque usaría credenciales reales)
 y a extensiones sensibles. `laravel/.env`, `vendor/`, `storage/` y la documentación ya no están bajo el docroot. **Producción
-con Apache:** DocumentRoot = `laravel/public` (ver `../DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md`; `public/.htaccess` y las
-carpetas `php/`).
+con Apache:** DocumentRoot = `laravel/public` (ver `../DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md`; solo `public/.htaccess`: las
+carpetas `php/` ya no tienen `.htaccess`, el 410 lo da Laravel).
 
 **Rutas de Laravel fuera de `/api`.** Igual que Apache (`public/.htaccess` envía a `index.php` lo que no es archivo ni carpeta), el
 router de desarrollo entrega a Laravel toda ruta que no existe en disco (tras los filtros de seguridad), así que `/climatico`
@@ -279,7 +288,7 @@ JS de los juegos (Fase 13).
 desde la Fase 12 con su propia regla; ver más abajo). La portada usa `mapplic/mapplic.js` y su propio orden de CSS (`@section('hojas_orden')`).
 
 **Compuerta de equivalencia:** `php tests/Equivalencia/comparar-paginas.php [--ver-diferencias] [--ref=<pagina>:<commit>]...` compara
-el HTML original de `index` (por defecto en `0c60734`), de los cinco mapas (`0c7c594`), del portal `juegos` (`bb4b68b`) y de los 7 juegos (`b97b191`) con el renderizado,
+el HTML original de `index` (por defecto en `0c60734`), de los cinco mapas (`0c7c594`), del portal `juegos` (`bb4b68b`), de los 7 juegos (`b97b191`) y de `lineaTiempo`/`ViajaPED` (`25acea1`) con el renderizado,
 normalizando espacios, URL de `asset()` y JS inline, y falla si hay diferencias no admitidas (documentadas en la cabecera del script).
 Además hace la comprobación estructural del perfil (necesita las bases de prueba: el script las fuerza antes de arrancar Laravel).
 
@@ -289,20 +298,53 @@ y funciones para escapar HTML y validar avatares. Se incluye **después de jQuer
 
 ## Pruebas
 
-El PHP legado y el sitio viven ahora bajo `public/`; `tests/Legacy/serve.sh` copia `public/mapplic/php` y `public/juegos/php`.
-
 ```bash
-# Contra bases *_test (las pruebas lo verifican y abortan si no lo son)
-php artisan test                         # toda la suite
-php artisan test --testsuite=Contract    # contrato legado <-> Laravel
-php artisan test --testsuite=Feature     # modelos, perfil y autenticación
-
-# Las pruebas de Characterization y Contract comparan con el legado: arrancar antes su copia
-tests/Legacy/serve.sh                    # puerto 8081; se detiene con Ctrl+C (o pkill -f "php.*-S 127.0.0.1:8081")
+# Contra bases *_test (las pruebas lo verifican y abortan si no lo son). Ya NO necesitan ningún servidor del legado.
+php artisan test                         # toda la suite (Unit, Feature y Contract)
+php artisan test --testsuite=Contract    # forma de la ficha y del quiz que consume el frontend
+php artisan test --testsuite=Feature     # modelos, perfil, autenticación, juegos, páginas, router de desarrollo, 410
+php tests/Equivalencia/comparar-paginas.php   # compuerta de equivalencia de las páginas migradas
 ```
 
-Sin el servidor del legado, esas pruebas se **omiten** (no fallan). `phpunit.xml` fuerza `APP_DEBUG=false` y las bases
-`explora_test` / `pedigital_test`; `tests/TestCase.php` aborta si la conexión no es local o no termina en `_test`.
+`phpunit.xml` fuerza `APP_DEBUG=false` y las bases `explora_test` / `pedigital_test`; `tests/TestCase.php` aborta si la
+conexión no es local o no termina en `_test`. **Nombre histórico de variables:** `AutenticacionTest` y `PerfilPortalTest` leen
+`LEGACY_DB_USER` / `LEGACY_DB_PASS` de `laravel/.env` (usuario MySQL con escritura solo sobre `*_test`, para preparar escenarios en
+`pedigital_test`). Se llaman «LEGACY» porque antes también las usaba el arnés del PHP legado, que ya no existe; **no se renombraron**
+para no obligar a editar el `.env` de nadie.
+
+### Retiro del PHP legado (Fase 15)
+
+Se eliminaron del repositorio (`git rm`), porque la API Laravel ya los sustituye y nadie los incluye:
+
+- los 7 scripts `public/mapplic/php/{iniciarSesion,cambiarAvatar,consultarInfo,buscarPreguntas}.php` y
+  `public/juegos/php/{guardar_resultado,consultar_ranking,consultar_historial}.php`;
+- los 3 `conexion*.php` (credenciales de MySQL escritas en el código) y los 2 `.htaccess` de esas carpetas (la carpeta
+  `public/juegos/php/` desapareció);
+- el arnés de pruebas: `tests/Legacy/` (`serve.sh` y su harness) y `tests/Characterization/` (20 pruebas que fijaban el
+  comportamiento del legado), la suite `Characterization` de `phpunit.xml` y las 5 pruebas de equivalencia «API = legado»
+  (`FichaContractTest`, `QuizContractTest`, 2 en `JuegosTest`, 1 en `ModelosExploraTest`), más sus ayudantes;
+- `ViajaPED/package.json` y `package-lock.json` (React/Babel que ninguna página usa) y `jsons/unir.html` (utilidad suelta sin
+  referencias que cargaba jQuery desde un CDN).
+
+**Para recuperarlo todo:** la historia completa está en la etiqueta git `pre-retiro-legado`
+(p. ej. `git show pre-retiro-legado:laravel/public/mapplic/php/consultarInfo.php`, o `git checkout pre-retiro-legado -- <ruta>`).
+
+**Compatibilidad:** las 7 URL antiguas siguen respondiendo **410 Gone** con `{"status":"error","mensaje":"Servicio retirado"}` (cualquier
+método HTTP, sin distinguir mayúsculas, sin cookies ni trazas): en Apache, mediante la ruta `servicio-retirado` de `routes/web.php`
+(los archivos ya no existen, así que `public/.htaccess` las envía a `index.php`); en el router de desarrollo, con su propio 410. Ambos
+leen la lista de `config/servicios_retirados.php`. **Lo que NO se tocó** (decisión del responsable: el chat con IA se aplaza y el
+corrector no se implementa aquí): `public/mapplic/php/chat.php`, `chat copy.php`, `public/mapplic/js/chat.js` (y los parciales de
+chat) y `public/corrector.html`. `chat.php` no es un servicio «retirado»: bajo Apache lo sirve PHP como siempre; el router de desarrollo
+lo bloquea (404). Sus credenciales siguen en el archivo y en el historial de git.
+
+### `lineaTiempo` y `ViajaPED` (Fase 15)
+
+Son vistas Blade (`resources/views/paginas/<slug>.blade.php`, layout `base`) servidas por `PaginaEstaticaController`, con la misma
+mecánica que los juegos: carpetas reales con assets y rutas relativas (`fetch('eventos.json')`, `data.json`, `img/…`), así que la URL
+canónica lleva **barra final** (`/lineaTiempo/`, `/ViajaPED/`, respetando mayúsculas); la forma sin barra y `*/index.html` redirigen
+(301). La lista de slugs es `config/paginas_estaticas.php` (la leen `routes/web.php`, `servidor-desarrollo.php` y
+`PaginasEstaticasTest`, que vigila que la regla `^(lineaTiempo|ViajaPED)/?$` de `public/.htaccess` liste lo mismo). El menú circular
+enlaza a esas URL. Equivalencia: `comparar-paginas.php` las compara con su `index.html` de `25acea1`.
 
 Estilo: `./vendor/bin/pint`. `pint.json` excluye `public/mapplic`, `public/juegos` y `public/ViajaPED` (PHP legado que no se reformatea; JSON no admite comentarios, por eso la explicación va aquí).
 
@@ -330,9 +372,7 @@ comprobar antes que el sistema operativo sea compatible. Las carpetas `test-resu
 | `API_POR_MINUTO` | `300` | Peticiones de lectura por minuto, por IP (o por usuario con sesión). Subido de 60 porque un aula entera comparte una IP (NAT) y cada página sincroniza la sesión al cargar |
 | `RESULTADOS_POR_MINUTO` | `10` | Partidas que puede guardar cada usuario (o IP, si es invitado) por minuto |
 | `PEDIGITAL_DB_*` | — | Conexión de solo lectura a la base de usuarios |
-| `LEGACY_DB_HOST/USER/PASS` | — | **Solo pruebas:** usuario MySQL con escritura únicamente sobre las bases `*_test`, usado por el arnés del legado y por las pruebas que preparan escenarios en `pedigital_test` |
-| `LEGACY_BASE_URL` | `http://127.0.0.1:8081` | Servidor del legado para las pruebas (debe ser local) |
-| `LEGACY_MEMORY` | `1G` | Memoria del servidor del legado (con `128M` falla la ficha del departamento 10) |
+| `LEGACY_DB_USER/PASS` | — | **Solo pruebas** (nombre histórico, ver «Pruebas»): usuario MySQL con escritura únicamente sobre las bases `*_test`, que usan las pruebas que preparan escenarios en `pedigital_test`. `LEGACY_DB_HOST`, `LEGACY_BASE_URL` y `LEGACY_MEMORY` ya no se usan (arnés retirado en la Fase 15) |
 
 ## Convenciones del proyecto
 
@@ -350,7 +390,7 @@ comprobar antes que el sistema operativo sea compatible. Las carpetas `test-resu
    Única excepción: algunas pruebas preparan un escenario (p. ej. desactivar una cuenta) en `pedigital_test` con el usuario
    `LEGACY_DB_*`, restringido a bases `*_test`, y lo restauran; nunca se hace en una base real.
 5. **Identidad desde la sesión.** El usuario nunca se toma de un dato enviado por el cliente (SEC-03).
-6. **Pruebas primero** para todo endpoint que reemplace al legado: contrato (misma forma) y casos de seguridad.
+6. **Pruebas primero** para todo endpoint nuevo: contrato (misma forma) y casos de seguridad.
 7. **Migraciones aditivas e idempotentes;** `down()` nunca borra datos. Cualquier cambio destructivo requiere autorización.
 8. **Nombres de la base de datos tal cual**, incluidos los errores ortográficos heredados (`opciones_verfal`,
    `pasword_usuario`, `update_at`): no «corregirlos» sin una migración autorizada. Los modelos documentan estos casos.
