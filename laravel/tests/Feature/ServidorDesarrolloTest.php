@@ -143,12 +143,14 @@ class ServidorDesarrolloTest extends TestCase
     }
 
     /**
-     * El sitio estático (portada y juegos) se sirve con 200: el router deja pasar los archivos legítimos.
+     * El sitio estático (juegos, perfil) se sirve con 200: el router deja pasar los archivos legítimos. La portada ya
+     * no es un archivo (Fase 11): `/index.html` redirige (301) a `/`.
      */
     public function test_sirve_el_sitio_estatico(): void
     {
-        $this->assertSame(200, $this->pedir('/index.html')[0]);
         $this->assertSame(200, $this->pedir('/juegos/index.html')[0]);
+        $this->assertSame(301, $this->pedir('/index.html', $location)[0]);
+        $this->assertSame($this->base, $location); // Laravel emite la raíz sin barra final
         // Los HTML de los mapas ya no existen (Fase 10): la URL antigua redirige, ver test_los_mapas_se_sirven_desde_laravel.
         $this->assertSame(200, $this->pedir('/miPerfil.html')[0]);
     }
@@ -205,20 +207,24 @@ class ServidorDesarrolloTest extends TestCase
             $this->assertStringNotContainsString('<title>', $cuerpo, $ruta);
         }
 
-        // Los archivos estáticos no tocan la base: siguen sirviéndose.
-        $this->assertSame(200, $this->pedir('/index.html')[0]);
+        // `/` (portada, Laravel) también se niega; los archivos estáticos no tocan la base y siguen sirviéndose.
+        $this->assertSame(500, $this->pedir('/')[0]);
+        $this->assertSame(200, $this->pedir('/juegos/index.html')[0]);
     }
 
     /**
-     * `/` devuelve el index.html del sitio (como `DirectoryIndex index.html index.php` en Apache) y NO el
-     * front controller de Laravel, aunque `public/index.php` exista: `php -S` lo preferiría sin la ayuda del router.
+     * `/` ya no es un archivo estático (Fase 11): la sirve Laravel (vista `inicio`) con 200 y HTML, como Apache con
+     * `DirectoryIndex index.php index.html`. Ya no existe `public/index.html`.
      */
-    public function test_la_raiz_sirve_index_html(): void
+    public function test_la_raiz_la_sirve_laravel(): void
     {
+        $this->assertFileDoesNotExist(dirname(__DIR__, 2).'/public/index.html');
+
         [$codigo, $tipo, $cuerpo] = $this->pedir('/');
         $this->assertSame(200, $codigo);
         $this->assertStringContainsString('text/html', $tipo);
-        $this->assertSame(file_get_contents(dirname(__DIR__, 2).'/public/index.html'), $cuerpo);
+        $this->assertStringContainsString('<title>Explora Colombia y aprende</title>', $cuerpo);
+        $this->assertStringContainsString('id="mapplic"', $cuerpo);
     }
 
     /**

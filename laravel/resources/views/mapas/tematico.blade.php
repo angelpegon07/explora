@@ -7,7 +7,7 @@
 
     Todo dato dinámico se imprime con {{ }} (escapado). La configuración que necesita el JS viaja en
     `window.EXPLORA_MAPA` mediante @json con las banderas HEX_*: nunca se concatenan datos en cadenas de JS.
-    El JS compartido está en public/js/mapa-tematico.js.
+    El JS está en public/js/mapa-comun.js (común con la portada) y public/js/mapa-tematico.js (init de Mapplic temática).
 --}}
 @extends('layouts.sitio')
 
@@ -27,7 +27,8 @@
     @include('partials.chat')
     @include('partials.modal-pantalla-completa', ['datoInteres' => $mapa['dato_interes']])
     @include('partials.modal-tipo-mapa')
-    @include('partials.multimedia', ['quizAnidado' => $mapa['quiz_anidado']])
+    @include('partials.multimedia')
+    @include('partials.test-aviso')
     @include('partials.menu-circular')
     @include('partials.menu-accesibilidad', ['tutorial' => $mapa['tutorial']])
     @include('partials.final')
@@ -35,7 +36,7 @@
 
 @push('scripts')
     {{--
-        Configuración del mapa para public/js/mapa-tematico.js. Las URL ya son absolutas (asset()), de modo que el JS
+        Configuración del mapa para public/js/mapa-comun.js y mapa-tematico.js. Las URL ya son absolutas (asset()), de modo que el JS
         no depende de la ruta desde la que se sirve la página.
           json             URL del archivo de datos de Mapplic.
           carpetaImagenes  URL base de las imágenes del carrusel; «{carpeta}» se sustituye en el navegador por el
@@ -57,5 +58,6 @@
     <script>
         window.EXPLORA_MAPA = @json($configuracionJs, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     </script>
+    <script src="{{ asset('js/mapa-comun.js') }}"></script>
     <script src="{{ asset('js/mapa-tematico.js') }}"></script>
 @endpush

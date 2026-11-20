@@ -64,7 +64,27 @@ class MapasTematicosTest extends TestCase
         foreach (['id="mapplic"', 'id="opciones_mapa"', 'id="chat"', 'id="myModal"', 'id="modalOpcionesAtlas"', 'id="final"', 'id="menuAccesibilidad"'] as $trozo) {
             $this->assertStringContainsString($trozo, $html, "$slug no contiene $trozo");
         }
+        $this->assertStringContainsString(asset('js/mapa-comun.js'), $html);
         $this->assertStringContainsString(asset('js/mapa-tematico.js'), $html);
+        // La Mapplic de los mapas es la genérica; la portada usa `mapplic.js` (ver InicioTest).
+        $this->assertStringContainsString(asset('mapplic/mapplic_generico.js'), $html);
+    }
+
+    /**
+     * Fase 11: el `.modal-body.quizmodal` de la ventana del test ya no se repite anidado en ningún mapa (antes lo hacían
+     * coordilleras, etnias, parques_naturales y vertientes), y el `</div>` sobrante tras #contenedorVideo desapareció
+     * (se comprueba que los <div> de la página quedan equilibrados).
+     *
+     * @dataProvider mapas
+     */
+    public function test_el_quizmodal_ya_no_esta_anidado_y_los_div_estan_equilibrados(string $slug): void
+    {
+        $html = $this->get('/'.$slug)->getContent();
+        $this->assertSame(1, substr_count($html, 'quizmodal'), "$slug debe tener un solo .quizmodal");
+
+        // Sin comentarios ni <script>, cada <div> abre y cierra: no sobra ningún `</div>`.
+        $sinScripts = preg_replace(['/<!--.*?-->/s', '#<script\b.*?</script>#is'], '', $html);
+        $this->assertSame(substr_count($sinScripts, '<div'), substr_count($sinScripts, '</div>'), "$slug tiene <div> desequilibrados");
     }
 
     /**

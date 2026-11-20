@@ -1,4 +1,4 @@
-{{-- Panel lateral «CONTENIDO» (#opciones_mapa): tres acordeones que Mapplic rellena con los lugares. El JS del acordeón está en public/js/mapa-tematico.js. --}}
+{{-- Panel lateral «CONTENIDO» (#opciones_mapa): tres acordeones que Mapplic rellena con los lugares. El JS del acordeón está en public/js/mapa-comun.js. --}}
 <div class="options scroll-container" id="opciones_mapa">
     <i onclick="cerrarOpciones()" style="cursor: pointer; color: #c94141; font-size: 27px; position: absolute; right: 4px; top: 24px;" class="fa-solid fa-circle-xmark"></i>
     <br>

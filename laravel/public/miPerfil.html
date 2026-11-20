@@ -160,7 +160,7 @@
                     // Se avisa al servidor y, pase lo que pase, se limpia la caché local.
                     ExploraApi.peticion('DELETE', 'sesion').always(function () {
                         ExploraApi.limpiarSesionLocal();
-                        window.location.href = 'index.html';
+                        window.location.href = '/';
                     });
                 }
             });

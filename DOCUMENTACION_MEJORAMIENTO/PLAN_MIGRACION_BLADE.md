@@ -46,9 +46,10 @@ Eloquent; `Usuario` es el único puente entre autenticación, perfil y modelos d
 se verifica contra la captura original y se replica. Cierra M07–M11.
 **Hecha:** `layouts/sitio`, parciales en `resources/views/partials`, `config/mapas.php`, `MapaTematicoController`, `public/js/mapa-tematico.js`, redirecciones 301 `*.html` y el router de desarrollo entregando a Laravel las rutas inexistentes; verificada con `tests/Equivalencia/comparar-paginas.php`. Detalle en `REGISTRO_CAMBIOS.md`.
 
-### Fase 11 — Mapa principal (`index`) y fichas
+### Fase 11 — Mapa principal (`index`) y fichas — ✔ HECHA
 Vista `inicio` con los parciales ya probados; el script inline de ~150 líneas se extrae a `resources/js/` (Vite) con la
 configuración del mapa pasada desde Blade (`@json`). Cubre M01–M03 y M12 (tutorial). Es la fase de mayor riesgo visual.
+**Hecha:** vista `inicio` en `/` (`InicioController`), parciales `ficha-departamento`, `lightbox-imagen`, `test-quiz`/`test-aviso`, JS en `public/js/{mapa-comun,inicio,mapa-tematico}.js` (clásico, sin Vite: ver riesgos), `/index.html` -> 301 a `/`, `.htaccess` y router de desarrollo entregan `/` a Laravel, pendientes de la Fase 10 cerrados (`quiz_anidado` y `</div>` sobrante) y `seleccionarTipoMapa()` con URL sin `.html`. Equivalencia verificada con `tests/Equivalencia/comparar-paginas.php`. Detalle en `REGISTRO_CAMBIOS.md`.
 
 ### Fase 12 — Perfil y portal de juegos
 `miPerfil` y `juegos/index` en Blade con la sesión de Laravel (el nombre y el avatar se pintan en servidor, no desde
@@ -105,4 +106,4 @@ verde; credenciales rotadas; documentación y `README` al día.
 - **Pendiente para la Fase 11:** unificar el `.modal-body.quizmodal` anidado (clave `quiz_anidado` en `config/mapas.php`) y quitar el `</div>` sobrante tras `#contenedorVideo`, ambos defectos heredados que se conservaron para garantizar la equivalencia.
 - **Sesión en las páginas Blade:** se mantiene el grupo `web` (la cookie de sesión/CSRF se necesita de todos modos para `/api/sesion`).
 - **`general.js`:** en la Fase 11, al migrar `index`, `seleccionarTipoMapa()` pasará a las URL sin `.html`; las redirecciones 301 quedan solo para marcadores antiguos.
-- **Compuerta de equivalencia:** tras confirmar la Fase 10 se ejecuta con `php tests/Equivalencia/comparar-paginas.php HEAD~1` (los HTML originales ya no están en HEAD).
+- **Compuerta de equivalencia:** los HTML originales ya no están en HEAD; el script usa por defecto `0c60734` para `index` y `0c7c594` para los mapas (configurable con `--ref=<pagina>:<commit>`).

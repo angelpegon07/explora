@@ -8,13 +8,12 @@ import { test, expect } from '@playwright/test';
 const PAGINAS = ['index', 'climatico', 'coordilleras', 'etnias', 'parques_naturales', 'vertientes'];
 
 /**
- * URL de cada página: la portada sigue siendo un HTML estático (Fase 11 la migrará); los cinco mapas temáticos son
- * rutas de Laravel sin extensión (Fase 10).
+ * URL de cada página: la portada es `/` y los cinco mapas temáticos rutas de Laravel sin extensión (Fases 10 y 11).
  *
  * @param {string} nombre Nombre de la página.
  * @returns {string} Ruta a visitar.
  */
-const ruta = (nombre) => (nombre === 'index' ? '/index.html' : `/${nombre}`);
+const ruta = (nombre) => (nombre === 'index' ? '/' : `/${nombre}`);
 
 for (const nombre of PAGINAS) {
     // Comprueba que la página carga, pinta la lista de lugares y que elegir uno muestra su contenido en el tooltip.
@@ -39,8 +38,8 @@ for (const nombre of PAGINAS) {
 }
 
 /**
- * Navegación del modal «Seleccione el mapa»: seleccionarTipoMapa() (general.js, compartida con index.html) sigue
- * apuntando a `*.html`; la redirección 301 debe llevar a la ruta nueva sin extensión.
+ * Navegación del modal «Seleccione el mapa»: seleccionarTipoMapa() (general.js, compartida con la portada) navega
+ * directamente a las URL de Laravel sin `.html` (Fase 11).
  */
 test('el modal de tipo de mapa navega: climatico -> etnias termina en /etnias', async ({ page }) => {
     await page.goto('/climatico');
@@ -48,6 +47,56 @@ test('el modal de tipo de mapa navega: climatico -> etnias termina en /etnias', 
     await page.waitForURL('**/etnias');
     expect(new URL(page.url()).pathname).toBe('/etnias');
     await expect(page).toHaveTitle('Etnias de Colombia');
+});
+
+/**
+ * Desde la portada, la tarjeta «Mapa climático» del modal de tipo de mapa lleva a `/climatico` y, desde ahí, la tarjeta
+ * «Mapa general» vuelve a `/` (sin pasar por una redirección `.html`).
+ */
+test('el modal de tipo de mapa: / -> /climatico y de vuelta a /', async ({ page }) => {
+    // Recorre dos páginas pesadas de Mapplic seguidas (cada una tarda varios segundos en el servidor de desarrollo).
+    test.setTimeout(120000);
+    /** @type {string[]} */
+    const redirecciones = [];
+    page.on('response', (r) => { if (r.status() === 301 || r.status() === 302) redirecciones.push(r.url()); });
+
+    /** Cierra el aviso de pantalla completa (se abre solo al cargar) y abre el modal de tipo de mapa desde el menú circular. */
+    const abrirModalTipoMapa = async () => {
+        await page.locator('#myModal [data-dismiss="modal"]').click();
+        await expect(page.locator('#myModal')).toBeHidden();
+        // En climatico «Seguir en modo normal» también desliza el panel «Dato de interés», que taparía las tarjetas: se cierra.
+        if (await page.locator('#dato_interes').count()) {
+            await page.locator('.btn_cerrar_dato_interes').dispatchEvent('click');
+        }
+        await page.locator('#btn_menu_circular').click();
+        await page.locator('#btn_menu_opciones_atlas').click();
+        await expect(page.locator('#modalOpcionesAtlas')).toBeVisible();
+    };
+
+    await page.goto('/');
+    await abrirModalTipoMapa();
+    await page.locator('#modalOpcionesAtlas .opcion_atlas.climatico').click();
+    await page.waitForURL('**/climatico');
+    expect(new URL(page.url()).pathname).toBe('/climatico');
+    await expect(page).toHaveTitle('Mapa Climático de Colombia');
+
+    await abrirModalTipoMapa();
+    await page.locator('#modalOpcionesAtlas .opcion_atlas.general').click();
+    await page.waitForURL((url) => url.pathname === '/');
+    await expect(page).toHaveTitle('Explora Colombia y aprende');
+    expect(redirecciones).toEqual([]);
+});
+
+/**
+ * La URL antigua `/index.html` redirige (301) a `/` y conserva la consulta y el hash del deeplinking.
+ */
+test('la URL antigua /index.html redirige a /', async ({ page }) => {
+    await page.goto('/index.html?x=1#y');
+    const url = new URL(page.url());
+    expect(url.pathname).toBe('/');
+    expect(url.search).toBe('?x=1');
+    expect(url.hash).toBe('#y');
+    await expect(page).toHaveTitle('Explora Colombia y aprende');
 });
 
 /**
@@ -107,4 +156,19 @@ test('verImagenes usa la carpeta de imágenes de cada mapa', async ({ page }) =>
         return Array.from(document.querySelectorAll('#carouselExampleIndicators img')).map((i) => i.getAttribute('src'));
     });
     expect(etnias.map((u) => new URL(/** @type {string} */ (u)).pathname)).toEqual(['/maps_parques/imagenes_parques/wayuu/a.jpg']);
+});
+
+/**
+ * La portada usa la carpeta fija `multimedia/imagenes/` (ahora absoluta, antes relativa) para su carrusel.
+ */
+test('verImagenes en la portada usa multimedia/imagenes', async ({ page }) => {
+    await page.goto('/');
+    const rutas = await page.evaluate(() => {
+        const w = /** @type {any} */ (window);
+        const b = document.createElement('button');
+        b.setAttribute('link-imagenes', 'a.jpg,b.jpg');
+        w.verImagenes(b);
+        return Array.from(document.querySelectorAll('#carouselExampleIndicators img')).map((i) => i.getAttribute('src'));
+    });
+    expect(rutas.map((u) => new URL(/** @type {string} */ (u)).pathname)).toEqual(['/multimedia/imagenes/a.jpg', '/multimedia/imagenes/b.jpg']);
 });

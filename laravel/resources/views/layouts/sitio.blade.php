@@ -1,5 +1,5 @@
 {{--
-    Layout base de las páginas del sitio (Fase 10; la portada `index` lo reutilizará en la Fase 11).
+    Layout base de las páginas del sitio (Fase 10 para los mapas temáticos; la portada `inicio` lo reutiliza desde la Fase 11).
 
     Contiene lo que era IDÉNTICO en las cinco páginas de mapas: cabecera con todas las hojas de estilo y scripts del
     <head>, y el bloque de scripts del final. TODAS las URL de recursos usan asset(): así funcionan desde cualquier
@@ -7,6 +7,12 @@
 
     Secciones que rellena cada vista:
       @section('titulo')   texto del <title> (se escapa solo al imprimirlo con {{ }}).
+      @section('hojas_orden') (opcional) las tres últimas hojas/enlaces del <head> en el orden propio de la página.
+                           La cascada depende del orden de las hojas: los mapas temáticos cargaban utilidad.css ANTES
+                           que general.css y la portada al revés. Por defecto se usa el orden de los mapas; la portada
+                           redefine la sección entera (sin @parent) con su propio orden.
+      @section('script_mapplic') (opcional) URL del script de Mapplic. Por defecto `mapplic_generico.js` (mapas
+                           temáticos); la portada usa `mapplic.js`. Se escapa al imprimirse.
       @push('estilos')     <style> propio de la página; se imprime al final del <head>.
       @section('contenido') todo el <body> salvo los scripts.
       @push('scripts')     scripts propios (configuración + JS de la página). Se imprimen DESPUÉS de las librerías
@@ -30,9 +36,12 @@
         <link rel="stylesheet" href="{{ asset('mapplic/quiz.css') }}">
         <link rel="stylesheet" href="{{ asset('sweetalert/sweetalert2.min.css') }}">
         <script src="{{ asset('sweetalert/sweetalert2.all.min.js') }}"></script>
+        {{-- Orden de utilidad.css / general.css / icono: configurable por página (ver cabecera). Este es el de los mapas. --}}
+        @section('hojas_orden')
         <link rel="stylesheet" href="{{ asset('css/utilidad.css') }}">
         <link rel="stylesheet" href="{{ asset('css/general.css') }}">
         <link rel="shortcut icon" href="{{ asset('juegos/images/Isotipo.png') }}">
+        @show
 
         <script src="{{ asset('driver/driver.js.iife.js') }}"></script>
         <link rel="stylesheet" href="{{ asset('driver/driver.css') }}"/>
@@ -50,7 +59,7 @@
         <script type="text/javascript" src="{{ asset('js/hammer.min.js') }}"></script>
         <script type="text/javascript" src="{{ asset('js/jquery.easing.js') }}"></script>
         <script type="text/javascript" src="{{ asset('js/jquery.mousewheel.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('mapplic/mapplic_generico.js') }}"></script>
+        <script type="text/javascript" src="@yield('script_mapplic', asset('mapplic/mapplic_generico.js'))"></script>
         <script type="text/javascript" src="{{ asset('bootstrap/bootstrap.min.js') }}"></script>
         <script type="text/javascript" src="{{ asset('mapplic/verMas.js') }}"></script>
         <script type="text/javascript" src="{{ asset('mapplic/js/quiz.js') }}"></script>

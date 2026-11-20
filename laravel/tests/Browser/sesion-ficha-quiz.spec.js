@@ -10,7 +10,7 @@ import { USUARIO, CLAVE, iniciarSesionPorApi } from './ayudas.js';
 
 // Comprueba el login completo desde la interfaz: menú de accesibilidad -> modal -> POST /api/sesion -> caché local.
 test('login desde el menú de accesibilidad guarda la sesión sin exponer el hash', async ({ page }) => {
-    await page.goto('/index.html');
+    await page.goto('/');
     await page.locator('#btn_menu_accesibilidad').click();
     await page.locator('#btn_iniciar_sesion').click();
     const modal = page.locator('#modalLogin');
@@ -30,7 +30,7 @@ test('login desde el menú de accesibilidad guarda la sesión sin exponer el has
 test('ficha: un 500 cierra el spinner y muestra un error', async ({ page }) => {
     await page.route('**/api/departamentos/*/ficha', (route) =>
         route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"Error"}' }));
-    await page.goto('/index.html');
+    await page.goto('/');
     await page.evaluate(() => {
         const a = document.createElement('a');
         a.setAttribute('id-departamento', '2');
@@ -45,7 +45,7 @@ test('ficha: un 500 cierra el spinner y muestra un error', async ({ page }) => {
 // Comprueba el caso feliz: la ficha real (~10 MB) del departamento 2 abre el modal con su nombre.
 test('ficha: el departamento 2 abre #modal_sitios con Antioquia', async ({ page }) => {
     test.setTimeout(150000);
-    await page.goto('/index.html');
+    await page.goto('/');
     await page.evaluate(() => {
         const a = document.createElement('a');
         a.setAttribute('id-departamento', '2');
@@ -62,7 +62,7 @@ test('ficha: el departamento 2 abre #modal_sitios con Antioquia', async ({ page 
  * @param {import('@playwright/test').Page} page
  */
 async function iniciarQuiz(page) {
-    await page.goto('/index.html');
+    await page.goto('/');
     await page.evaluate(() => {
         // @ts-ignore elemento de la página
         document.querySelector('#departamento_seleccionado').value = '2';
@@ -163,7 +163,7 @@ test('climatico: verTest sin departamento avisa del mapa y no llama a la API', a
 // Comprueba que cerrar sesión avisa al servidor (DELETE) y borra la caché local.
 test('cerrar sesión dispara DELETE /api/sesion y limpia localStorage', async ({ page }) => {
     await iniciarSesionPorApi(page);
-    await page.goto('/index.html');
+    await page.goto('/');
     // Con el frontend conectado la página ya sincroniza esto sola; se fija por si aún no lo hace.
     await page.evaluate(() => { localStorage.setItem('usuario', 'usuario1'); localStorage.setItem('id_usuario', '1'); });
     await page.reload();

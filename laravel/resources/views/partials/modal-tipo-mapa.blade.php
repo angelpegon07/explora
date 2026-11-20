@@ -1,7 +1,7 @@
 {{--
     Modal «SELECCIONE EL MAPA QUE DESEA EXPLORAR» (#modalOpcionesAtlas). Cada tarjeta llama a seleccionarTipoMapa(),
-    definida en public/mapplic/js/general.js (compartida con index.html): navega a `*.html`, y esas URL antiguas
-    redirigen (301) a las rutas nuevas (`/etnias`…). No se cambia general.js a propósito.
+    definida en public/mapplic/js/general.js (compartida por la portada y los mapas): desde la Fase 11 navega directo a
+    las URL de Laravel sin `.html` (`/`, `/etnias`…); las `*.html` antiguas solo redirigen (301) para marcadores viejos.
 --}}
 <div class="modal fade" id="modalOpcionesAtlas" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">

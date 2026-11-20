@@ -71,13 +71,13 @@ test('cambiar avatar con teclado hace PATCH 200 y persiste al recargar', async (
 });
 
 // Comprueba que sin sesión se invita a iniciar sesión y NO se consulta el historial (sería un 401 inútil).
-test('sin sesión muestra aviso con enlace a index.html y no llama a /api/historial', async ({ page }) => {
+test('sin sesión muestra aviso con enlace a la portada y no llama a /api/historial', async ({ page }) => {
     /** @type {string[]} */
     const historial = [];
     page.on('request', (r) => { if (r.url().includes('/api/historial')) historial.push(r.url()); });
     await page.goto('/miPerfil.html');
     await expect(page.getByText(/iniciar sesión/i).first()).toBeVisible();
-    await expect(page.locator('a[href$="index.html"]').filter({ hasText: /./ }).first()).toBeVisible();
+    await expect(page.locator('a[href="/"]').filter({ hasText: /./ }).first()).toBeVisible();
     expect(historial).toEqual([]);
 });
 

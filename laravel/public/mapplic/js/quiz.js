@@ -47,7 +47,7 @@ function totalPreguntas() {
 
 /**
  * Abre el test del departamento elegido en el mapa.
- * - Sin #departamento_seleccionado en la página (solo existe en index.html):
+ * - Sin #departamento_seleccionado en la página (solo existe en la portada, `/`):
  *   informa y enlaza al mapa; no pide nada a la API.
  * - Con el campo vacío: pide seleccionar un departamento.
  * - Si no: muestra el contenedor y pide las preguntas UNA sola vez.
@@ -62,7 +62,7 @@ function verTest() {
             icon: 'info',
             title: 'Test por departamento',
             html: 'El test por departamento está disponible en el mapa de departamentos.<br><br>' +
-                  '<a class="btn btn-primary" href="index.html">Ir al mapa de departamentos</a>',
+                  '<a class="btn btn-primary" href="/">Ir al mapa de departamentos</a>',
             confirmButtonColor: '#3085d6'
         });
         return;

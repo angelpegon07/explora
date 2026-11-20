@@ -22,6 +22,7 @@ Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del siti
 | 7B | Modernizar el frontend (Vite, unificar librerías, Mapplic, optimizar medios) | parcial |
 | 9 | Cimientos Blade: `laravel/public/` es el único documento raíz y contiene todo el sitio (HTML intacto, solo movido) | ✔ |
 | 10 | Mapas temáticos (`/climatico`, `/coordilleras`, `/etnias`, `/parques_naturales`, `/vertientes`): una vista Blade parametrizada + layout y parciales reutilizables | ✔ |
+| 11 | Portada (`/`): mapa general + ficha de departamento + quiz en Blade, con los mismos layout y parciales; `/index.html` redirige a `/` | ✔ |
 
 ## Requisitos
 
@@ -51,10 +52,11 @@ pero conviene aplicarlas de una en una y solo en bases de prueba hasta que se au
 
 ```
 public/                  ÚNICO documento raíz (Fase 9): index.php (front controller), .htaccess y todo el sitio estático
-                         (index.html, *.html, *.json, css/, js/, mapplic/, juegos/, images/, maps*/…; el PHP legado en
-                         mapplic/php y juegos/php). Las rutas públicas (/index.html, /juegos/…) no cambiaron.
+                         (*.html, *.json, css/, js/, mapplic/, juegos/, images/, maps*/…; el PHP legado en mapplic/php y juegos/php).
+                         Desde la Fase 11 no hay `index.html`: la portada `/` es una vista Blade.
 app/
   Http/
+    Controllers/InicioController.php        Portada `/` (Fase 11)
     Controllers/MapaTematicoController.php  Un único método (`__invoke`) para los 5 mapas temáticos (Fase 10)
     Controllers/Api/     Una clase por endpoint: ficha, preguntas, sesión, avatar, resultado, ranking, historial
     Requests/            Validación de entrada (Login, CambiarAvatar, GuardarResultado, Ranking; reglas compartidas en Concerns/)
@@ -71,12 +73,17 @@ app/
 config/explora.php       Opciones propias (respuestas del quiz, cantidad de avatares)
 config/mapas.php         Un arreglo por mapa temático (clave = slug de la URL): título, JSON, carpeta de imágenes, tutorial, variante y CSS
 resources/views/
-  layouts/sitio.blade.php   Doctype, <head> y scripts comunes (todo con asset()); secciones `titulo`, `contenido` y pilas `estilos`/`scripts`
-  partials/                 Bloques reutilizables (la portada de la Fase 11 usará los mismos): mapa-contenedor, panel-contenido, chat,
-                            modal-pantalla-completa, modal-tipo-mapa, multimedia (video/imágenes/test), menu-circular, menu-accesibilidad, final
+  layouts/sitio.blade.php   Doctype, <head> y scripts comunes (todo con asset()); secciones `titulo`, `contenido`, `hojas_orden` (orden de
+                            CSS por página) y `script_mapplic`, y pilas `estilos`/`scripts`
+  inicio.blade.php          La portada `/` (mapa general + ficha + quiz)
+  partials/                 Bloques reutilizables de portada y mapas: mapa-contenedor, panel-contenido, chat (variante `chatCompleto`),
+                            modal-pantalla-completa (`relleno`), modal-tipo-mapa, multimedia (video/imágenes), test-quiz (portada),
+                            test-aviso (mapas), ficha-departamento, lightbox-imagen, menu-circular, menu-accesibilidad, final
   mapas/                    tematico.blade.php (la página), estilos.blade.php (CSS por mapa) y dato-interes.blade.php (solo climatico)
-routes/web.php           `GET /{slug}` (lista cerrada desde config/mapas.php) y `GET /{slug}.html` -> 301 a `/{slug}`
-public/js/mapa-tematico.js  JS compartido de los mapas (acordeón, modales, visores, accesibilidad, opciones de Mapplic); lee `window.EXPLORA_MAPA`
+routes/web.php           `GET /` (portada), `GET /index.html` -> 301 a `/`, `GET /{slug}` (lista cerrada desde config/mapas.php) y `GET /{slug}.html` -> 301
+public/js/mapa-comun.js  JS común de portada y mapas (acordeón, modales, pestañas de la ficha, visores, accesibilidad); lee `window.EXPLORA_MAPA`
+public/js/inicio.js      JS de la portada (Mapplic con sus opciones, búho del test, visor ampliado de imágenes)
+public/js/mapa-tematico.js  JS de los mapas temáticos (dato de interés y opciones de Mapplic temática)
 database/migrations/     Migración base (esquema real, idempotente) y perfiles_explora
 routes/api.php           Rutas de la API
 tests/
@@ -151,7 +158,7 @@ La sesión es una cookie `SameSite=Lax` con CSRF, así que el sitio estático y 
 cd laravel && PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t public servidor-desarrollo.php
 ```
 
-El router sirve `index.html` en `/` (con `public/index.php` presente, `php -S` preferiría el front controller) y responde **410**
+El router entrega `/` a Laravel (la portada es una vista Blade desde la Fase 11) y responde **410**
 a los 7 PHP legados sustituidos y **404** a `.git`, `.env`, los `conexion*.php`, cualquier otro `.php` (incluido el chat, que en desarrollo queda desactivado porque usaría credenciales reales)
 y a extensiones sensibles. `laravel/.env`, `vendor/`, `storage/` y la documentación ya no están bajo el docroot. **Producción
 con Apache:** DocumentRoot = `laravel/public` (ver `../DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md`; `public/.htaccess` y las
@@ -159,29 +166,35 @@ carpetas `php/`).
 
 **Rutas de Laravel fuera de `/api`.** Igual que Apache (`public/.htaccess` envía a `index.php` lo que no es archivo ni carpeta), el
 router de desarrollo entrega a Laravel toda ruta que no existe en disco (tras los filtros de seguridad), así que `/climatico`
-funciona, `/climatico.html` redirige (301) y lo desconocido da el 404 de Laravel (sin trazas). La guarda de bases `_test`
+funciona (también `/`), `/index.html` y `/climatico.html` redirigen (301) y lo desconocido da el 404 de Laravel (sin trazas). La guarda de bases `_test`
 (`EXPLORA_SOLO_BD_PRUEBA=1`) se aplica a TODA petición que llegue a Laravel, no solo a `/api`.
 
 ### Mapas temáticos (Fase 10)
 
 Las cinco páginas de mapas comparten la vista `mapas/tematico.blade.php`; lo que cambia entre ellas vive en `config/mapas.php`.
-Los HTML estáticos antiguos se eliminaron; las URL `*.html` (que siguen usando `seleccionarTipoMapa()` de `general.js`,
-compartido con `index.html`) redirigen con 301. El JS inline idéntico entre páginas es ahora `public/js/mapa-tematico.js`
-(script clásico, funciones globales porque el HTML usa `onclick=`), parametrizado por `window.EXPLORA_MAPA`, que imprime la
-vista con `@json` (con las banderas `JSON_HEX_*`).
+Los HTML estáticos antiguos se eliminaron; `seleccionarTipoMapa()` de `general.js` (compartido con la portada) navega ya a las
+URL sin `.html` y las antiguas redirigen con 301 solo para marcadores viejos. El JS inline idéntico entre páginas es ahora
+`public/js/mapa-comun.js` (común con la portada) y `public/js/mapa-tematico.js` (scripts clásicos, funciones globales porque el
+HTML usa `onclick=`), parametrizados por `window.EXPLORA_MAPA`, que imprime la vista con `@json` (con las banderas `JSON_HEX_*`).
 
 **Cómo añadir un mapa:**
 1. Colocar sus datos en `public/` (el JSON de Mapplic, el SVG e imágenes en su carpeta `maps_*`).
 2. Añadir una entrada a `config/mapas.php` con el slug como clave y las claves documentadas allí (`titulo`, `json`,
-   `carpeta_imagenes`, `tutorial`, `variante`, `dato_interes`, `ocultar_niveles`, `quiz_anidado`, `css`). La ruta `/{slug}` y la
+   `carpeta_imagenes`, `tutorial`, `variante`, `dato_interes`, `ocultar_niveles`, `css`). La ruta `/{slug}` y la
    redirección `/{slug}.html` salen solas (no hay que tocar `routes/web.php`).
 3. Si usa `seleccionarTipoMapa()`, enlazarlo desde `partials/modal-tipo-mapa.blade.php` y `public/mapplic/js/general.js`.
 4. Añadir el caso a `tests/Feature/MapasTematicosTest.php` (`mapas()`) y a `tests/Browser/{mapas,recursos}.spec.js`.
 
-**Compuerta de equivalencia:** `php tests/Equivalencia/comparar-paginas.php [--ver-diferencias] [referencia-git]` compara el HTML
-original (`git show <ref>:laravel/public/<slug>.html`, por defecto `HEAD`; tras confirmar la Fase 10 usar el commit anterior) con
-el renderizado, normalizando espacios, URL de `asset()` y JS inline, y falla si hay diferencias no admitidas (documentadas en la
-cabecera del script).
+### Portada (Fase 11)
+
+`/` es la vista `inicio` (`InicioController`), con el mismo layout y los mismos parciales que los mapas; la ficha del departamento
+(`partials/ficha-departamento`) es una copia literal del HTML original porque `public/mapplic/verMas.js` depende de sus ids.
+`/index.html` redirige (301) a `/`. En Apache `DirectoryIndex index.php index.html` entrega `/` a Laravel (`/juegos/` sigue con su
+`index.html`). La portada usa `mapplic/mapplic.js` y su propio orden de CSS (`@section('hojas_orden')`).
+
+**Compuerta de equivalencia:** `php tests/Equivalencia/comparar-paginas.php [--ver-diferencias] [--ref=<pagina>:<commit>]...` compara
+el HTML original de `index` (por defecto en `0c60734`) y de los cinco mapas (por defecto en `0c7c594`) con el renderizado,
+normalizando espacios, URL de `asset()` y JS inline, y falla si hay diferencias no admitidas (documentadas en la cabecera del script).
 
 Cliente común del sitio: [`public/js/explora-api.js`](public/js/explora-api.js) (`window.ExploraApi`): URL de la API desde cualquier
 profundidad, cabecera `X-XSRF-TOKEN` leída de la cookie en cada petición, mensajes de error unificados, sincronización de la sesión

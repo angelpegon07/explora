@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\InicioController;
 use App\Http\Controllers\MapaTematicoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -15,8 +16,21 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
+/*
+|--------------------------------------------------------------------------
+| Portada (Fase 11)
+|--------------------------------------------------------------------------
+|
+| `/` es el mapa general (vista `inicio`). El antiguo `public/index.html` se eliminó: su URL, que usan marcadores,
+| enlaces externos y la propia aplicación, redirige con 301 a `/` y conserva la cadena de consulta (el fragmento
+| `#…` del «deeplinking» de Mapplic lo mantiene el navegador).
+*/
+Route::get('/', InicioController::class)->name('inicio');
+
+Route::get('/index.html', static function (Request $request) {
+    $consulta = $request->getQueryString();
+
+    return redirect()->to('/'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
 });
 
 /*

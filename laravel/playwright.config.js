@@ -40,7 +40,7 @@ export default defineConfig({
         command: `php -S 127.0.0.1:8090 -t ${process.env.EXPLORA_RAIZ_SITIO || 'public'} servidor-desarrollo.php`,
         // Directorio del proyecto Laravel (laravel/); desde la Fase 9 el documento raíz del sitio es su carpeta public/.
         cwd: import.meta.dirname,
-        url: 'http://127.0.0.1:8090/index.html',
+        url: 'http://127.0.0.1:8090/',
 
         // NUNCA reutilizar un servidor ya levantado: podría apuntar a otra base de datos (p. ej. la de desarrollo)
         // y las pruebas escribirían en datos reales. Siempre se arranca uno propio con las bases de prueba.

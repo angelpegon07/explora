@@ -5,7 +5,7 @@
  * Depende de jQuery, SweetAlert2 y js/explora-api.js (ExploraApi), cargados antes.
  *
  * La sesión se confirma contra el servidor con ExploraApi.sesionLista; si no hay
- * sesión se muestra un aviso con enlace a index.html y no se consulta el historial.
+ * sesión se muestra un aviso con enlace a la portada (`/`) y no se consulta el historial.
  * Los datos del historial son escritos por usuarios: se pintan SIEMPRE con
  * textContent (nunca como HTML).
  * =============================================================================
@@ -47,7 +47,7 @@ function verUsuario(usuario) {
 }
 
 /**
- * Muestra el aviso «Debe iniciar sesión» (role="alert") con enlace a index.html y
+ * Muestra el aviso «Debe iniciar sesión» (role="alert") con enlace a la portada (`/`) y
  * oculta el formulario, el historial y el menú. Es idempotente.
  * @returns {void}
  */
@@ -64,7 +64,7 @@ function mostrarAvisoSinSesion() {
     aviso.setAttribute('role', 'alert');
     aviso.appendChild(document.createTextNode('Debe iniciar sesión para ver su perfil. '));
     var enlace = document.createElement('a');
-    enlace.href = 'index.html';
+    enlace.href = '/';
     enlace.textContent = 'Ir al inicio';
     aviso.appendChild(enlace);
 

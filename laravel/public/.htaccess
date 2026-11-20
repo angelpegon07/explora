@@ -10,9 +10,9 @@
 # (MultiViews haría que /api/x resolviera a un archivo x.* por sorpresa).
 Options -Indexes -MultiViews
 
-# La raíz «/» y las carpetas sirven index.html (el sitio estático); index.php (front controller de Laravel) queda
-# de respaldo. Sin esta línea Apache serviría index.php en «/» y la portada dejaría de verse.
-DirectoryIndex index.html index.php
+# La raíz «/» la atiende Laravel (la portada es la vista `inicio`, Fase 11): index.php va PRIMERO. Las carpetas
+# del sitio estático con su propio index.html (p. ej. /juegos/) siguen sirviéndolo, porque allí no hay index.php.
+DirectoryIndex index.php index.html
 
 # Nunca servir el repositorio Git ni archivos .env (credenciales), en cualquier nivel de la ruta. Defensa en
 # profundidad: ninguno debería existir bajo el docroot.

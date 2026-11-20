@@ -28,10 +28,11 @@
  *     (`mapplic/php/chat.php` y `chat copy.php`) queda DESACTIVADO a propósito: usa credenciales reales de MySQL
  *     escritas en el código y no debe ejecutarse desde este servidor.
  *  5. Extensiones sensibles (sql, gz, zip, md, sh, lock, log, bak) -> 404.
- *  6. Archivo existente dentro de la raíz -> `return false` y `php -S` lo sirve. Carpetas: sin index.html -> 404; con
- *     index.html se sirve ESE archivo desde el propio router (en `/` y en cualquier carpeta). Es imprescindible:
- *     con `index.php` en la raíz, `php -S` lo preferiría sobre `index.html` y la portada mostraría Laravel, justo lo
- *     contrario de `DirectoryIndex index.html index.php` de Apache. Una carpeta pedida sin «/» final se redirige (301).
+ *  6. Archivo existente dentro de la raíz -> `return false` y `php -S` lo sirve. Carpetas: la RAÍZ `/` la atiende
+ *     Laravel (desde la Fase 11 la portada es la vista `inicio`; ya no existe `public/index.html`, igual que en Apache,
+ *     donde `DirectoryIndex index.php index.html` entrega `/` al front controller). Las demás carpetas: sin index.html
+ *     -> 404; con index.html se sirve ESE archivo desde el propio router (`/juegos/`…). Una carpeta pedida sin «/»
+ *     final se redirige (301).
  *  7. Ruta que NO existe como archivo ni carpeta (y que pasó los filtros anteriores) -> Laravel, igual que el
  *     `RewriteRule ^ index.php` de `public/.htaccess` en Apache. Así funcionan las páginas Blade (`/climatico`),
  *     sus redirecciones (`/climatico.html` -> 301) y el 404 propio de Laravel para lo desconocido. Una ruta con «/»
@@ -204,6 +205,11 @@ if ($real === false) {
 if ($real !== $raiz && ! str_starts_with($real, $raiz.DIRECTORY_SEPARATOR)) {
     // Existe pero fuera de la raíz (enlace simbólico): nunca se sirve ni se delega.
     return explora_responder_texto(404, 'No encontrado');
+}
+if ($real === $raiz) {
+    // Raíz del sitio: la portada es la ruta `/` de Laravel (con la guarda de bases de prueba). Cualquier otro
+    // contenido del docroot se sirve como archivo; `/index.html` ya no existe en disco y Laravel lo redirige a `/`.
+    return explora_delegar_en_laravel(false);
 }
 if (is_dir($real)) {
     $indice = $real.DIRECTORY_SEPARATOR.'index.html';
