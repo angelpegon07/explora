@@ -51,9 +51,13 @@ Vista `inicio` con los parciales ya probados; el script inline de ~150 líneas s
 configuración del mapa pasada desde Blade (`@json`). Cubre M01–M03 y M12 (tutorial). Es la fase de mayor riesgo visual.
 **Hecha:** vista `inicio` en `/` (`InicioController`), parciales `ficha-departamento`, `lightbox-imagen`, `test-quiz`/`test-aviso`, JS en `public/js/{mapa-comun,inicio,mapa-tematico}.js` (clásico, sin Vite: ver riesgos), `/index.html` -> 301 a `/`, `.htaccess` y router de desarrollo entregan `/` a Laravel, pendientes de la Fase 10 cerrados (`quiz_anidado` y `</div>` sobrante) y `seleccionarTipoMapa()` con URL sin `.html`. Equivalencia verificada con `tests/Equivalencia/comparar-paginas.php`. Detalle en `REGISTRO_CAMBIOS.md`.
 
-### Fase 12 — Perfil y portal de juegos
+### Fase 12 — Perfil y portal de juegos — ✔ HECHA
 `miPerfil` y `juegos/index` en Blade con la sesión de Laravel (el nombre y el avatar se pintan en servidor, no desde
 `localStorage`; `localStorage` queda solo como caché cosmética). Cubre M05, M06 y M13.
+**Hecha:** `layouts/base` (esqueleto) con `layouts/sitio` extendiéndolo sin cambiar su salida; `PerfilController` (`/perfil`) y
+`PortalJuegosController` (`/juegos`) con la sesión del guard `web` (`Support/SesionServidor`); reglas explícitas para `/juegos` y
+`/juegos/` (carpeta real) en `.htaccess` y en `servidor-desarrollo.php`; 301 de `/miPerfil.html` y `/juegos/index.html`;
+compuerta de equivalencia ampliada (portal + comprobación estructural del perfil). Detalle en `REGISTRO_CAMBIOS.md`.
 
 ### Fase 13 — Los 7 juegos
 `laberinto`, `banderas-color`, `puzzle`, `sopa_letras`, `juego_ahorcado`, `arrastra`, `completa`, un layout común de juego.

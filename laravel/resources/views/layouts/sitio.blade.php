@@ -1,5 +1,5 @@
 {{--
-    Layout base de las páginas del sitio (Fase 10 para los mapas temáticos; la portada `inicio` lo reutiliza desde la Fase 11).
+    Layout de las páginas del MAPA (portada y mapas temáticos); extiende a layouts/base desde la Fase 12 (Fase 10 para los mapas temáticos; la portada `inicio` lo reutiliza desde la Fase 11).
 
     Contiene lo que era IDÉNTICO en las cinco páginas de mapas: cabecera con todas las hojas de estilo y scripts del
     <head>, y el bloque de scripts del final. TODAS las URL de recursos usan asset(): así funcionan desde cualquier
@@ -18,13 +18,19 @@
       @push('scripts')     scripts propios (configuración + JS de la página). Se imprimen DESPUÉS de las librerías
                            comunes y ANTES de tutorial.js e iniciarSesion.js, el mismo orden que tenían los HTML.
 --}}
-<!DOCTYPE html>
-<html lang="es" style="max-height: 100vh; overflow: hidden;">
+@extends('layouts.base')
 
-    <head>
-        <meta charset="utf-8">
-        <title>@yield('titulo')</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+{{-- Fase 12: el esqueleto (doctype, <html>, <head>, <body>) vive en layouts/base; aquí solo lo propio de las páginas del mapa. --}}
+{{-- Atributos en forma de BLOQUE: la forma de dos argumentos escaparía las comillas (&quot;). --}}
+@section('atributos_html') style="max-height: 100vh; overflow: hidden;"@endsection
+@section('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no')
+@section('atributos_body') style="overflow: hidden; max-height: 100vh;"@endsection
+
+{{-- El favicon de estas páginas va dentro de `hojas_orden` (su posición respecto a las hojas es la original): se anula el de base. --}}
+@section('favicon')
+@endsection
+
+@section('cabecera')
         <meta name="description" content="Vector Europe map with clickable states and pins, an example of using Mapplic, a premium custom interactive map plugin to display custom image or vector (SVG) maps.">
         <link rel="stylesheet" type="text/css" href="{{ asset('css/style.css') }}">
         <link rel="stylesheet" type="text/css" href="{{ asset('css/map.css') }}">
@@ -46,13 +52,9 @@
         <script src="{{ asset('driver/driver.js.iife.js') }}"></script>
         <link rel="stylesheet" href="{{ asset('driver/driver.css') }}"/>
 
-        @stack('estilos')
-    </head>
+@endsection
 
-    <body style="overflow: hidden; max-height: 100vh;">
-
-        @yield('contenido')
-
+@section('scripts_pie')
         {{-- Librerías comunes. El orden importa: jQuery primero, Mapplic antes de Bootstrap, quiz/general/chat al final. --}}
         <script type="text/javascript" src="{{ asset('bootstrap/jquery.min.js') }}"></script>
         <script src="{{ asset('js/explora-api.js') }}"></script>
@@ -71,5 +73,4 @@
 
         <script src="{{ asset('driver/tutorial.js') }}"></script>
         <script src="{{ asset('mapplic/js/iniciarSesion.js') }}"></script>
-    </body>
-</html>
+@endsection

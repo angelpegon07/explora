@@ -11,7 +11,8 @@
 Options -Indexes -MultiViews
 
 # La raíz «/» la atiende Laravel (la portada es la vista `inicio`, Fase 11): index.php va PRIMERO. Las carpetas
-# del sitio estático con su propio index.html (p. ej. /juegos/) siguen sirviéndolo, porque allí no hay index.php.
+# del sitio estático con su propio index.html siguen sirviéndolo, porque allí no hay index.php. (`/juegos/` ya no es
+# una de ellas desde la Fase 12: la atiende Laravel mediante la regla `^juegos/?$` de más abajo.)
 DirectoryIndex index.php index.html
 
 # Nunca servir el repositorio Git ni archivos .env (credenciales), en cualquier nivel de la ruta. Defensa en
@@ -34,6 +35,13 @@ RedirectMatch 404 /\.(git|env)
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Portal de juegos (Fase 12): /juegos y /juegos/ son una CARPETA real (guarda css/, js/, juegos/…), así que las
+    # reglas genéricas de abajo (`!-d`) no la enviarían a Laravel. Esta regla manda EXACTAMENTE esas dos URL al
+    # front controller (`^juegos/?$` no coincide con /juegos/css/…, /juegos/juegos/… ni /juegos/js/) y va ANTES de
+    # DirectoryIndex/mod_dir, que de otro modo redirigiría /juegos a /juegos/ y no encontraría index.html.
+    # No habilita listados de directorio: el resto de carpetas sin index siguen dando 403 por `-Indexes`.
+    RewriteRule ^juegos/?$ index.php [L]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d

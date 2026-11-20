@@ -1,11 +1,13 @@
 /**
  * miPerfil/script.js
  * =============================================================================
- * Página «Mi perfil»: datos del usuario, cambio de avatar e historial de partidas.
- * Depende de jQuery, SweetAlert2 y js/explora-api.js (ExploraApi), cargados antes.
+ * Página «Mi perfil» (vista Blade `/perfil`, Fase 12): cambio de avatar e historial de partidas.
+ * Depende de jQuery, Bootstrap, SweetAlert2 y js/explora-api.js (ExploraApi), cargados antes.
  *
- * La sesión se confirma contra el servidor con ExploraApi.sesionLista; si no hay
- * sesión se muestra un aviso con enlace a la portada (`/`) y no se consulta el historial.
+ * El SERVIDOR es la fuente de verdad: los datos del usuario (nombre, login, grado, avatar) y la lista de
+ * avatares ya vienen pintados en el HTML, y este script NO se carga si no hay sesión (la vista solo emite
+ * el aviso «Debe iniciar sesión…»). Aquí solo queda lo interactivo. Si la sesión caduca mientras la página
+ * está abierta (la API responde 401/419) se muestra ese mismo aviso con enlace a la portada (`/`).
  * Los datos del historial son escritos por usuarios: se pintan SIEMPRE con
  * textContent (nunca como HTML).
  * =============================================================================
@@ -32,23 +34,10 @@ function mostrarSeccion(id, link) {
 }
 
 /**
- * Pinta los datos del usuario en el formulario.
- * @param {{nombre_usuario?: string, login_usuario?: string, grado_usuario?: (string|number),
- *          avatar_explora?: (string|number)}} usuario Objeto `usuario_objeto` de la API.
- * @returns {void}
- */
-function verUsuario(usuario) {
-    document.getElementById('usuario').value = usuario.login_usuario || '';
-    document.getElementById('nombre').value = usuario.nombre_usuario || '';
-    document.getElementById('grado').value = String(usuario.grado_usuario == null ? '' : usuario.grado_usuario);
-    // Se valida el avatar (1..35); si no es válido se usa el 1.
-    var avatar = ExploraApi.avatarValido(usuario.avatar_explora) || 1;
-    document.getElementById('avatar-preview').src = 'juegos/images/avatars/' + avatar + '.png';
-}
-
-/**
  * Muestra el aviso «Debe iniciar sesión» (role="alert") con enlace a la portada (`/`) y
- * oculta el formulario, el historial y el menú. Es idempotente.
+ * oculta el formulario, el historial y el menú. Es idempotente. Equivale al aviso que la
+ * vista pinta en el servidor sin sesión (mismo texto y mismas clases): se usa cuando la sesión
+ * caduca con la página ya abierta.
  * @returns {void}
  */
 function mostrarAvisoSinSesion() {
@@ -80,34 +69,22 @@ function mostrarAvisoSinSesion() {
 }
 
 $(document).ready(function () {
-    ExploraApi.sesionLista.done(function (usuario) {
-        if (usuario) {
-            verUsuario(usuario);
-            consultarHistorial();
-        } else {
-            mostrarAvisoSinSesion();
-        }
-    });
+    // Los datos ya están en el HTML (pintados por el servidor): solo se pide el historial y se activan las
+    // opciones de avatar. Este script solo se carga con sesión, pero se comprueba por si se reutiliza.
+    if (document.getElementById('historial-body')) {
+        consultarHistorial();
+    }
+    activarOpcionesAvatar();
 });
 
 /**
- * Abre el modal de avatares y genera las 35 opciones. Cada opción es un elemento
+ * Activa las opciones de avatar que la vista dejó dentro de #avatars-preview. Cada una es un elemento
  * con data-avatar, role="button" y tabindex="0", activable con clic, Enter o Espacio.
+ * Un único manejador delegado (se reasigna sin acumular duplicados).
  * @returns {void}
  */
-function mostrarModalAvatar() {
-    $('#modal-avatar').modal('show');
-
-    var $contenedor = $('#avatars-preview').empty();
-    for (var i = 1; i <= 35; i++) {
-        var $opcion = $('<div class="avatar_container" role="button" tabindex="0"></div>')
-            .attr({ id: 'avatar_' + i, 'data-avatar': i, 'aria-label': 'Avatar ' + i })
-            .append($('<img class="img-fluid">').attr({ src: 'juegos/images/avatars/' + i + '.png', alt: '' }));
-        $('<div class="col-lg-1" style="padding: 10px;"></div>').append($opcion).appendTo($contenedor);
-    }
-
-    // Un único manejador delegado (se reasigna sin acumular duplicados).
-    $contenedor.off('click.avatar keydown.avatar')
+function activarOpcionesAvatar() {
+    $('#avatars-preview').off('click.avatar keydown.avatar')
         .on('click.avatar', '[data-avatar]', function () {
             seleccionar_avatar(Number($(this).attr('data-avatar')));
         })
@@ -120,13 +97,34 @@ function mostrarModalAvatar() {
 }
 
 /**
+ * Abre el modal con las opciones de avatar (las pintó el servidor con `config('explora.avatares_max')`).
+ * @returns {void}
+ */
+function mostrarModalAvatar() {
+    $('#modal-avatar').modal('show');
+}
+
+/**
+ * URL de la imagen de un avatar, tomada de la propia opción pintada por el servidor (así este script no
+ * conoce rutas ni el número de avatares).
+ * @param {number} id Número de avatar.
+ * @returns {(string|undefined)} Valor del atributo src, o undefined si esa opción no existe.
+ */
+function urlAvatar(id) {
+    return $('#avatar_' + id + ' img').attr('src');
+}
+
+/**
  * Registra el avatar elegido, actualiza la vista previa y cierra el modal.
  * (Aún no se guarda en el servidor: eso lo hace guardarCambios.)
- * @param {number} id Número de avatar (1..35).
+ * @param {number} id Número de avatar (1..`avatares_max`).
  * @returns {void}
  */
 function seleccionar_avatar(id) {
-    $('#avatar-preview').attr('src', 'juegos/images/avatars/' + id + '.png');
+    var url = urlAvatar(id);
+    if (url) {
+        $('#avatar-preview').attr('src', url);
+    }
     cerrarModalAvatar();
     avatar_seleccionado = id;
 }
@@ -277,7 +275,10 @@ function guardarCambios() {
             try {
                 localStorage.setItem('avatar', String(avatar));
             } catch (e) { /* almacenamiento no disponible: la sesión real está en el servidor */ }
-            $('#avatar-preview').attr('src', 'juegos/images/avatars/' + avatar + '.png');
+            var url = urlAvatar(avatar);
+            if (url) {
+                $('#avatar-preview').attr('src', url);
+            }
             Swal.fire({
                 title: 'Éxito',
                 icon: 'success',

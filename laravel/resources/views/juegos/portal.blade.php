@@ -1,22 +1,43 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juegos Educativos Explora</title>
-    <!-- Bootstrap CSS -->
-    <link href="librerias/bootstrap-5.3/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="librerias/fontawesome/css/all.min.css" rel="stylesheet">
-    <!-- AOS CSS para animaciones -->
-    <link href="librerias/aos/aos.css" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/clouds.css">
-    <link rel="shortcut icon" href="images/Isotipo.png" type="image/x-icon">
-    <script src="../sweetalert/sweetalert2.all.min.js"></script>
-    <script type="text/javascript" src="../bootstrap/jquery.min.js"></script>
-    <script src="../js/explora-api.js"></script>
+{{--
+    Portal de juegos (`/juegos`, Fase 12): migración de `public/juegos/index.html` (se eliminó) a Blade.
+    Lo entrega PortalJuegosController y recibe un único dato: `$haySesion` (bool, SESIÓN DE SERVIDOR con cuenta activa).
+
+    Usa `layouts/base` (no `layouts/sitio`): este portal tiene su propio Bootstrap 5.3, AOS y CSS en `public/juegos/`.
+    Como la URL es `/juegos` (sin «/» final) las rutas relativas del HTML original (`css/…`, `images/…`, `juegos/…`)
+    ya no resolverían: TODAS las URL pasan por asset(). Los enlaces `#` de las fichas son un defecto heredado (FUN-07)
+    y se conservan tal cual. Orden de CSS y JS idéntico al original.
+
+    Estado de la barra: con sesión se ven «Mi Perfil» y «Salir»; sin ella, «Iniciar sesión». Todo esto lo pinta el
+    servidor para que no haya parpadeo; el JS (`mapplic/js/iniciarSesion.js`) lo mantiene al día tras login/logout.
+--}}
+@extends('layouts.base')
+
+@section('titulo', 'Juegos Educativos Explora')
+@section('viewport', 'width=device-width, initial-scale=1.0')
+@section('atributos_body') class="bg-light"@endsection
+
+{{-- El icono va entre las hojas y los scripts (posición original), con su `type`: se anula el de base y se emite abajo. --}}
+@section('favicon')
+@endsection
+
+@section('cabecera')
+        <!-- Bootstrap CSS -->
+        <link href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}" rel="stylesheet">
+        <!-- Font Awesome -->
+        <link href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}" rel="stylesheet">
+        <!-- AOS CSS para animaciones -->
+        <link href="{{ asset('juegos/librerias/aos/aos.css') }}" rel="stylesheet">
+        <!-- Custom CSS -->
+        <link rel="stylesheet" href="{{ asset('juegos/css/styles.css') }}">
+        <link rel="stylesheet" href="{{ asset('juegos/css/clouds.css') }}">
+        <link rel="shortcut icon" href="{{ asset('juegos/images/Isotipo.png') }}" type="image/x-icon">
+        <script src="{{ asset('sweetalert/sweetalert2.all.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset('bootstrap/jquery.min.js') }}"></script>
+        <script src="{{ asset('js/explora-api.js') }}"></script>
+@endsection
+
+@push('estilos')
+    {{-- Estilos de las opciones de avatar (los reutiliza el selector de avatares de otras páginas). --}}
     <style>
         .avatar_container{
             width: 100%;
@@ -42,8 +63,10 @@
             border: 4px solid #48ff00;
         }
     </style>
-</head>
-<body class="bg-light">
+@endpush
+
+@section('contenido')
+
     <!-- Contenedor de nubes -->
     <div class="cloud-container">
         <div class="cloud cloud-1"></div>
@@ -58,22 +81,24 @@
         <div class="cloud cloud-10"></div>
     </div>
 
+    {{-- Barra superior. Los tres botones de sesión los decide el SERVIDOR ($haySesion); iniciarSesion.js los actualiza
+         después de iniciar o cerrar sesión desde esta página (usa `display: block`, igual que aquí, para no saltar). --}}
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
         <div class="container">
             <a class="navbar-brand" style="display: flex; align-items: center;" href="#">
-                <img src="images/logo.png" alt="Logo" width="60" height="60" class="d-inline-block align-text-top">
+                <img src="{{ asset('juegos/images/logo.png') }}" alt="Logo" width="60" height="60" class="d-inline-block align-text-top">
                 Juegos Educativos Explora
             </a>
             <div class="d-flex justify-content-end gap-3">
                
-                <a href="../miPerfil.html" style="display: none;" id="btn-perfil" class="btn btn-outline-warning">
+                <a href="{{ url('/perfil') }}" style="display: {{ $haySesion ? 'block' : 'none' }};" id="btn-perfil" class="btn btn-outline-warning">
                     <i class="fas fa-user"></i> Mi Perfil
                 </a>
-                <a href="#" type="button" onclick="cerrarSesion()" id="btn-cerrar" aria-label="Cerrar sesión" style="display: none;" class="btn btn-outline-primary">
+                <a href="#" type="button" onclick="cerrarSesion()" id="btn-cerrar" aria-label="Cerrar sesión" style="display: {{ $haySesion ? 'block' : 'none' }};" class="btn btn-outline-primary">
                      <i class="fas fa-sign-out-alt"></i> Salir
                 </a>
-                <a href="#" onclick="mostrarModalIniciarSesion(2)" type="button" id="btn-iniciar" style="display: none;" class="btn btn-outline-warning">
+                <a href="#" onclick="mostrarModalIniciarSesion(2)" type="button" id="btn-iniciar" style="display: {{ $haySesion ? 'none' : 'block' }};" class="btn btn-outline-warning">
                     <i class="fas fa-sign-out-alt"></i> Iniciar sesión
                 </a>
                 <a href="/" class="btn btn-outline-danger">
@@ -110,17 +135,17 @@
                 <div class="puzzle-piece no-action" data-game="matematicas" data-aos="fade-up" data-aos-delay="100">
                     <div class="flip-card">
                         <div class="flip-side flip-front">
-                            <img src="images/ficha1.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha1.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="header-puzzle">
                                 <div class="puzzle-icon">🚀</div>
                                 <h3 class="puzzle-title">Navega y aprende</h3>
                             </div>
                         </div>
                         <div class="flip-side flip-back">
-                            <img src="images/ficha1.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha1.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle" style="z-index: 100;">
                                 <p class="puzzle-description">LLeva la nave a las estaciones espaciales y responde las preguntas.</p>
-                                <a href="juegos/laberinto/index.html" class="btn btn-warning mt-3" style="color: black !important">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/laberinto/index.html') }}" class="btn btn-warning mt-3" style="color: black !important">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -130,19 +155,19 @@
                 <div class="puzzle-piece no-action" data-game="lenguaje" data-aos="fade-up" data-aos-delay="200">
                     <div class="flip-card">
                         <div class="flip-side flip-front">
-                            <img src="images/ficha6.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha6.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="header-puzzle">
                                 <div class="puzzle-icon">
-                            <img src="images/pinta.png" alt="Banderas" width="80" height="80">
+                            <img src="{{ asset('juegos/images/pinta.png') }}" alt="Banderas" width="80" height="80">
                         </div>
                                 <h3 class="puzzle-title">Conoce las banderas</h3>
                             </div>
                         </div>
                         <div class="flip-side flip-back">
-                            <img src="images/ficha6.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha6.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle" style="z-index: 100;">
                                 <p class="puzzle-description">Pinta o adivina las banderas de los departamentos de Colombia.</p>
-                                <a href="juegos/banderas-color/index.html" class="btn btn-success mt-3">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/banderas-color/index.html') }}" class="btn btn-success mt-3">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -152,19 +177,19 @@
                 <div class="puzzle-piece no-action" data-game="ciencias" data-aos="fade-up" data-aos-delay="300">
                     <div class="flip-card">
                         <div class="flip-side flip-front">
-                            <img src="images/ficha3.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha3.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="header-puzzle">
                                 <div class="puzzle-icon">
-                                    <img src="images/arma.png" alt="Banderas" width="80" height="80">
+                                    <img src="{{ asset('juegos/images/arma.png') }}" alt="Banderas" width="80" height="80">
                                 </div>
                                 <h3 class="puzzle-title">Rompecabezas</h3>
                             </div>
                         </div>
                         <div class="flip-side flip-back">
-                            <img src="images/ficha3.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha3.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle" style="z-index: 100;">
                                 <p class="puzzle-description">Sigue las instrucciones y arma el rompecabezas.</p>
-                                <a href="juegos/puzzle/index.html" class="btn btn-info mt-3">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/puzzle/index.html') }}" class="btn btn-info mt-3">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -174,19 +199,19 @@
                 <div class="puzzle-piece no-action" data-game="historia" data-aos="fade-up" data-aos-delay="400">
                     <div class="flip-card">
                         <div class="flip-side flip-front">
-                            <img src="images/ficha4.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha4.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="header-puzzle">
                                 <div class="puzzle-icon">
-                                    <img src="images/sopa.png" alt="Banderas" width="80" height="80">
+                                    <img src="{{ asset('juegos/images/sopa.png') }}" alt="Banderas" width="80" height="80">
                                 </div>
                                 <h3 class="puzzle-title">Sopa de letras</h3>
                             </div>
                         </div>
                         <div class="flip-side flip-back">
-                            <img src="images/ficha4.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha4.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle">
                                 <p class="puzzle-description">Explora la rica historia de Colombia a través de juegos interactivos.</p>
-                                <a href="juegos/sopa_letras/index.html" class="btn btn-danger mt-3">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/sopa_letras/index.html') }}" class="btn btn-danger mt-3">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -196,16 +221,16 @@
                 <div class="puzzle-piece no-action" data-game="geografia" data-aos="fade-up" data-aos-delay="500">
                     <div class="flip-card">
                         <div class="flip-side flip-front">
-                            <img src="images/ficha5.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha5.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="header-puzzle">
                                 <div class="puzzle-icon">
-                                    <img src="images/arrastra.png" alt="Banderas" width="97" height="80">
+                                    <img src="{{ asset('juegos/images/arrastra.png') }}" alt="Banderas" width="97" height="80">
                                 </div>
                                 <h3 class="puzzle-title">Ubica los puntos</h3>
                             </div>
                         </div>
                         <div class="flip-side flip-back">
-                            <img src="images/ficha5.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha5.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle">
                                 <p class="puzzle-description">Aprende sobre las regiones, ríos y montañas de Colombia.</p>
                                 <a href="#" type="button" class="btn btn-info mt-3" data-bs-toggle="modal" data-bs-target="#myModal">¡Jugar!</a>
@@ -218,19 +243,19 @@
                 <div class="puzzle-piece no-action" data-game="cultura" data-aos="fade-up" data-aos-delay="600">
                     <div class="flip-card">
                         <div class="flip-side flip-front">
-                            <img src="images/ficha2.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha2.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="header-puzzle">
                                 <div class="puzzle-icon">
-                                    <img src="images/cruci.png" alt="Banderas" width="120" height="80">
+                                    <img src="{{ asset('juegos/images/cruci.png') }}" alt="Banderas" width="120" height="80">
                                 </div>
                                 <h3 class="puzzle-title" style="text-align: center;">Adivina la palabra</h3>
                             </div>
                         </div>
                         <div class="flip-side flip-back">
-                            <img src="images/ficha2.png" alt="Banderas" class="puzzle-image">
+                            <img src="{{ asset('juegos/images/ficha2.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle">
                                 <p class="puzzle-description">Sigue las pistas y completa la palabra, antes de agotar tus intentos.</p>
-                                <a href="juegos/juego_ahorcado/index.html" class="btn btn-purple mt-3">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/juego_ahorcado/index.html') }}" class="btn btn-purple mt-3">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -255,13 +280,13 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-6">
-                            <div class="card-juego" onclick="location.href = 'juegos/arrastra/index.html'">
-                                <img style="width: 110%; height: 110%" src="images/drag.png" alt="Banderas">
+                            <div class="card-juego" onclick="location.href = '{{ asset('juegos/juegos/arrastra/index.html') }}'">
+                                <img style="width: 110%; height: 110%" src="{{ asset('juegos/images/drag.png') }}" alt="Banderas">
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="card-juego" onclick="location.href = 'juegos/completa/index.html'">
-                                <img style="width: 110%; height: 110%" src="images/completa.png"  alt="Banderas">
+                            <div class="card-juego" onclick="location.href = '{{ asset('juegos/juegos/completa/index.html') }}'">
+                                <img style="width: 110%; height: 110%" src="{{ asset('juegos/images/completa.png') }}"  alt="Banderas">
                             </div>
                         </div>
                     </div>
@@ -282,18 +307,16 @@
             <p class="mb-0">&copy; <span id="year"></span> Juegos Educativos Colombia. Todos los derechos reservados.</p>
         </div>
     </footer>
+@endsection
 
-    <script>
-        const year = new Date().getFullYear();
-        document.getElementById('year').textContent = year;
-    </script>
+@section('scripts_pie')
+    {{-- El año del pie lo escribe un archivo estático (antes era un script inline), en la posición original. --}}
+    <script src="{{ asset('juegos/js/anio-pie.js') }}"></script>
     <!-- Scripts -->
-    <script src="librerias/bootstrap-5.3/js/bootstrap.bundle.js"></script>
-    <script src="librerias/aos/aos.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/clouds.js"></script>
-    <script src="../mapplic/js/iniciarSesion.js"></script>
+    <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.js') }}"></script>
+    <script src="{{ asset('juegos/librerias/aos/aos.js') }}"></script>
+    <script src="{{ asset('juegos/js/main.js') }}"></script>
+    <script src="{{ asset('juegos/js/clouds.js') }}"></script>
+    <script src="{{ asset('mapplic/js/iniciarSesion.js') }}"></script>
     <!-- iniciarSesion.js refresca los botones de sesión al cargar y cuando ExploraApi.sesionLista se resuelve. -->
-    
-</body>
-</html> 
+@endsection

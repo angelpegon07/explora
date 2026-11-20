@@ -10,7 +10,7 @@
     <menu class="items-wrapper">
         <a id="btn_menu_opciones_atlas" href="#" class="menu-item itemm1" data-toggle="modal" data-target="#modalOpcionesAtlas">
         </a>
-        <a id="btn_menu_juegos" href="{{ asset('juegos/index.html') }}" target="_blank" class="menu-item itemm2">
+        <a id="btn_menu_juegos" href="{{ url('/juegos') }}" target="_blank" class="menu-item itemm2">
         </a>
         <a id="btn_menu_test" href="#" class="menu-item itemm3" type="button" onclick="verTest()">
         </a>

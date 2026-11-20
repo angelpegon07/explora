@@ -143,16 +143,66 @@ class ServidorDesarrolloTest extends TestCase
     }
 
     /**
-     * El sitio estático (juegos, perfil) se sirve con 200: el router deja pasar los archivos legítimos. La portada ya
-     * no es un archivo (Fase 11): `/index.html` redirige (301) a `/`.
+     * El sitio estático (CSS, JS y páginas de cada juego) se sirve con 200: el router deja pasar los archivos
+     * legítimos, incluso los que cuelgan de carpetas que comparten nombre con una ruta de Laravel (`/juegos/…`,
+     * `/miPerfil/…`). La portada ya no es un archivo (Fase 11): `/index.html` redirige (301) a `/`; tampoco lo son el
+     * perfil ni el portal de juegos (Fase 12), cuyas URL antiguas redirigen (ver test_el_perfil_y_el_portal_se_sirven_desde_laravel).
      */
     public function test_sirve_el_sitio_estatico(): void
     {
-        $this->assertSame(200, $this->pedir('/juegos/index.html')[0]);
+        [$codigo, $tipo] = $this->pedir('/juegos/css/styles.css');
+        $this->assertSame(200, $codigo);
+        $this->assertStringContainsString('text/css', $tipo);
+        $this->assertSame(200, $this->pedir('/juegos/juegos/puzzle/index.html')[0]);
+        $this->assertSame(200, $this->pedir('/miPerfil/script.js')[0]);
+        $this->assertSame(200, $this->pedir('/miPerfil/cerrar-sesion.js')[0]);
+        $this->assertSame(200, $this->pedir('/juegos/js/anio-pie.js')[0]);
         $this->assertSame(301, $this->pedir('/index.html', $location)[0]);
         $this->assertSame($this->base, $location); // Laravel emite la raíz sin barra final
         // Los HTML de los mapas ya no existen (Fase 10): la URL antigua redirige, ver test_los_mapas_se_sirven_desde_laravel.
-        $this->assertSame(200, $this->pedir('/miPerfil.html')[0]);
+    }
+
+    /**
+     * Fase 12: `/perfil`, `/juegos` y `/juegos/` los atiende Laravel aunque `public/juegos/` sea una CARPETA real (el
+     * router la envía a Laravel solo para esas dos URL exactas); las URL antiguas redirigen con 301 (con su consulta) y
+     * las páginas HTML de cada juego, que llaman a `../../index.html`, siguen llegando al portal por esa redirección.
+     */
+    public function test_el_perfil_y_el_portal_se_sirven_desde_laravel(): void
+    {
+        foreach (['/juegos', '/juegos/'] as $ruta) {
+            [$codigo, $tipo, $cuerpo] = $this->pedir($ruta);
+            $this->assertSame(200, $codigo, $ruta);
+            $this->assertStringContainsString('text/html', $tipo, $ruta);
+            $this->assertStringContainsString('<title>Juegos Educativos Explora</title>', $cuerpo, $ruta);
+            $this->assertStringContainsString('id="btn-iniciar" style="display: block;"', $cuerpo, $ruta);
+        }
+
+        [$codigo, , $cuerpo] = $this->pedir('/perfil');
+        $this->assertSame(200, $codigo);
+        $this->assertStringContainsString('Debe iniciar sesión para ver su perfil.', $cuerpo);
+        $this->assertStringNotContainsString('id="nombre"', $cuerpo);
+
+        $this->assertSame(301, $this->pedir('/juegos/index.html', $location)[0]);
+        $this->assertSame($this->base.'/juegos', $location);
+        $this->assertSame(301, $this->pedir('/juegos/index.html?x=1', $location)[0]);
+        $this->assertSame($this->base.'/juegos?x=1', $location);
+        $this->assertSame(301, $this->pedir('/miPerfil.html', $location)[0]);
+        $this->assertSame($this->base.'/perfil', $location);
+    }
+
+    /**
+     * Las carpetas sin `index.html` siguen sin responder: ni listado ni 200 (el router da 404; Apache, 403 por
+     * `-Indexes`). Solo `/juegos` y `/juegos/` son la excepción de Laravel; `/miPerfil/`, `/juegos/js/`, `/juegos/css/`…
+     * no, y tampoco `/juegos/juegos/` (carpeta de los juegos).
+     */
+    public function test_las_carpetas_sin_index_no_se_listan(): void
+    {
+        foreach (['/miPerfil/', '/miPerfil', '/juegos/js/', '/juegos/js', '/juegos/css/', '/juegos/juegos/', '/juegos/images/avatars/', '/css/'] as $ruta) {
+            [$codigo, , $cuerpo] = $this->pedir($ruta);
+            $this->assertContains($codigo, [403, 404], $ruta);
+            $this->assertStringNotContainsString('script.js', $cuerpo, "$ruta parece listar el contenido de la carpeta");
+            $this->assertStringNotContainsString('Index of', $cuerpo, $ruta);
+        }
     }
 
     /**
@@ -186,7 +236,7 @@ class ServidorDesarrolloTest extends TestCase
             $this->assertStringContainsString('text/html', $tipo, $ruta);
             $this->assertStringContainsString('Not Found', $cuerpo, $ruta);
             foreach (['Stack trace', 'vendor/', 'Illuminate\\', 'NotFoundHttpException', 'APP_KEY', 'laravel/framework'] as $pista) {
-                $this->assertStringNotContainsString($pista, $cuerpo, "La respuesta a $ruta filtra «$pista»");
+                $this->assertStringNotContainsString($pista, $cuerpo, "La respuesta a $ruta filtra «{$pista}»");
             }
         }
     }
@@ -207,9 +257,12 @@ class ServidorDesarrolloTest extends TestCase
             $this->assertStringNotContainsString('<title>', $cuerpo, $ruta);
         }
 
-        // `/` (portada, Laravel) también se niega; los archivos estáticos no tocan la base y siguen sirviéndose.
-        $this->assertSame(500, $this->pedir('/')[0]);
-        $this->assertSame(200, $this->pedir('/juegos/index.html')[0]);
+        // `/` (portada), `/perfil` y el portal de juegos (Laravel) también se niegan; los archivos estáticos no tocan
+        // la base y siguen sirviéndose.
+        foreach (['/', '/perfil', '/juegos', '/juegos/', '/juegos/index.html'] as $ruta) {
+            $this->assertSame(500, $this->pedir($ruta)[0], $ruta);
+        }
+        $this->assertSame(200, $this->pedir('/juegos/css/styles.css')[0]);
     }
 
     /**
@@ -228,12 +281,15 @@ class ServidorDesarrolloTest extends TestCase
     }
 
     /**
-     * Una carpeta con index.html se sirve con «/» final y se redirige (301) si se pide sin ella.
+     * Una carpeta con index.html se sirve con «/» final y se redirige (301) si se pide sin ella. Desde la Fase 12 ya no
+     * queda ninguna carpeta pública con `index.html` en la raíz de `juegos/` (el portal es Blade), pero sí las de cada
+     * juego (`/juegos/juegos/puzzle/`).
      */
     public function test_las_carpetas_con_index_html_se_sirven_y_redirigen(): void
     {
-        $this->assertSame(200, $this->pedir('/juegos/')[0]);
-        $this->assertSame(301, $this->pedir('/juegos')[0]);
+        $this->assertSame(200, $this->pedir('/juegos/juegos/puzzle/')[0]);
+        $this->assertSame(301, $this->pedir('/juegos/juegos/puzzle', $location)[0]);
+        $this->assertSame('/juegos/juegos/puzzle/', $location);
     }
 
     /**

@@ -51,7 +51,7 @@ for (const ruta of PRIVADOS) {
     });
 }
 
-for (const ruta of ['/', '/juegos/index.html']) {
+for (const ruta of ['/', '/perfil', '/juegos', '/juegos/']) {
     // Comprueba que el router sigue sirviendo la portada (Laravel) y las páginas estáticas legítimas.
     test(`200 en ${ruta}`, async ({ request }) => {
         const r = await request.get(ruta);

@@ -4,8 +4,10 @@
  * Inicio y cierre de sesión del sitio Explora, común a dos tipos de página:
  *   - Páginas raíz del mapa (index.html, climatico.html...): tienen el menú de
  *     accesibilidad `.opciones-accesibilidad`, donde se pintan los botones de sesión.
- *   - Barra de juegos (juegos/index.html): tiene los botones `#btn-perfil`,
- *     `#btn-cerrar` y `#btn-iniciar`, que se muestran u ocultan según la sesión.
+ *   - Barra del portal de juegos (`/juegos`, vista Blade): tiene los botones `#btn-perfil`,
+ *     `#btn-cerrar` y `#btn-iniciar`. Desde la Fase 12 el SERVIDOR pinta su estado inicial
+ *     según la sesión real (sin parpadeo); este script solo los actualiza después de que
+ *     la página confirme la sesión con la API, de iniciar sesión o de cerrarla.
  * El tipo de página se deduce del DOM (ya no se usa localStorage.tipo_modal): los
  * botones de la barra de juegos se manejan si existen y el menú de accesibilidad
  * solo en páginas que lo tienen.
@@ -19,6 +21,14 @@
 
 /** Avatar elegido en el selector de avatares (lo usa seleccionar_avatar). */
 var avatar_seleccionado = 1;
+
+/**
+ * Indica si ya se conoce el estado REAL de la sesión (respuesta de GET /api/sesion, o un inicio/cierre de sesión
+ * hecho desde esta página). Mientras es false, verificarSesion() NO toca los botones de la barra de juegos: su estado
+ * inicial lo pintó el servidor y `localStorage` (solo una caché) podría contradecirlo y provocar un parpadeo.
+ * @type {boolean}
+ */
+var sesionConfirmada = false;
 
 /**
  * Indica si la página es una página raíz con menú de accesibilidad.
@@ -43,7 +53,11 @@ $(document).ready(function () {
     // Cuando termina la primera sincronización con el servidor, se vuelve a pintar:
     // así un cierre de sesión en otra pestaña o una sesión caducada se reflejan.
     if (window.ExploraApi && window.ExploraApi.sesionLista) {
-        window.ExploraApi.sesionLista.done(refrescarInterfazSesion);
+        window.ExploraApi.sesionLista.done(function () {
+            // ExploraApi ya sincronizó localStorage con el servidor: desde ahora la caché es fiable.
+            sesionConfirmada = true;
+            refrescarInterfazSesion();
+        });
     }
 });
 
@@ -223,6 +237,7 @@ function iniciarSesion() {
     ExploraApi.peticion('POST', 'sesion', { usuario: usuario, contrasena: contrasena })
         .done(function (respuesta) {
             ExploraApi.guardarSesionLocal(respuesta.usuario_objeto);
+            sesionConfirmada = true;
 
             Swal.fire({
                 icon: 'success',
@@ -253,9 +268,13 @@ function iniciarSesion() {
 /**
  * Muestra u oculta los botones de la barra de juegos (#btn-perfil, #btn-cerrar,
  * #btn-iniciar) según la sesión. Tolera que alguno no exista (páginas raíz).
+ * Hasta que {@link sesionConfirmada} sea true no hace nada: el estado inicial lo decide el servidor.
  * @returns {void}
  */
 function verificarSesion() {
+    if (!sesionConfirmada) {
+        return;
+    }
     var hayUsuario = !!localStorage.getItem('usuario');
     var visibilidad = {
         'btn-perfil': hayUsuario,
@@ -289,6 +308,7 @@ function cerrarSesion() {
         if (result.isConfirmed) {
             ExploraApi.peticion('DELETE', 'sesion').always(function () {
                 ExploraApi.limpiarSesionLocal();
+                sesionConfirmada = true;
                 refrescarInterfazSesion();
             });
         }
@@ -296,9 +316,9 @@ function cerrarSesion() {
 }
 
 /**
- * Lleva a la página «Mi perfil» (ruta calculada desde la raíz del sitio).
+ * Lleva a la página «Mi perfil» (`/perfil`, ruta calculada desde la raíz del sitio).
  * @returns {void}
  */
 function mostrarPerfil() {
-    window.location.href = ExploraApi.raiz('miPerfil.html');
+    window.location.href = ExploraApi.raiz('perfil');
 }

@@ -95,3 +95,9 @@ cd laravel && PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t public servidor-
 - **El chat legado queda desactivado en desarrollo** (404): usa credenciales reales de MySQL escritas en el código.
 - Con `EXPLORA_SOLO_BD_PRUEBA=1` rechaza atender `/api` si las bases configuradas no terminan en `_test`.
 - Solo para desarrollo; nunca exponerlo a Internet.
+
+## Verificación de la regla `/juegos` (Fase 12, probada con Apache 2.4.68 sin PHP)
+`/juegos` es una carpeta real; la regla `RewriteRule ^juegos/?$ index.php` la envía a Laravel. Con Apache real: `/juegos/` →
+200 (front controller), `/juegos` → 301 a `/juegos/` (la redirección de `mod_dir` por carpeta sin barra llega antes; es un salto
+extra inofensivo) y `/juegos/css/styles.css`, `/juegos/juegos/puzzle/index.html` → 200 estáticos; `/juegos/js/` y `/miPerfil/` no
+se listan (404). Comprobado por el líder; la respuesta JSON de la API bajo Apache sigue sin probarse (sin `mod_php`).

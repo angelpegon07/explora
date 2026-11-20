@@ -31,8 +31,9 @@
  *  6. Archivo existente dentro de la raíz -> `return false` y `php -S` lo sirve. Carpetas: la RAÍZ `/` la atiende
  *     Laravel (desde la Fase 11 la portada es la vista `inicio`; ya no existe `public/index.html`, igual que en Apache,
  *     donde `DirectoryIndex index.php index.html` entrega `/` al front controller). Las demás carpetas: sin index.html
- *     -> 404; con index.html se sirve ESE archivo desde el propio router (`/juegos/`…). Una carpeta pedida sin «/»
- *     final se redirige (301).
+ *     -> 404; con index.html se sirve ESE archivo desde el propio router. Una carpeta pedida sin «/» final se
+ *     redirige (301). EXCEPCIÓN (Fase 12): `/juegos` y `/juegos/` (solo esas dos) también van a Laravel, que sirve el
+ *     portal de juegos, igual que la regla `RewriteRule ^juegos/?$ index.php` de Apache.
  *  7. Ruta que NO existe como archivo ni carpeta (y que pasó los filtros anteriores) -> Laravel, igual que el
  *     `RewriteRule ^ index.php` de `public/.htaccess` en Apache. Así funcionan las páginas Blade (`/climatico`),
  *     sus redirecciones (`/climatico.html` -> 301) y el 404 propio de Laravel para lo desconocido. Una ruta con «/»
@@ -205,6 +206,12 @@ if ($real === false) {
 if ($real !== $raiz && ! str_starts_with($real, $raiz.DIRECTORY_SEPARATOR)) {
     // Existe pero fuera de la raíz (enlace simbólico): nunca se sirve ni se delega.
     return explora_responder_texto(404, 'No encontrado');
+}
+if ($minusculas === ['juegos']) {
+    // Portal de juegos (Fase 12): `/juegos` y `/juegos/` son una CARPETA real, pero los atiende Laravel (equivale a la
+    // regla `RewriteRule ^juegos/?$ index.php` de public/.htaccess). Solo estas dos URL: `/juegos/js/`, `/juegos/css/`…
+    // siguen sin index.html -> 404 (más abajo) y `/juegos/css/styles.css` se sirve como archivo.
+    return explora_delegar_en_laravel(false);
 }
 if ($real === $raiz) {
     // Raíz del sitio: la portada es la ruta `/` de Laravel (con la guarda de bases de prueba). Cualquier otro

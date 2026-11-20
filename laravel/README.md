@@ -53,10 +53,15 @@ pero conviene aplicarlas de una en una y solo en bases de prueba hasta que se au
 ```
 public/                  ÚNICO documento raíz (Fase 9): index.php (front controller), .htaccess y todo el sitio estático
                          (*.html, *.json, css/, js/, mapplic/, juegos/, images/, maps*/…; el PHP legado en mapplic/php y juegos/php).
-                         Desde la Fase 11 no hay `index.html`: la portada `/` es una vista Blade.
+                         Desde la Fase 11 no hay `index.html`: la portada `/` es una vista Blade. Desde la Fase 12 tampoco
+                         `miPerfil.html` ni `juegos/index.html` (perfil y portal de juegos son vistas Blade); las carpetas
+                         `miPerfil/` y `juegos/` siguen existiendo con sus CSS/JS.
+
 app/
   Http/
     Controllers/InicioController.php        Portada `/` (Fase 11)
+    Controllers/PerfilController.php        Perfil `/perfil`, pintado en servidor con la sesión (Fase 12)
+    Controllers/PortalJuegosController.php  Portal de juegos `/juegos`, barra según la sesión del servidor (Fase 12)
     Controllers/MapaTematicoController.php  Un único método (`__invoke`) para los 5 mapas temáticos (Fase 10)
     Controllers/Api/     Una clase por endpoint: ficha, preguntas, sesión, avatar, resultado, ranking, historial
     Requests/            Validación de entrada (Login, CambiarAvatar, GuardarResultado, Ranking; reglas compartidas en Concerns/)
@@ -68,6 +73,7 @@ app/
                          DepartamentoDescripcion, Pregunta, 2 de opciones, ResultadoJuego, PerfilExplora) + 2 bases abstractas
     Pedigital/Usuario    Usuario de pednia (autenticable, solo lectura)
   Support/NormalizaLogin Normaliza el usuario (minúsculas, sin acentos) para las claves de los limitadores
+  Support/SesionServidor Usuario de la sesión del servidor SOLO si su cuenta está activa (lo usan perfil y portal)
   Exceptions/Handler     Toda la ruta api/* responde JSON
   Providers/RouteServiceProvider   Limitadores de peticiones (`login`, `api`)
 config/explora.php       Opciones propias (respuestas del quiz, cantidad de avatares)
@@ -166,7 +172,7 @@ carpetas `php/`).
 
 **Rutas de Laravel fuera de `/api`.** Igual que Apache (`public/.htaccess` envía a `index.php` lo que no es archivo ni carpeta), el
 router de desarrollo entrega a Laravel toda ruta que no existe en disco (tras los filtros de seguridad), así que `/climatico`
-funciona (también `/`), `/index.html` y `/climatico.html` redirigen (301) y lo desconocido da el 404 de Laravel (sin trazas). La guarda de bases `_test`
+funciona (también `/`, `/perfil` y `/juegos`), `/index.html` y `/climatico.html` redirigen (301) y lo desconocido da el 404 de Laravel (sin trazas). La guarda de bases `_test`
 (`EXPLORA_SOLO_BD_PRUEBA=1`) se aplica a TODA petición que llegue a Laravel, no solo a `/api`.
 
 ### Mapas temáticos (Fase 10)
@@ -185,16 +191,56 @@ HTML usa `onclick=`), parametrizados por `window.EXPLORA_MAPA`, que imprime la v
 3. Si usa `seleccionarTipoMapa()`, enlazarlo desde `partials/modal-tipo-mapa.blade.php` y `public/mapplic/js/general.js`.
 4. Añadir el caso a `tests/Feature/MapasTematicosTest.php` (`mapas()`) y a `tests/Browser/{mapas,recursos}.spec.js`.
 
+### Layouts: cuándo usar cada uno (Fase 12)
+
+- `layouts/base`: esqueleto mínimo (doctype, `<html lang="es">`, charset, título, viewport, favicon y puntos de extensión
+  `cabecera`, `estilos`, `contenido`, `scripts_pie`). Úsalo en páginas con **su propio conjunto de CSS/JS**: perfil, portal de
+  juegos y los juegos (Fase 13).
+- `layouts/sitio`: extiende a `base` y añade las ~15 hojas y las librerías que comparten la portada y los mapas temáticos
+  (Mapplic, Bootstrap 4, SweetAlert, chat, tutorial…). Su salida no cambió con la extracción (la compuerta de equivalencia
+  sigue en verde).
+
+### Perfil y portal de juegos (Fase 12)
+
+**El servidor es la fuente de verdad de la sesión.** La cookie de sesión es la misma para la API y las páginas (grupo `web`), así
+que las vistas usan el guard `web`; `App\Support\SesionServidor::usuarioActivo()` devuelve el usuario solo si su cuenta está activa
+(una cuenta inactiva se trata como «sin sesión», sin escribir en ninguna base). `localStorage` queda como caché cosmética para el
+JS de los juegos (Fase 13).
+
+- **`/perfil`** (`PerfilController`, vista `perfil/index`): con sesión se pintan en servidor nombre, usuario, grado (opción
+  seleccionada), avatar vigente (`PerfilExplora::avatarDe`, validado 1..`avatares_max`) y la lista de avatares
+  (`config('explora.avatares_max')`, ya no 35 fijos en JS). Sin sesión (o cuenta inactiva) solo el aviso «Debe iniciar sesión…»:
+  ni formulario, ni historial, ni datos, y no se carga `miPerfil/script.js` (nadie pide `/api/historial`). Respuesta con
+  `Cache-Control: private, no-store`. No recibe ids: solo la sesión. Todo con `{{ }}` (nombre y usuario vienen de una base externa).
+  `miPerfil/script.js` queda para lo interactivo (historial con `textContent`, avatar con CSRF, caducidad 401/419);
+  `miPerfil/cerrar-sesion.js` es el antiguo script inline.
+- **`/juegos`** (`PortalJuegosController`, vista `juegos/portal`): la barra pinta en servidor `#btn-perfil` y `#btn-cerrar` (con
+  sesión) o `#btn-iniciar` (sin ella), sin parpadeo; `mapplic/js/iniciarSesion.js` no toca esos botones hasta que
+  `/api/sesion` confirma la sesión (`sesionConfirmada`) y después los mantiene al día tras login/logout. `Cache-Control: private,
+  no-cache`. `juegos/js/anio-pie.js` es el antiguo script inline del año.
+- **Carpeta frente a ruta.** `public/miPerfil/` y `public/juegos/` son carpetas reales y ni Apache (`RewriteCond !-d`) ni el router
+  de desarrollo envían carpetas a Laravel. Por eso el perfil está en `/perfil` (no `/miPerfil`) y `/juegos` y `/juegos/` (solo esas
+  dos) se envían a Laravel con la regla `RewriteRule ^juegos/?$ index.php [L]` de `public/.htaccess` y, en
+  `servidor-desarrollo.php`, con la comprobación `$minusculas === ['juegos']`. `/juegos/css/…`, `/juegos/juegos/…` siguen siendo
+  estáticos y el resto de carpetas sin index siguen sin listarse (403 en Apache por `-Indexes`, 404 en el router).
+- **Redirecciones 301** (conservan la consulta): `/miPerfil.html` → `/perfil` y `/juegos/index.html` → `/juegos`. Las ~20 páginas
+  de juegos que enlazan `../../index.html` siguen funcionando por esa redirección (Fase 13 las actualizará).
+- **Equivalencia:** el portal anónimo se compara con su original (`bb4b68b`) en la compuerta. El perfil no es comparable por
+  texto (formulario frente a aviso): la compuerta hace una comprobación estructural (cada `id` del original existe con sesión,
+  las funciones de los `onclick` siguen definidas, mismo texto del aviso que el JS, sin datos sin sesión) y PHPUnit
+  (`PerfilPortalTest`) cubre el resto.
+
 ### Portada (Fase 11)
 
 `/` es la vista `inicio` (`InicioController`), con el mismo layout y los mismos parciales que los mapas; la ficha del departamento
 (`partials/ficha-departamento`) es una copia literal del HTML original porque `public/mapplic/verMas.js` depende de sus ids.
-`/index.html` redirige (301) a `/`. En Apache `DirectoryIndex index.php index.html` entrega `/` a Laravel (`/juegos/` sigue con su
-`index.html`). La portada usa `mapplic/mapplic.js` y su propio orden de CSS (`@section('hojas_orden')`).
+`/index.html` redirige (301) a `/`. En Apache `DirectoryIndex index.php index.html` entrega `/` a Laravel (`/juegos/` lo atiende Laravel
+desde la Fase 12 con su propia regla; ver más abajo). La portada usa `mapplic/mapplic.js` y su propio orden de CSS (`@section('hojas_orden')`).
 
 **Compuerta de equivalencia:** `php tests/Equivalencia/comparar-paginas.php [--ver-diferencias] [--ref=<pagina>:<commit>]...` compara
-el HTML original de `index` (por defecto en `0c60734`) y de los cinco mapas (por defecto en `0c7c594`) con el renderizado,
+el HTML original de `index` (por defecto en `0c60734`), de los cinco mapas (`0c7c594`) y del portal `juegos` (`bb4b68b`) con el renderizado,
 normalizando espacios, URL de `asset()` y JS inline, y falla si hay diferencias no admitidas (documentadas en la cabecera del script).
+Además hace la comprobación estructural del perfil (necesita las bases de prueba: el script las fuerza antes de arrancar Laravel).
 
 Cliente común del sitio: [`public/js/explora-api.js`](public/js/explora-api.js) (`window.ExploraApi`): URL de la API desde cualquier
 profundidad, cabecera `X-XSRF-TOKEN` leída de la cookie en cada petición, mensajes de error unificados, sincronización de la sesión

@@ -45,14 +45,14 @@ async function elegirAvatar7YGuardar(page) {
 // Comprueba que con sesión la página muestra los datos reales del usuario desde la API.
 test('con sesión muestra el nombre del usuario', async ({ page }) => {
     await iniciarSesionPorApi(page);
-    await page.goto('/miPerfil.html');
+    await page.goto('/perfil');
     await expect(page.locator('#nombre')).toHaveValue('Usuario 1');
 });
 
 // Comprueba que las opciones de avatar son operables por teclado y que el cambio se persiste en el servidor.
 test('cambiar avatar con teclado hace PATCH 200 y persiste al recargar', async ({ page }) => {
     await iniciarSesionPorApi(page);
-    await page.goto('/miPerfil.html');
+    await page.goto('/perfil');
     await expect(page.locator('#nombre')).toHaveValue('Usuario 1');
     await expect(page.getByRole('button', { name: /cambiar avatar/i })).toBeVisible();
     await abrirModalAvatar(page);
@@ -75,7 +75,7 @@ test('sin sesión muestra aviso con enlace a la portada y no llama a /api/histor
     /** @type {string[]} */
     const historial = [];
     page.on('request', (r) => { if (r.url().includes('/api/historial')) historial.push(r.url()); });
-    await page.goto('/miPerfil.html');
+    await page.goto('/perfil');
     await expect(page.getByText(/iniciar sesión/i).first()).toBeVisible();
     await expect(page.locator('a[href="/"]').filter({ hasText: /./ }).first()).toBeVisible();
     expect(historial).toEqual([]);
@@ -84,7 +84,7 @@ test('sin sesión muestra aviso con enlace a la portada y no llama a /api/histor
 // Comprueba que si la cookie CSRF desaparece, guardar el avatar no falla en silencio: se avisa de sesión caducada.
 test('sin cookie XSRF al guardar avatar se avisa de sesión caducada', async ({ page }) => {
     await iniciarSesionPorApi(page);
-    await page.goto('/miPerfil.html');
+    await page.goto('/perfil');
     await expect(page.locator('#nombre')).toHaveValue('Usuario 1');
     // Se espera a que termine la red (p. ej. el historial): cada respuesta de la API vuelve a emitir la cookie
     // XSRF-TOKEN, y una respuesta tardía la restauraría después de borrarla, haciendo que el guardado SÍ funcione.
@@ -93,4 +93,61 @@ test('sin cookie XSRF al guardar avatar se avisa de sesión caducada', async ({ 
     await page.context().clearCookies({ name: 'XSRF-TOKEN' });
     await page.locator('#btn-guardar').click();
     await expect(page.locator('.swal2-popup, [role="alert"]').first()).toContainText(/sesión/i);
+});
+
+// Fase 12: el perfil se pinta en el SERVIDOR; el HTML inicial ya trae los datos, sin esperar a ningún JS.
+test('el HTML del perfil ya trae los datos del usuario pintados por el servidor', async ({ page }) => {
+    await iniciarSesionPorApi(page);
+    const html = await (await page.request.get('/perfil')).text();
+    expect(html).toContain('value="Usuario 1"');
+    expect(html).toContain('value="usuario1"');
+    expect(html).toMatch(/<option value="6" selected>/);
+    // La lista de avatares la genera Blade con config('explora.avatares_max') (35 por defecto).
+    expect((html.match(/data-avatar="\d+"/g) || []).length).toBe(35);
+});
+
+// Con sesión se pintan el formulario y el menú; con la sesión cerrada, solo el aviso (nada de datos).
+test('con sesión el perfil ofrece menú, formulario e historial y sin sesión solo el aviso', async ({ page }) => {
+    await iniciarSesionPorApi(page);
+    await page.goto('/perfil');
+    await expect(page.locator('#menu-perfil')).toBeVisible();
+    await expect(page.locator('#usuario')).toHaveValue('usuario1');
+    await expect(page.locator('#grado')).toHaveValue('6');
+    await expect(page.locator('#avatars-preview [data-avatar]')).toHaveCount(35);
+    await expect(page.locator('#aviso-sesion')).toHaveCount(0);
+
+    await page.context().clearCookies();
+    await page.goto('/perfil');
+    await expect(page.locator('#aviso-sesion')).toBeVisible();
+    await expect(page.locator('#nombre')).toHaveCount(0);
+    await expect(page.locator('#historial-body')).toHaveCount(0);
+    await expect(page.locator('#modal-avatar')).toHaveCount(0);
+});
+
+// Cerrar sesión desde el perfil (SweetAlert + DELETE /api/sesion) lleva a la portada y /perfil vuelve a mostrar el aviso.
+test('cerrar sesión desde el perfil limpia la sesión del servidor y la caché local', async ({ page }) => {
+    await iniciarSesionPorApi(page);
+    await page.goto('/perfil');
+    await expect(page.locator('#nombre')).toHaveValue('Usuario 1');
+    await page.locator('#link-cerrar-sesion').click();
+    await page.getByRole('button', { name: /cerrar sesión/i }).click();
+    await page.waitForURL((url) => url.pathname === '/');
+    expect(await page.evaluate(() => window.localStorage.getItem('usuario'))).toBeNull();
+
+    await page.goto('/perfil');
+    await expect(page.locator('#aviso-sesion')).toBeVisible();
+});
+
+// Las URL antiguas siguen funcionando: redirigen (301) a las nuevas.
+test('/miPerfil.html redirige a /perfil', async ({ request }) => {
+    const r = await request.get('/miPerfil.html', { maxRedirects: 0 });
+    expect(r.status()).toBe(301);
+    expect(new URL(r.headers()['location'], 'http://x').pathname).toBe('/perfil');
+});
+
+// Datos personales: nada de caché (ni al volver con «atrás» tras cerrar sesión).
+test('el perfil se envía con Cache-Control private, no-store', async ({ request }) => {
+    const r = await request.get('/perfil');
+    expect(r.headers()['cache-control']).toMatch(/no-store/);
+    expect(r.headers()['cache-control']).toMatch(/private/);
 });

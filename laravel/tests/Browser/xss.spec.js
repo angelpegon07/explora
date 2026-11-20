@@ -24,7 +24,7 @@ test('ranking muestra el HTML hostil como texto literal', async ({ page }) => {
 test('historial muestra el HTML hostil como texto literal', async ({ page }) => {
     const dialogos = vigilarDialogosNativos(page);
     await iniciarSesionPorApi(page);
-    await page.goto('/miPerfil.html');
+    await page.goto('/perfil');
     await page.locator('#menu-perfil .nav-link', { hasText: /historial/i }).click();
     await expect(page.locator('#historial')).toContainText('E2E-<img');
     expect(await page.evaluate(() => /** @type {any} */ (window).__xss)).toBeUndefined();

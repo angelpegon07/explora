@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\InicioController;
 use App\Http\Controllers\MapaTematicoController;
+use App\Http\Controllers\PerfilController;
+use App\Http\Controllers\PortalJuegosController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -58,3 +60,34 @@ Route::get('/{slug}.html', static function (Request $request, string $slug) {
 
     return redirect()->to('/'.$slug.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
 })->where('slug', $patronMapas);
+
+/*
+|--------------------------------------------------------------------------
+| Perfil y portal de juegos (Fase 12)
+|--------------------------------------------------------------------------
+|
+| Ambas páginas se pintan en el servidor con la sesión de Laravel (grupo `web`, la misma cookie que `/api/sesion`).
+|
+| OJO con las carpetas: `public/miPerfil/` y `public/juegos/` son CARPETAS reales (guardan script.js, style.css, css/,
+| js/…) y ni Apache (`RewriteCond !-d`) ni el router de desarrollo envían carpetas a Laravel. Por eso:
+|  - el perfil vive en `/perfil` (no en `/miPerfil`, que chocaría con su carpeta);
+|  - `/juegos` y `/juegos/` (y SOLO esas dos) se envían a Laravel con una regla explícita en `public/.htaccess` y su
+|    equivalente en `servidor-desarrollo.php`. Laravel casa `/juegos/` con esta ruta sin redirigir.
+|
+| Los archivos estáticos antiguos se eliminaron (un archivo real gana siempre a una ruta); sus URL —que siguen
+| escritas en marcadores y en ~20 enlaces `../../index.html` de las páginas de cada juego— redirigen con 301.
+*/
+Route::get('/perfil', PerfilController::class)->name('perfil');
+Route::get('/juegos', PortalJuegosController::class)->name('juegos');
+
+Route::get('/miPerfil.html', static function (Request $request) {
+    $consulta = $request->getQueryString();
+
+    return redirect()->to('/perfil'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
+});
+
+Route::get('/juegos/index.html', static function (Request $request) {
+    $consulta = $request->getQueryString();
+
+    return redirect()->to('/juegos'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
+});
