@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Pruebas del router del servidor de desarrollo (`laravel/servidor-desarrollo.php`).
  *
- * Arrancan un `php -S` REAL en un puerto libre de 127.0.0.1 con la raíz del repositorio como DocumentRoot y hacen
+ * Arrancan un `php -S` REAL en un puerto libre de 127.0.0.1 con `laravel/public` (documento raíz desde la Fase 9) como DocumentRoot y hacen
  * peticiones HTTP de verdad: es la única forma de comprobar lo que importa (que el servidor integrado nunca
  * ejecute PHP legado ni sirva archivos sensibles). El proceso se arranca con las bases de PRUEBA y con
  * `EXPLORA_SOLO_BD_PRUEBA=1`, por lo que el router se negaría a atender `/api` contra bases reales.
@@ -29,7 +29,9 @@ class ServidorDesarrolloTest extends TestCase
     {
         parent::setUp();
 
-        $raiz = dirname(__DIR__, 3);
+        // Proyecto Laravel (laravel/) y documento raíz del sitio (laravel/public).
+        $laravel = dirname(__DIR__, 2);
+        $raiz = $laravel.'/public';
         $puerto = $this->puertoLibre();
         $this->base = 'http://127.0.0.1:'.$puerto;
 
@@ -41,10 +43,10 @@ class ServidorDesarrolloTest extends TestCase
         ]);
 
         $this->proceso = proc_open(
-            [PHP_BINARY, '-S', '127.0.0.1:'.$puerto, '-t', $raiz, $raiz.'/laravel/servidor-desarrollo.php'],
+            [PHP_BINARY, '-S', '127.0.0.1:'.$puerto, '-t', $raiz, $laravel.'/servidor-desarrollo.php'],
             [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']],
             $pipes,
-            $raiz,
+            $laravel,
             $entorno
         );
         $this->assertIsResource($this->proceso, 'No se pudo arrancar php -S');
@@ -124,6 +126,28 @@ class ServidorDesarrolloTest extends TestCase
     {
         $this->assertSame(200, $this->pedir('/index.html')[0]);
         $this->assertSame(200, $this->pedir('/juegos/index.html')[0]);
+        $this->assertSame(200, $this->pedir('/climatico.html')[0]);
+    }
+
+    /**
+     * `/` devuelve el index.html del sitio (como `DirectoryIndex index.html index.php` en Apache) y NO el
+     * front controller de Laravel, aunque `public/index.php` exista: `php -S` lo preferiría sin la ayuda del router.
+     */
+    public function test_la_raiz_sirve_index_html(): void
+    {
+        [$codigo, $tipo, $cuerpo] = $this->pedir('/');
+        $this->assertSame(200, $codigo);
+        $this->assertStringContainsString('text/html', $tipo);
+        $this->assertSame(file_get_contents(dirname(__DIR__, 2).'/public/index.html'), $cuerpo);
+    }
+
+    /**
+     * Una carpeta con index.html se sirve con «/» final y se redirige (301) si se pide sin ella.
+     */
+    public function test_las_carpetas_con_index_html_se_sirven_y_redirigen(): void
+    {
+        $this->assertSame(200, $this->pedir('/juegos/')[0]);
+        $this->assertSame(301, $this->pedir('/juegos')[0]);
     }
 
     /**
@@ -185,8 +209,16 @@ class ServidorDesarrolloTest extends TestCase
             // Chat legado: desactivado en desarrollo (credenciales de MySQL escritas en el código).
             '/mapplic/php/chat.php',
             '/mapplic/php/conexion.php',
+            // Ya no existen bajo el docroot (Fase 9): dan 404 por inexistentes, no por un bloqueo por nombre.
             '/laravel/.env',
             '/laravel/composer.json',
+            '/vendor/autoload.php',
+            '/vendor/composer/installed.json',
+            '/storage/logs/laravel.log',
+            '/.env',
+            '/.htaccess',
+            // `public/index.php` es el front controller: se pide solo vía /api; directo no se ejecuta ni se muestra su código.
+            '/index.php',
             '/.git/HEAD',
             '/DOCUMENTACION_MEJORAMIENTO/REGISTRO_CAMBIOS.md',
             '/dump.sql',
@@ -204,6 +236,16 @@ class ServidorDesarrolloTest extends TestCase
     public function test_las_rutas_sensibles_responden_404(string $ruta): void
     {
         $this->assertSame(404, $this->pedir($ruta)[0]);
+    }
+
+    /**
+     * `/index.php` no expone el código fuente del front controller (404 sin cuerpo con «<?php»).
+     */
+    public function test_index_php_no_expone_la_fuente(): void
+    {
+        [$codigo, , $cuerpo] = $this->pedir('/index.php');
+        $this->assertSame(404, $codigo);
+        $this->assertStringNotContainsString('<?php', $cuerpo);
     }
 
     /**

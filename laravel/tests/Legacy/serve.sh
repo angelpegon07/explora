@@ -4,7 +4,8 @@
 # Uso: tests/Legacy/serve.sh [puerto]   (lee LEGACY_DB_* de laravel/.env)
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-ROOT="$(cd "$HERE/../../.." && pwd)"
+# Documento raíz del sitio (Fase 9): el PHP legado vive ahora bajo laravel/public/
+ROOT="$(cd "$HERE/../../public" && pwd)"
 PORT="${1:-8081}"
 # Solo se cargan las variables LEGACY_DB_* (no se ejecuta .env como shell ni se exportan otros secretos)
 for v in LEGACY_DB_HOST LEGACY_DB_USER LEGACY_DB_PASS; do

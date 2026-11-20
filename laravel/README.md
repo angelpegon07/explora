@@ -1,8 +1,8 @@
 # Explora — migración a Laravel 10
 
 Nueva base de código de **Explora Colombia y aprende** (sitio educativo sobre geografía, cultura e historia de
-Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del sitio original (`../mapplic/php`,
-`../juegos/php`), que siguen funcionando mientras se migra cada módulo.
+Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del sitio original (`public/mapplic/php`,
+`public/juegos/php`), que siguen funcionando mientras se migra cada módulo.
 
 > Contexto, auditorías, decisiones y registro de cambios: [`../DOCUMENTACION_MEJORAMIENTO/`](../DOCUMENTACION_MEJORAMIENTO/)
 > (empezar por `REGISTRO_CAMBIOS.md` e `IMPLEMENTACION_MEJORAS.md`).
@@ -19,7 +19,8 @@ Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del siti
 | 5 | Juegos: resultados, ranking, historial | ✔ (conectada al frontend en la Fase 7) |
 | 6 | Chat con IA y corrector | aplazada (trabajo aparte enfocado en IA) |
 | 7 | Conmutación segura del frontend (sesión, fichas, quiz, perfil, juegos), bloqueo de los PHP sustituidos y pruebas en navegador | ✔ |
-| 7B | Modernizar el frontend (Vite, unificar librerías, Mapplic, optimizar medios) | pendiente |
+| 7B | Modernizar el frontend (Vite, unificar librerías, Mapplic, optimizar medios) | parcial |
+| 9 | Cimientos Blade: `laravel/public/` es el único documento raíz y contiene todo el sitio (HTML intacto, solo movido) | ✔ |
 
 ## Requisitos
 
@@ -48,6 +49,9 @@ pero conviene aplicarlas de una en una y solo en bases de prueba hasta que se au
 ## Estructura del código
 
 ```
+public/                  ÚNICO documento raíz (Fase 9): index.php (front controller), .htaccess y todo el sitio estático
+                         (index.html, *.html, *.json, css/, js/, mapplic/, juegos/, images/, maps*/…; el PHP legado en
+                         mapplic/php y juegos/php). Las rutas públicas (/index.html, /juegos/…) no cambiaron.
 app/
   Http/
     Controllers/Api/     Una clase por endpoint: ficha, preguntas, sesión, avatar, resultado, ranking, historial
@@ -132,36 +136,23 @@ En HTTPS, definir `SESSION_SECURE_COOKIE=true`. Pasos para conectar el frontend:
 La sesión es una cookie `SameSite=Lax` con CSRF, así que el sitio estático y la API deben servirse desde el **mismo origen**.
 
 ```bash
-# Desarrollo: router que sirve el sitio (raíz del repo) y envía /api/* a Laravel, y bloquea lo que no debe servirse
-cd laravel && PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t .. servidor-desarrollo.php
+# Desarrollo: router que sirve el sitio (laravel/public) y envía /api/* a Laravel, y bloquea lo que no debe servirse
+cd laravel && PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t public servidor-desarrollo.php
 ```
 
-El router responde **410** a los 7 PHP legados sustituidos y **404** a `laravel/`, `.git`, `DOCUMENTACION_MEJORAMIENTO/`, los
-`conexion*.php`, cualquier otro `.php` (incluido el chat, que en desarrollo queda desactivado porque usaría credenciales reales)
-y a extensiones sensibles. **Producción con Apache:** ver `../DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md` (`.htaccess` en la
-raíz, `laravel/` y las carpetas `php/`).
+El router sirve `index.html` en `/` (con `public/index.php` presente, `php -S` preferiría el front controller) y responde **410**
+a los 7 PHP legados sustituidos y **404** a `.git`, `.env`, los `conexion*.php`, cualquier otro `.php` (incluido el chat, que en desarrollo queda desactivado porque usaría credenciales reales)
+y a extensiones sensibles. `laravel/.env`, `vendor/`, `storage/` y la documentación ya no están bajo el docroot. **Producción
+con Apache:** DocumentRoot = `laravel/public` (ver `../DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md`; `public/.htaccess` y las
+carpetas `php/`).
 
-Cliente común del sitio: [`../js/explora-api.js`](../js/explora-api.js) (`window.ExploraApi`): URL de la API desde cualquier
+Cliente común del sitio: [`public/js/explora-api.js`](public/js/explora-api.js) (`window.ExploraApi`): URL de la API desde cualquier
 profundidad, cabecera `X-XSRF-TOKEN` leída de la cookie en cada petición, mensajes de error unificados, sincronización de la sesión
 y funciones para escapar HTML y validar avatares. Se incluye **después de jQuery** en todas las páginas que usan la API.
 
-## Build ligero del sitio (`dist/`)
-
-`npm run build:sitio` (desde `laravel/`) ejecuta [build-sitio.mjs](build-sitio.mjs): copia el sitio estático a `../dist/` y
-minifica los JS/CSS propios con esbuild (motor de Vite). **No empaqueta ni usa módulos**: los scripts son clásicos con jQuery
-global, así que los nombres, rutas y el orden de carga no cambian y las páginas HTML no se tocan. No entran en `dist/`: PHP
-legado, `laravel/`, documentación, dumps y `.md`. Despliegue: superponer `dist/` sobre la raíz del sitio
-(`rsync -a dist/ /ruta/del/sitio/`), sin reemplazar `laravel/` ni los PHP. `dist/` está en `.gitignore`.
-
-Para probar el build con el mismo router y las pruebas de navegador:
-
-```bash
-npm run build:sitio && EXPLORA_RAIZ_SITIO="$(cd ../dist && pwd)" npm run test:e2e
-```
-
-El ahorro de la minificación es pequeño (~1 MB sobre ~300 MB): el peso real estaba en los medios (ver REGISTRO_CAMBIOS.md).
-
 ## Pruebas
+
+El PHP legado y el sitio viven ahora bajo `public/`; `tests/Legacy/serve.sh` copia `public/mapplic/php` y `public/juegos/php`.
 
 ```bash
 # Contra bases *_test (las pruebas lo verifican y abortan si no lo son)
@@ -176,7 +167,7 @@ tests/Legacy/serve.sh                    # puerto 8081; se detiene con Ctrl+C (o
 Sin el servidor del legado, esas pruebas se **omiten** (no fallan). `phpunit.xml` fuerza `APP_DEBUG=false` y las bases
 `explora_test` / `pedigital_test`; `tests/TestCase.php` aborta si la conexión no es local o no termina en `_test`.
 
-Estilo: `./vendor/bin/pint` (el único archivo que incumple es `bootstrap/app.php`, del esqueleto de Laravel).
+Estilo: `./vendor/bin/pint`. `pint.json` excluye `public/mapplic`, `public/juegos` y `public/ViajaPED` (PHP legado que no se reformatea; JSON no admite comentarios, por eso la explicación va aquí).
 
 ### Pruebas en navegador (Playwright)
 

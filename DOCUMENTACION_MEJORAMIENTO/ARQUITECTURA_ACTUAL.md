@@ -17,7 +17,7 @@ Archivos estáticos: JSON/GeoJSON, SVG/WebP, imágenes, sonidos
 
 | Directorio | Función |
 |---|---|
-| raíz (`*.html`, `*.json`) | Páginas de mapas temáticos y su data |
+| `laravel/public/` (`*.html`, `*.json`; antes en la raíz del repositorio, movido en la Fase 9) | Páginas de mapas temáticos y su data |
 | `mapplic/` | Motor de mapas (3 variantes de `mapplic*.js`), quiz, chat, login, "ver más", `php/` con API |
 | `mapplic/js/` | `general.js`, `quiz.js`, `chat.js`, `iniciarSesion.js` |
 | `juegos/` | Portal de juegos, `php/` con API de resultados, `juegos/<juego>/` cada juego autocontenido |

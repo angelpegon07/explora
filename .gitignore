@@ -7,6 +7,7 @@
 node_modules/
 **/node_modules/
 
-# Salida del build ligero (npm run build:sitio)
-dist/
+# Grafos de conocimiento generados por graphify (se regeneran; no se versionan)
+graphify-out/
+graphify-out-laravel/
 .DS_Store

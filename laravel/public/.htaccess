@@ -1,12 +1,34 @@
-# Esta carpeta es el destino de la reescritura de /api/* (ver .htaccess de la raíz). Como laravel/.htaccess deniega
-# todo el acceso, aquí se concede de nuevo: una directiva más específica (directorio hijo) prevalece sobre la del padre.
-Require all granted
+# ---------------------------------------------------------------------------------------------------------------
+# Explora: configuración de Apache del ÚNICO documento raíz del sitio (DocumentRoot = laravel/public).
+# Requiere AllowOverride All y mod_rewrite. Guía completa: DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md
+#
+# Como laravel/.env, vendor/, storage/ y la documentación quedan FUERA del docroot, ya no hace falta un .htaccess
+# en la raíz del repositorio para ocultarlos (Fase 9). Aquí solo quedan las reglas de seguridad del propio sitio.
+# ---------------------------------------------------------------------------------------------------------------
+
+# Sin listado de directorios (evita exponer el contenido de carpetas sin index) y sin negociación de contenido
+# (MultiViews haría que /api/x resolviera a un archivo x.* por sorpresa).
+Options -Indexes -MultiViews
+
+# La raíz «/» y las carpetas sirven index.html (el sitio estático); index.php (front controller de Laravel) queda
+# de respaldo. Sin esta línea Apache serviría index.php en «/» y la portada dejaría de verse.
+DirectoryIndex index.html index.php
+
+# Nunca servir el repositorio Git ni archivos .env (credenciales), en cualquier nivel de la ruta. Defensa en
+# profundidad: ninguno debería existir bajo el docroot.
+RedirectMatch 404 /\.(git|env)
+
+# Los archivos de conexión del PHP legado contienen credenciales de MySQL escritas en el código.
+<FilesMatch "^conexion.*\.php$">
+    Require all denied
+</FilesMatch>
+
+# Volcados, copias y archivos de proyecto que nunca deben descargarse.
+<FilesMatch "\.(sql|gz|zip|md|sh|lock|log|bak)$">
+    Require all denied
+</FilesMatch>
 
 <IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
-
     RewriteEngine On
 
     # Handle Authorization Header
@@ -18,7 +40,8 @@ Require all granted
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
+    # Front controller de Laravel: todo lo que no sea un archivo o carpeta real (p. ej. /api/...) lo atiende
+    # index.php, que ve la ruta COMPLETA con el prefijo «api».
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]

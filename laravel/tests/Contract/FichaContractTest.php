@@ -47,7 +47,7 @@ class FichaContractTest extends TestCase
      */
     public function test_contiene_todas_las_claves_que_lee_ver_mas_js(): void
     {
-        $js = file_get_contents(base_path('../mapplic/verMas.js'));
+        $js = file_get_contents(base_path('public/mapplic/verMas.js'));
         preg_match_all('/\bdata\.([A-Za-z_]+(?:\.[A-Za-z_]+)*)/', $js, $m);
         $rutas = array_values(array_unique($m[1]));
         $this->assertGreaterThan(30, count($rutas), 'No se pudo extraer el contrato de verMas.js');

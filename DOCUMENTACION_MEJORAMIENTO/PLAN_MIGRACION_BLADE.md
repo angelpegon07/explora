@@ -36,9 +36,7 @@ Eloquent; `Usuario` es el único puente entre autenticación, perfil y modelos d
 
 ### Fase 9 — Cimientos (sin cambiar páginas visibles)
 - Mover assets a `laravel/public/` conservando rutas (`css/`, `js/`, `mapplic/`, `bootstrap/`, `fontawesome/`, `images/`, `img/`, `maps*/`, `jsons/`, `sounds/`, `sweetalert/`, `driver/`, `multimedia/`). Se mueven con `git mv` para conservar historial; se elimina `build-sitio.mjs`/`dist/` al final de la fase.
-- Layouts Blade: `layouts/sitio` (head, meta, scripts base, `explora-api.js`, CSRF), `layouts/juego`.
-- Parciales compartidos: menú, modal de login (`iniciarSesion`), widget de chat, tutorial.
-- Rutas `web.php` y `PaginaController` (o vistas directas) + redirecciones 301 de las URLs `.html`.
+- ~~Layouts Blade, parciales compartidos, rutas `web.php`/`PaginaController` y redirecciones 301~~: **se pospone a la Fase 10** (los layouts y parciales solo se crean cuando una página los consume).
 - Servidor de desarrollo y `.htaccess` actualizados al nuevo documento raíz; `PROPUESTA_DESPLIEGUE.md` corregida.
 - **Salida:** la raíz del sitio abre desde `laravel/public/` con el HTML antiguo intacto (solo movido). Playwright en verde.
 

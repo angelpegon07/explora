@@ -5,7 +5,7 @@ import { defineConfig } from '@playwright/test';
  * Configuración de las pruebas de navegador (Playwright) de Explora.
  *
  * Las pruebas recorren el sitio estático conectado a la API Laravel a través del router de desarrollo
- * (`servidor-desarrollo.php`), que sirve sitio y API desde el MISMO origen (la sesión es una cookie SameSite=Lax con CSRF).
+ * (`servidor-desarrollo.php`, docroot `laravel/public`), que sirve sitio y API desde el MISMO origen (la sesión es una cookie SameSite=Lax con CSRF).
  *
  * Navegador: el Chromium que descarga Playwright (`npx playwright install chromium`, queda en
  * ~/Library/Caches/ms-playwright, FUERA del repositorio). Antes se usó el Google Chrome del sistema
@@ -37,8 +37,8 @@ export default defineConfig({
     },
 
     webServer: {
-        command: `php -S 127.0.0.1:8090 -t ${process.env.EXPLORA_RAIZ_SITIO || '..'} servidor-desarrollo.php`,
-        // Directorio del proyecto Laravel (laravel/); la raíz del sitio es su carpeta padre (-t ..).
+        command: `php -S 127.0.0.1:8090 -t ${process.env.EXPLORA_RAIZ_SITIO || 'public'} servidor-desarrollo.php`,
+        // Directorio del proyecto Laravel (laravel/); desde la Fase 9 el documento raíz del sitio es su carpeta public/.
         cwd: import.meta.dirname,
         url: 'http://127.0.0.1:8090/index.html',
 

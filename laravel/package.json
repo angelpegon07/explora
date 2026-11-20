@@ -4,7 +4,6 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "build:sitio": "node build-sitio.mjs",
         "test:e2e": "playwright test"
     },
     "devDependencies": {

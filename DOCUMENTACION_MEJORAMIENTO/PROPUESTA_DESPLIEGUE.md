@@ -14,7 +14,7 @@ Nada de lo siguiente se ha hecho: requiere autorización y acceso al servidor re
 3. Crear `laravel/.env` de producción: `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` nueva (`php artisan key:generate`), credenciales nuevas, `SESSION_SECURE_COOKIE=true`, `API_POR_MINUTO` según el colegio (IP compartida).
 4. Crear la tabla propia: `php artisan migrate --force` (solo añade `perfiles_explora`; es idempotente; no toca datos existentes).
 5. `php artisan config:cache route:cache` y permisos de escritura solo en `storage/` y `bootstrap/cache/`.
-6. Apache: vhost con HTTPS, `AllowOverride All` y DocumentRoot en la raíz (ver DESPLIEGUE_APACHE.md); opcional `npm run build:sitio` y superponer `dist/`.
+6. Apache: vhost con HTTPS, DocumentRoot en `laravel/public` y `AllowOverride All` solo ahí (ver DESPLIEGUE_APACHE.md). El build ligero `dist/` se retiró en la Fase 9; la minificación pasará a Vite.
 7. Verificar con `curl` la tabla de bloqueos del informe de pruebas (403/404/410 y `/api/sesion`) y recorrer el flujo: iniciar sesión → ficha → quiz → juego → perfil.
 
 ## Marcha atrás
