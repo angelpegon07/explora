@@ -21,6 +21,7 @@ Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del siti
 | 7 | Conmutación segura del frontend (sesión, fichas, quiz, perfil, juegos), bloqueo de los PHP sustituidos y pruebas en navegador | ✔ |
 | 7B | Modernizar el frontend (Vite, unificar librerías, Mapplic, optimizar medios) | parcial |
 | 9 | Cimientos Blade: `laravel/public/` es el único documento raíz y contiene todo el sitio (HTML intacto, solo movido) | ✔ |
+| 10 | Mapas temáticos (`/climatico`, `/coordilleras`, `/etnias`, `/parques_naturales`, `/vertientes`): una vista Blade parametrizada + layout y parciales reutilizables | ✔ |
 
 ## Requisitos
 
@@ -54,6 +55,7 @@ public/                  ÚNICO documento raíz (Fase 9): index.php (front contr
                          mapplic/php y juegos/php). Las rutas públicas (/index.html, /juegos/…) no cambiaron.
 app/
   Http/
+    Controllers/MapaTematicoController.php  Un único método (`__invoke`) para los 5 mapas temáticos (Fase 10)
     Controllers/Api/     Una clase por endpoint: ficha, preguntas, sesión, avatar, resultado, ranking, historial
     Requests/            Validación de entrada (Login, CambiarAvatar, GuardarResultado, Ranking; reglas compartidas en Concerns/)
     Resources/           Forma de las respuestas JSON (LISTA BLANCA de campos)
@@ -67,12 +69,21 @@ app/
   Exceptions/Handler     Toda la ruta api/* responde JSON
   Providers/RouteServiceProvider   Limitadores de peticiones (`login`, `api`)
 config/explora.php       Opciones propias (respuestas del quiz, cantidad de avatares)
+config/mapas.php         Un arreglo por mapa temático (clave = slug de la URL): título, JSON, carpeta de imágenes, tutorial, variante y CSS
+resources/views/
+  layouts/sitio.blade.php   Doctype, <head> y scripts comunes (todo con asset()); secciones `titulo`, `contenido` y pilas `estilos`/`scripts`
+  partials/                 Bloques reutilizables (la portada de la Fase 11 usará los mismos): mapa-contenedor, panel-contenido, chat,
+                            modal-pantalla-completa, modal-tipo-mapa, multimedia (video/imágenes/test), menu-circular, menu-accesibilidad, final
+  mapas/                    tematico.blade.php (la página), estilos.blade.php (CSS por mapa) y dato-interes.blade.php (solo climatico)
+routes/web.php           `GET /{slug}` (lista cerrada desde config/mapas.php) y `GET /{slug}.html` -> 301 a `/{slug}`
+public/js/mapa-tematico.js  JS compartido de los mapas (acordeón, modales, visores, accesibilidad, opciones de Mapplic); lee `window.EXPLORA_MAPA`
 database/migrations/     Migración base (esquema real, idempotente) y perfiles_explora
 routes/api.php           Rutas de la API
 tests/
   Characterization/      Fijan el comportamiento ACTUAL del PHP legado (incluidos sus defectos)
   Contract/              La API nueva entrega al frontend lo mismo que el legado (33 departamentos)
-  Feature/               Modelos, perfil, autenticación y juegos
+  Feature/               Modelos, perfil, autenticación, juegos, servidor de desarrollo y mapas temáticos
+  Equivalencia/          comparar-paginas.php: compara el HTML original de cada mapa con el renderizado (compuerta de la Fase 10)
   Legacy/                Arnés para servir una copia del legado contra bases *_test
 ```
 
@@ -145,6 +156,32 @@ a los 7 PHP legados sustituidos y **404** a `.git`, `.env`, los `conexion*.php`,
 y a extensiones sensibles. `laravel/.env`, `vendor/`, `storage/` y la documentación ya no están bajo el docroot. **Producción
 con Apache:** DocumentRoot = `laravel/public` (ver `../DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md`; `public/.htaccess` y las
 carpetas `php/`).
+
+**Rutas de Laravel fuera de `/api`.** Igual que Apache (`public/.htaccess` envía a `index.php` lo que no es archivo ni carpeta), el
+router de desarrollo entrega a Laravel toda ruta que no existe en disco (tras los filtros de seguridad), así que `/climatico`
+funciona, `/climatico.html` redirige (301) y lo desconocido da el 404 de Laravel (sin trazas). La guarda de bases `_test`
+(`EXPLORA_SOLO_BD_PRUEBA=1`) se aplica a TODA petición que llegue a Laravel, no solo a `/api`.
+
+### Mapas temáticos (Fase 10)
+
+Las cinco páginas de mapas comparten la vista `mapas/tematico.blade.php`; lo que cambia entre ellas vive en `config/mapas.php`.
+Los HTML estáticos antiguos se eliminaron; las URL `*.html` (que siguen usando `seleccionarTipoMapa()` de `general.js`,
+compartido con `index.html`) redirigen con 301. El JS inline idéntico entre páginas es ahora `public/js/mapa-tematico.js`
+(script clásico, funciones globales porque el HTML usa `onclick=`), parametrizado por `window.EXPLORA_MAPA`, que imprime la
+vista con `@json` (con las banderas `JSON_HEX_*`).
+
+**Cómo añadir un mapa:**
+1. Colocar sus datos en `public/` (el JSON de Mapplic, el SVG e imágenes en su carpeta `maps_*`).
+2. Añadir una entrada a `config/mapas.php` con el slug como clave y las claves documentadas allí (`titulo`, `json`,
+   `carpeta_imagenes`, `tutorial`, `variante`, `dato_interes`, `ocultar_niveles`, `quiz_anidado`, `css`). La ruta `/{slug}` y la
+   redirección `/{slug}.html` salen solas (no hay que tocar `routes/web.php`).
+3. Si usa `seleccionarTipoMapa()`, enlazarlo desde `partials/modal-tipo-mapa.blade.php` y `public/mapplic/js/general.js`.
+4. Añadir el caso a `tests/Feature/MapasTematicosTest.php` (`mapas()`) y a `tests/Browser/{mapas,recursos}.spec.js`.
+
+**Compuerta de equivalencia:** `php tests/Equivalencia/comparar-paginas.php [--ver-diferencias] [referencia-git]` compara el HTML
+original (`git show <ref>:laravel/public/<slug>.html`, por defecto `HEAD`; tras confirmar la Fase 10 usar el commit anterior) con
+el renderizado, normalizando espacios, URL de `asset()` y JS inline, y falla si hay diferencias no admitidas (documentadas en la
+cabecera del script).
 
 Cliente común del sitio: [`public/js/explora-api.js`](public/js/explora-api.js) (`window.ExploraApi`): URL de la API desde cualquier
 profundidad, cabecera `X-XSRF-TOKEN` leída de la cookie en cada petición, mensajes de error unificados, sincronización de la sesión

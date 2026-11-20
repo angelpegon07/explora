@@ -40,10 +40,11 @@ Eloquent; `Usuario` es el único puente entre autenticación, perfil y modelos d
 - Servidor de desarrollo y `.htaccess` actualizados al nuevo documento raíz; `PROPUESTA_DESPLIEGUE.md` corregida.
 - **Salida:** la raíz del sitio abre desde `laravel/public/` con el HTML antiguo intacto (solo movido). Playwright en verde.
 
-### Fase 10 — Mapas temáticos (5 páginas, una plantilla)
+### Fase 10 — Mapas temáticos (5 páginas, una plantilla) — ✔ HECHA
 `climatico`, `coordilleras`, `etnias`, `parques_naturales`, `vertientes` comparten estructura: **una vista `mapa` parametrizada**
 (título, JSON, carpeta de mapas, script Mapplic) + datos en `config/mapas.php`. Se migra primero `climatico` (la más simple),
 se verifica contra la captura original y se replica. Cierra M07–M11.
+**Hecha:** `layouts/sitio`, parciales en `resources/views/partials`, `config/mapas.php`, `MapaTematicoController`, `public/js/mapa-tematico.js`, redirecciones 301 `*.html` y el router de desarrollo entregando a Laravel las rutas inexistentes; verificada con `tests/Equivalencia/comparar-paginas.php`. Detalle en `REGISTRO_CAMBIOS.md`.
 
 ### Fase 11 — Mapa principal (`index`) y fichas
 Vista `inicio` con los parciales ya probados; el script inline de ~150 líneas se extrae a `resources/js/` (Vite) con la
@@ -99,3 +100,9 @@ Cada fase = una o más sesiones con commits propios, pruebas Playwright/PHPUnit 
 
 Sin HTML ni PHP plano de aplicación fuera de `laravel/`; el servidor sirve solo `laravel/public/`; PHPUnit y Playwright en
 verde; credenciales rotadas; documentación y `README` al día.
+
+## 8. Decisiones del líder tras la Fase 10 (2026-11-19)
+- **Pendiente para la Fase 11:** unificar el `.modal-body.quizmodal` anidado (clave `quiz_anidado` en `config/mapas.php`) y quitar el `</div>` sobrante tras `#contenedorVideo`, ambos defectos heredados que se conservaron para garantizar la equivalencia.
+- **Sesión en las páginas Blade:** se mantiene el grupo `web` (la cookie de sesión/CSRF se necesita de todos modos para `/api/sesion`).
+- **`general.js`:** en la Fase 11, al migrar `index`, `seleccionarTipoMapa()` pasará a las URL sin `.html`; las redirecciones 301 quedan solo para marcadores antiguos.
+- **Compuerta de equivalencia:** tras confirmar la Fase 10 se ejecuta con `php tests/Equivalencia/comparar-paginas.php HEAD~1` (los HTML originales ya no están en HEAD).

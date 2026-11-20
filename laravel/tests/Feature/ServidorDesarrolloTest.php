@@ -23,12 +23,22 @@ class ServidorDesarrolloTest extends TestCase
     private string $base = '';
 
     /**
-     * Arranca el servidor y espera (hasta 10 s) a que responda.
+     * Arranca el servidor con las bases de prueba.
      */
     protected function setUp(): void
     {
         parent::setUp();
+        $this->arrancar([]);
+    }
 
+    /**
+     * Arranca un `php -S` con el router y espera (hasta 10 s) a que responda.
+     *
+     * @param  array<string,string>  $entornoExtra  Variables que sustituyen a las de prueba por defecto (p. ej. para
+     *                                              probar la guarda de bases con una base que no acaba en `_test`).
+     */
+    private function arrancar(array $entornoExtra): void
+    {
         // Proyecto Laravel (laravel/) y documento raíz del sitio (laravel/public).
         $laravel = dirname(__DIR__, 2);
         $raiz = $laravel.'/public';
@@ -40,7 +50,7 @@ class ServidorDesarrolloTest extends TestCase
             'DB_DATABASE' => 'explora_test',
             'PEDIGITAL_DB_DATABASE' => 'pedigital_test',
             'EXPLORA_SOLO_BD_PRUEBA' => '1',
-        ]);
+        ], $entornoExtra);
 
         $this->proceso = proc_open(
             [PHP_BINARY, '-S', '127.0.0.1:'.$puerto, '-t', $raiz, $laravel.'/servidor-desarrollo.php'],
@@ -74,11 +84,20 @@ class ServidorDesarrolloTest extends TestCase
      */
     protected function tearDown(): void
     {
+        $this->detener();
+        parent::tearDown();
+    }
+
+    /**
+     * Detiene el servidor si está en marcha.
+     */
+    private function detener(): void
+    {
         if (is_resource($this->proceso)) {
             proc_terminate($this->proceso);
             proc_close($this->proceso);
+            $this->proceso = null;
         }
-        parent::tearDown();
     }
 
     /**
@@ -99,9 +118,10 @@ class ServidorDesarrolloTest extends TestCase
      * Hace un GET sin seguir redirecciones.
      *
      * @param  string  $ruta  Ruta tal cual se envía (puede llevar %2e, mayúsculas…).
+     * @param  string|null  $cabeceraLocation  Si se pasa una variable, recibe el valor de la cabecera `Location`.
      * @return array{0:int,1:string,2:string} Código HTTP, cabecera Content-Type (vacía si no hay) y cuerpo.
      */
-    private function pedir(string $ruta): array
+    private function pedir(string $ruta, ?string &$cabeceraLocation = null): array
     {
         $contexto = stream_context_create(['http' => ['ignore_errors' => true, 'follow_location' => 0, 'timeout' => 30]]);
         $cuerpo = (string) @file_get_contents($this->base.$ruta, false, $contexto);
@@ -112,6 +132,9 @@ class ServidorDesarrolloTest extends TestCase
         foreach ($http_response_header as $cabecera) {
             if (stripos($cabecera, 'Content-Type:') === 0) {
                 $tipo = trim(substr($cabecera, 13));
+            }
+            if (stripos($cabecera, 'Location:') === 0) {
+                $cabeceraLocation = trim(substr($cabecera, 9));
             }
         }
         $this->assertStringNotContainsString('/Users/', $cuerpo, "La respuesta a $ruta revela rutas del sistema");
@@ -126,7 +149,64 @@ class ServidorDesarrolloTest extends TestCase
     {
         $this->assertSame(200, $this->pedir('/index.html')[0]);
         $this->assertSame(200, $this->pedir('/juegos/index.html')[0]);
-        $this->assertSame(200, $this->pedir('/climatico.html')[0]);
+        // Los HTML de los mapas ya no existen (Fase 10): la URL antigua redirige, ver test_los_mapas_se_sirven_desde_laravel.
+        $this->assertSame(200, $this->pedir('/miPerfil.html')[0]);
+    }
+
+    /**
+     * Las rutas que no existen como archivo llegan a Laravel (como el RewriteRule de Apache): `/climatico` da 200 con la
+     * página Blade, `/climatico.html` redirige (301) a ella y un slug desconocido da el 404 de Laravel.
+     */
+    public function test_los_mapas_se_sirven_desde_laravel(): void
+    {
+        [$codigo, $tipo, $cuerpo] = $this->pedir('/climatico');
+        $this->assertSame(200, $codigo);
+        $this->assertStringContainsString('text/html', $tipo);
+        $this->assertStringContainsString('<title>Mapa Climático de Colombia</title>', $cuerpo);
+
+        $this->assertSame(301, $this->pedir('/climatico.html', $location)[0]);
+        $this->assertSame($this->base.'/climatico', $location);
+
+        // Con barra final: se quita (301), como la regla «Trailing Slashes» de Apache.
+        $this->assertSame(301, $this->pedir('/climatico/', $location)[0]);
+        $this->assertSame('/climatico', $location);
+    }
+
+    /**
+     * Una ruta desconocida da el 404 HTML de Laravel (no el texto plano del router) y no filtra información interna:
+     * ni trazas, ni rutas del sistema, ni la versión del framework.
+     */
+    public function test_una_ruta_desconocida_da_el_404_de_laravel_sin_filtrar_informacion(): void
+    {
+        foreach (['/inexistente', '/climatico.json/otra', '/no/existe/nada.html'] as $ruta) {
+            [$codigo, $tipo, $cuerpo] = $this->pedir($ruta);
+            $this->assertSame(404, $codigo, $ruta);
+            $this->assertStringContainsString('text/html', $tipo, $ruta);
+            $this->assertStringContainsString('Not Found', $cuerpo, $ruta);
+            foreach (['Stack trace', 'vendor/', 'Illuminate\\', 'NotFoundHttpException', 'APP_KEY', 'laravel/framework'] as $pista) {
+                $this->assertStringNotContainsString($pista, $cuerpo, "La respuesta a $ruta filtra «$pista»");
+            }
+        }
+    }
+
+    /**
+     * La guarda de bases de prueba (`EXPLORA_SOLO_BD_PRUEBA=1`) también cubre las páginas Blade, no solo `/api`:
+     * con una base que no acaba en `_test` el router se niega (500) y NO entrega la petición a Laravel.
+     */
+    public function test_la_guarda_de_bases_de_prueba_cubre_las_paginas(): void
+    {
+        $this->detener();
+        $this->arrancar(['DB_DATABASE' => 'explora']);
+
+        foreach (['/climatico', '/inexistente', '/api/sesion'] as $ruta) {
+            [$codigo, , $cuerpo] = $this->pedir($ruta);
+            $this->assertSame(500, $codigo, $ruta);
+            $this->assertStringContainsString('solo para bases de prueba', $cuerpo, $ruta);
+            $this->assertStringNotContainsString('<title>', $cuerpo, $ruta);
+        }
+
+        // Los archivos estáticos no tocan la base: siguen sirviéndose.
+        $this->assertSame(200, $this->pedir('/index.html')[0]);
     }
 
     /**

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  * Protege las rutas compartidas de librerías y los WebP que sustituyeron a los GIF.
  */
 const PAGINAS = [
-    '/index.html', '/climatico.html', '/miPerfil.html', '/juegos/index.html',
+    '/index.html', '/climatico', '/coordilleras', '/etnias', '/parques_naturales', '/vertientes', '/miPerfil.html', '/juegos/index.html',
     '/juegos/juegos/arrastra/index.html', '/juegos/juegos/banderas-color/index.html',
     '/juegos/juegos/completa/index.html', '/juegos/juegos/juego_ahorcado/index.html',
     '/juegos/juegos/laberinto/index.html', '/juegos/juegos/puzzle/index.html', '/juegos/juegos/sopa_letras/index.html',

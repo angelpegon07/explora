@@ -20,6 +20,7 @@
  * Orden de decisiones (el primero que aplica responde):
  *  1. Ruta inválida (byte nulo, `..` o `\`)              -> 400.
  *  2. `/api` o `/api/...`                                -> Laravel (laravel/public/index.php).
+ *     (Las demás rutas que no existen en disco también llegan a Laravel; ver el punto 6.)
  *  3. Segmentos ocultos (`.git`, `.env`, `.htaccess`…)   -> 404 (defensa en profundidad: no deberían existir).
  *  4. Cualquier segmento acabado en .php/.phtml/.phar/.phpN -> el router responde él mismo, NUNCA `false`: si
  *     devolviera `false`, `php -S` ejecutaría el PHP legado (incluso con PATH_INFO, p. ej. `/x.php/a.css`).
@@ -31,9 +32,14 @@
  *     index.html se sirve ESE archivo desde el propio router (en `/` y en cualquier carpeta). Es imprescindible:
  *     con `index.php` en la raíz, `php -S` lo preferiría sobre `index.html` y la portada mostraría Laravel, justo lo
  *     contrario de `DirectoryIndex index.html index.php` de Apache. Una carpeta pedida sin «/» final se redirige (301).
+ *  7. Ruta que NO existe como archivo ni carpeta (y que pasó los filtros anteriores) -> Laravel, igual que el
+ *     `RewriteRule ^ index.php` de `public/.htaccess` en Apache. Así funcionan las páginas Blade (`/climatico`),
+ *     sus redirecciones (`/climatico.html` -> 301) y el 404 propio de Laravel para lo desconocido. Una ruta con «/»
+ *     final que no es carpeta se redirige (301) sin esa barra, como la regla «Trailing Slashes» de Apache.
  *
- * Protección de bases de datos: con `EXPLORA_SOLO_BD_PRUEBA=1` el router se niega (500) a atender `/api` si
- * `DB_DATABASE` o `PEDIGITAL_DB_DATABASE` no acaban en `_test`. Así las pruebas automáticas nunca tocan datos reales.
+ * Protección de bases de datos: con `EXPLORA_SOLO_BD_PRUEBA=1` el router se niega (500) a atender CUALQUIER ruta que
+ * llegue a Laravel (`/api` y las páginas) si `DB_DATABASE` o `PEDIGITAL_DB_DATABASE` no acaban en `_test`: las páginas
+ * Blade arrancan la sesión y podrían tocar la base. Así las pruebas automáticas nunca tocan datos reales.
  *
  * Las respuestas de error no revelan rutas del sistema.
  */
@@ -100,20 +106,22 @@ function explora_leer_variable(string $clave): ?string
     return null;
 }
 
-// EXPLORA_RAIZ_SITIO permite apuntar a otra raíz con el mismo router; por defecto, el documento raíz laravel/public.
-$raiz = realpath(getenv('EXPLORA_RAIZ_SITIO') ?: __DIR__.'/public');
-$ruta = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
-
-// 1) Rutas con byte nulo, «..» o barra invertida: intento de salir de la raíz o de confundir al servidor.
-if (str_contains($ruta, "\0") || str_contains($ruta, '..') || str_contains($ruta, '\\')) {
-    return explora_responder_texto(400, 'Solicitud no válida');
-}
-
-// 2) La API se delega en Laravel. No se modifica REQUEST_URI: Laravel debe ver «/api/...» completo.
-if (preg_match('#^/api(/|$)#', $ruta)) {
+/**
+ * Entrega la petición actual al front controller de Laravel (`public/index.php`), tras aplicar la guarda de bases de prueba.
+ *
+ * No modifica REQUEST_URI: Laravel debe ver la ruta completa (p. ej. `/api/sesion` o `/climatico`).
+ *
+ * @param  bool  $esApi  true si la ruta es de la API (el error de la guarda se responde en JSON; si no, en texto).
+ * @return true Siempre true (petición atendida).
+ */
+function explora_delegar_en_laravel(bool $esApi): bool
+{
     if (getenv('EXPLORA_SOLO_BD_PRUEBA') === '1') {
         foreach (['DB_DATABASE', 'PEDIGITAL_DB_DATABASE'] as $clave) {
             if (! str_ends_with((string) explora_leer_variable($clave), '_test')) {
+                if (! $esApi) {
+                    return explora_responder_texto(500, 'Servidor configurado solo para bases de prueba');
+                }
                 http_response_code(500);
                 header('Content-Type: application/json; charset=utf-8');
                 echo json_encode(['status' => 'error', 'mensaje' => 'Servidor configurado solo para bases de prueba'], JSON_UNESCAPED_UNICODE);
@@ -129,6 +137,20 @@ if (preg_match('#^/api(/|$)#', $ruta)) {
     require __DIR__.'/public/index.php';
 
     return true;
+}
+
+// EXPLORA_RAIZ_SITIO permite apuntar a otra raíz con el mismo router; por defecto, el documento raíz laravel/public.
+$raiz = realpath(getenv('EXPLORA_RAIZ_SITIO') ?: __DIR__.'/public');
+$ruta = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
+
+// 1) Rutas con byte nulo, «..» o barra invertida: intento de salir de la raíz o de confundir al servidor.
+if (str_contains($ruta, "\0") || str_contains($ruta, '..') || str_contains($ruta, '\\')) {
+    return explora_responder_texto(400, 'Solicitud no válida');
+}
+
+// 2) La API se delega en Laravel (con la guarda de bases de prueba).
+if (preg_match('#^/api(/|$)#', $ruta)) {
+    return explora_delegar_en_laravel(true);
 }
 
 $segmentos = array_values(array_filter(explode('/', $ruta), static fn (string $s): bool => $s !== ''));
@@ -165,7 +187,22 @@ if ($minusculas !== [] && preg_match('/\.(sql|gz|zip|md|sh|lock|log|bak)$/', end
 
 // 6) Debe existir dentro de la raíz; las carpetas solo se sirven si tienen index.html.
 $real = realpath($raiz.$ruta);
-if ($real === false || ($real !== $raiz && ! str_starts_with($real, $raiz.DIRECTORY_SEPARATOR))) {
+if ($real === false) {
+    // 7) No existe en disco: como Apache, se envía al front controller de Laravel (páginas Blade, redirecciones, 404 de Laravel).
+    if ($ruta !== '/' && str_ends_with($ruta, '/')) {
+        // Regla «Redirect Trailing Slashes» de .htaccess: se quita la barra final. Se reconstruye desde los segmentos
+        // codificados (nunca se refleja la ruta cruda) y se conserva la cadena de consulta.
+        $consulta = (string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY);
+        http_response_code(301);
+        header('Location: /'.implode('/', array_map('rawurlencode', $segmentos)).($consulta !== '' ? '?'.preg_replace('/[\r\n]/', '', $consulta) : ''));
+
+        return true;
+    }
+
+    return explora_delegar_en_laravel(false);
+}
+if ($real !== $raiz && ! str_starts_with($real, $raiz.DIRECTORY_SEPARATOR)) {
+    // Existe pero fuera de la raíz (enlace simbólico): nunca se sirve ni se delega.
     return explora_responder_texto(404, 'No encontrado');
 }
 if (is_dir($real)) {
