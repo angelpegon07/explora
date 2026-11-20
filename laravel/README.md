@@ -170,6 +170,10 @@ La sesión es una cookie `SameSite=Lax` con CSRF, así que el sitio estático y 
 cd laravel && PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t public servidor-desarrollo.php
 ```
 
+También sirve `php artisan serve` (puerto 8000): el archivo `server.php` de la raíz de `laravel/` delega en el mismo router. Sin él, el router
+por defecto de `artisan serve` dejaba un «Not Found» en `/juegos` y en `/juegos/juegos/<slug>/` (carpetas reales de `public/`). **Si ya
+tenías `artisan serve` en marcha, reinícialo** para que lo use.
+
 El router entrega `/` a Laravel (la portada es una vista Blade desde la Fase 11) y responde **410**
 a los 7 PHP legados sustituidos y **404** a `.git`, `.env`, los `conexion*.php`, cualquier otro `.php` (incluido el chat, que en desarrollo queda desactivado porque usaría credenciales reales)
 y a extensiones sensibles. `laravel/.env`, `vendor/`, `storage/` y la documentación ya no están bajo el docroot. **Producción
