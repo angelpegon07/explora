@@ -32,3 +32,8 @@ reúne lo que ya se sabe para no repetir el análisis. Nada de esto se ha implem
 
 ## Hallazgos relacionados
 SEC-02 (parte del chat), SEC-08, SEC-11, FUN-03, FUN-04, FUN-05 en [MATRIZ_HALLAZGOS.md](MATRIZ_HALLAZGOS.md).
+
+## Decisión del responsable (2026-11-20): FUERA DE ALCANCE DE ESTE REPOSITORIO
+- **Chat con IA: aplazado.** No se trabaja por ahora. `mapplic/php/chat.php`, `chat copy.php` y `mapplic/js/chat.js` siguen tal cual (riesgos SEC-02/SEC-08/SEC-11 abiertos y aceptados por el responsable).
+- **Corrector de texto: NO se implementa en Explora.** Se desarrollará únicamente en el proyecto **biblioteca** (allí existe el servicio Python/Hunspell auditado en `biblioteca/DOCUMENTACION_MEJORAMIENTO/AUDITORIA_CORRECTOR_PYTHON.md`). `public/corrector.html` queda como está (sigue llamando a Ollama desde el navegador; riesgos FUN-05/SEC-11 abiertos).
+- Consecuencia: la antigua Fase 14 queda **cancelada para este repositorio**.

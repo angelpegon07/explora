@@ -117,3 +117,6 @@ verde; credenciales rotadas; documentación y `README` al día.
 - **Sesión en las páginas Blade:** se mantiene el grupo `web` (la cookie de sesión/CSRF se necesita de todos modos para `/api/sesion`).
 - **`general.js`:** en la Fase 11, al migrar `index`, `seleccionarTipoMapa()` pasará a las URL sin `.html`; las redirecciones 301 quedan solo para marcadores antiguos.
 - **Compuerta de equivalencia:** los HTML originales ya no están en HEAD; el script usa por defecto `0c60734` para `index` y `0c7c594` para los mapas (configurable con `--ref=<pagina>:<commit>`).
+
+## 9. Decisión de IA (2026-11-20)
+La **Fase 14 (chat y corrector con IA) queda CANCELADA en este repositorio**: el chat se aplaza y el corrector se desarrollará solo en el proyecto biblioteca (ver `PENDIENTE_TRABAJO_IA.md`). La **Fase 15 no debe eliminar** `chat.php`, `chat copy.php`, `chat.js` ni `corrector.html` mientras no se retome ese trabajo; sí puede retirar el resto del PHP legado ya sustituido por la API.
