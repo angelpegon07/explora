@@ -23,6 +23,8 @@ Colombia). Reemplaza **de forma incremental** los 12 scripts PHP planos del siti
 | 9 | Cimientos Blade: `laravel/public/` es el único documento raíz y contiene todo el sitio (HTML intacto, solo movido) | ✔ |
 | 10 | Mapas temáticos (`/climatico`, `/coordilleras`, `/etnias`, `/parques_naturales`, `/vertientes`): una vista Blade parametrizada + layout y parciales reutilizables | ✔ |
 | 11 | Portada (`/`): mapa general + ficha de departamento + quiz en Blade, con los mismos layout y parciales; `/index.html` redirige a `/` | ✔ |
+| 12 | Perfil (`/perfil`) y portal de juegos (`/juegos`) en Blade con la sesión pintada en servidor | ✔ |
+| 13 | Los 7 juegos (`/juegos/juegos/<slug>/`) en Blade con un layout común de juego | ✔ |
 
 ## Requisitos
 
@@ -62,6 +64,7 @@ app/
     Controllers/InicioController.php        Portada `/` (Fase 11)
     Controllers/PerfilController.php        Perfil `/perfil`, pintado en servidor con la sesión (Fase 12)
     Controllers/PortalJuegosController.php  Portal de juegos `/juegos`, barra según la sesión del servidor (Fase 12)
+    Controllers/JuegoController.php         Las 7 páginas de juego `/juegos/juegos/<slug>/`; la forma sin barra redirige (Fase 13)
     Controllers/MapaTematicoController.php  Un único método (`__invoke`) para los 5 mapas temáticos (Fase 10)
     Controllers/Api/     Una clase por endpoint: ficha, preguntas, sesión, avatar, resultado, ranking, historial
     Requests/            Validación de entrada (Login, CambiarAvatar, GuardarResultado, Ranking; reglas compartidas en Concerns/)
@@ -77,10 +80,13 @@ app/
   Exceptions/Handler     Toda la ruta api/* responde JSON
   Providers/RouteServiceProvider   Limitadores de peticiones (`login`, `api`)
 config/explora.php       Opciones propias (respuestas del quiz, cantidad de avatares)
+config/juegos.php        Lista cerrada de los 7 slugs de juego (arreglo PHP plano: también lo lee `servidor-desarrollo.php`) (Fase 13)
 config/mapas.php         Un arreglo por mapa temático (clave = slug de la URL): título, JSON, carpeta de imágenes, tutorial, variante y CSS
 resources/views/
   layouts/sitio.blade.php   Doctype, <head> y scripts comunes (todo con asset()); secciones `titulo`, `contenido`, `hojas_orden` (orden de
                             CSS por página) y `script_mapplic`, y pilas `estilos`/`scripts`
+  layouts/juego.blade.php   Layout común de los 7 juegos (extiende `base`; pilas `cabecera` y `pie`, ver «Los 7 juegos (Fase 13)»)
+  juegos/juego/<slug>       Una vista por juego; juegos/partials: terminar-css/js, explora-api, pantalla-css/js
   inicio.blade.php          La portada `/` (mapa general + ficha + quiz)
   partials/                 Bloques reutilizables de portada y mapas: mapa-contenedor, panel-contenido, chat (variante `chatCompleto`),
                             modal-pantalla-completa (`relleno`), modal-tipo-mapa, multimedia (video/imágenes), test-quiz (portada),
@@ -224,11 +230,42 @@ JS de los juegos (Fase 13).
   `servidor-desarrollo.php`, con la comprobación `$minusculas === ['juegos']`. `/juegos/css/…`, `/juegos/juegos/…` siguen siendo
   estáticos y el resto de carpetas sin index siguen sin listarse (403 en Apache por `-Indexes`, 404 en el router).
 - **Redirecciones 301** (conservan la consulta): `/miPerfil.html` → `/perfil` y `/juegos/index.html` → `/juegos`. Las ~20 páginas
-  de juegos que enlazan `../../index.html` siguen funcionando por esa redirección (Fase 13 las actualizará).
+  de juegos que enlazan `../../index.html` siguen funcionando por esa redirección (se conservan tal cual en la Fase 13).
 - **Equivalencia:** el portal anónimo se compara con su original (`bb4b68b`) en la compuerta. El perfil no es comparable por
   texto (formulario frente a aviso): la compuerta hace una comprobación estructural (cada `id` del original existe con sesión,
   las funciones de los `onclick` siguen definidas, mismo texto del aviso que el JS, sin datos sin sesión) y PHPUnit
   (`PerfilPortalTest`) cubre el resto.
+
+### Los 7 juegos (Fase 13)
+
+`laberinto`, `banderas-color`, `puzzle`, `sopa_letras`, `juego_ahorcado`, `arrastra` y `completa` son vistas Blade
+(`resources/views/juegos/juego/<slug>.blade.php`) sobre `layouts/juego`, servidas por `JuegoController`. La lógica de cada juego
+(`script.js`, `game.js`…, `terminar_juego.js`, `pantalla_completa.js`) NO cambió; los juegos no reciben datos del servidor.
+
+- **URL canónica CON barra final:** `/juegos/juegos/<slug>/`. Casi todo lo que carga un juego en ejecución (`fetch('js/preguntas.json')`,
+  `$.getJSON('datos.json')`, `../sounds/*.mp3`, `url()` de CSS) es relativo a la URL de la página, así que NO se usa `<base>` ni se
+  movieron assets. La forma sin barra y `/<slug>/index.html` redirigen (301, conservan la consulta) a la canónica
+  (`JuegoController::redirigirACanonica`; ojo: `redirect()->to()` recorta la barra final, por eso usa `away()`).
+- **Lista de juegos = `config/juegos.php`** (arreglo plano, una sola fuente). La leen `routes/web.php` (`where()` de lista cerrada, el
+  resto da 404), `servidor-desarrollo.php` (`require`) y `JuegosPaginasTest`, que comprueba que la regla de `public/.htaccess`
+  (`RewriteRule ^juegos/juegos/(…)/?$ index.php [L]`, antes de las genéricas) lista exactamente los mismos slugs. La regla solo casa la
+  carpeta (no sus archivos) y no habilita listados. Verificada con Apache 2.4.68 (sin PHP): con barra llega al front controller; sin
+  barra, mod_dir redirige antes con 301 (equivalente); los JSON, CSS y mp3 se sirven con su content-type y `…/js/` da 403.
+- **Layout `layouts/juego`:** no impone ningún recurso. Cada vista declara en SU orden (cascada y dependencias) `@push('cabecera')`
+  (CSS y JS del `<head>` en una sola pila) y `@push('pie')` (scripts del final), más `@section('titulo' | 'viewport' | 'atributos_body' | 'juego')`.
+  `@section('sin_viewport', 'sí')` suprime el `<meta viewport>` (sopa_letras y juego_ahorcado no lo tenían; `layouts/base` lo admite).
+  Parciales `juegos/partials/`: `terminar-css`, `explora-api`, `terminar-js`, `pantalla-css`, `pantalla-js`. Particularidades que se
+  conservan: sopa carga `pantalla_completa.js` antes que `terminar_juego.js`; arrastra no carga `pantalla_completa.css`; banderas-color usa su
+  propio Bootstrap 4.6.2/jQuery 3.7.1/SweetAlert 11.17 y no el Bootstrap 5.3 compartido.
+- **CSS/JS inline extraídos:** el `<style>` de cada juego es `public/juegos/juegos/<slug>/estilo-pagina.css`, enlazado en la misma posición
+  del `<head>`; el `<script>` inline de sopa es `sopa_letras/juego.js` (sin tocar el código, incluido el muerto `readText`). Viven en la
+  carpeta del juego, así que sus rutas relativas resuelven igual que antes.
+- **Compuerta de equivalencia:** `comparar-paginas.php` compara también los 7 juegos con su `index.html` de `b97b191` (el CSS/JS extraído
+  se reintegra y se compara texto a texto). Diferencias admitidas: URL con `asset()`, `<style>`/`<script>` extraídos, `<title>`
+  duplicado, `lang="es"` (banderas decía `en`; sopa no lo tenía) y `<meta charset>` en sopa. `JuegosRutasTest` comprueba que las rutas
+  literales de cada juego existen (salvo 2 conocidas rotas, ver `DOCUMENTACION_MEJORAMIENTO/INVENTARIO_JUEGOS.md`).
+- **Seguridad:** sin `{!! !!}` ni datos del servidor en las vistas; el `nombre_juego` enviado a `/api/resultados` sigue escrito en el JS de cada
+  juego; endpoints y CSRF sin cambios.
 
 ### Portada (Fase 11)
 
@@ -238,7 +275,7 @@ JS de los juegos (Fase 13).
 desde la Fase 12 con su propia regla; ver más abajo). La portada usa `mapplic/mapplic.js` y su propio orden de CSS (`@section('hojas_orden')`).
 
 **Compuerta de equivalencia:** `php tests/Equivalencia/comparar-paginas.php [--ver-diferencias] [--ref=<pagina>:<commit>]...` compara
-el HTML original de `index` (por defecto en `0c60734`), de los cinco mapas (`0c7c594`) y del portal `juegos` (`bb4b68b`) con el renderizado,
+el HTML original de `index` (por defecto en `0c60734`), de los cinco mapas (`0c7c594`), del portal `juegos` (`bb4b68b`) y de los 7 juegos (`b97b191`) con el renderizado,
 normalizando espacios, URL de `asset()` y JS inline, y falla si hay diferencias no admitidas (documentadas en la cabecera del script).
 Además hace la comprobación estructural del perfil (necesita las bases de prueba: el script las fuerza antes de arrancar Laravel).
 

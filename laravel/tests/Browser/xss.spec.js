@@ -10,7 +10,7 @@ import { iniciarSesionPorApi, vigilarDialogosNativos } from './ayudas.js';
 // Comprueba que el nombre del jugador del ranking se escapa: se ve el texto «<img» y no se ejecuta nada.
 test('ranking muestra el HTML hostil como texto literal', async ({ page }) => {
     const dialogos = vigilarDialogosNativos(page);
-    await page.goto('/juegos/juegos/completa/index.html');
+    await page.goto('/juegos/juegos/completa/');
     await page.evaluate(() => {
         // @ts-ignore función global del juego
         guardar_resultado('Ahorcado', 1, 10, 'Principiante', 'E2E-XSS');

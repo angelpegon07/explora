@@ -153,7 +153,9 @@ class ServidorDesarrolloTest extends TestCase
         [$codigo, $tipo] = $this->pedir('/juegos/css/styles.css');
         $this->assertSame(200, $codigo);
         $this->assertStringContainsString('text/css', $tipo);
-        $this->assertSame(200, $this->pedir('/juegos/juegos/puzzle/index.html')[0]);
+        // Fase 13: los archivos de la carpeta de un juego se sirven tal cual; su index.html ya no existe y redirige (301).
+        $this->assertSame(200, $this->pedir('/juegos/juegos/puzzle/estilo-pagina.css')[0]);
+        $this->assertSame(301, $this->pedir('/juegos/juegos/puzzle/index.html')[0]);
         $this->assertSame(200, $this->pedir('/miPerfil/script.js')[0]);
         $this->assertSame(200, $this->pedir('/miPerfil/cerrar-sesion.js')[0]);
         $this->assertSame(200, $this->pedir('/juegos/js/anio-pie.js')[0]);
@@ -259,7 +261,7 @@ class ServidorDesarrolloTest extends TestCase
 
         // `/` (portada), `/perfil` y el portal de juegos (Laravel) también se niegan; los archivos estáticos no tocan
         // la base y siguen sirviéndose.
-        foreach (['/', '/perfil', '/juegos', '/juegos/', '/juegos/index.html'] as $ruta) {
+        foreach (['/', '/perfil', '/juegos', '/juegos/', '/juegos/index.html', '/juegos/juegos/puzzle/'] as $ruta) {
             $this->assertSame(500, $this->pedir($ruta)[0], $ruta);
         }
         $this->assertSame(200, $this->pedir('/juegos/css/styles.css')[0]);
@@ -281,15 +283,63 @@ class ServidorDesarrolloTest extends TestCase
     }
 
     /**
-     * Una carpeta con index.html se sirve con «/» final y se redirige (301) si se pide sin ella. Desde la Fase 12 ya no
-     * queda ninguna carpeta pública con `index.html` en la raíz de `juegos/` (el portal es Blade), pero sí las de cada
-     * juego (`/juegos/juegos/puzzle/`).
+     * Una carpeta con index.html se sirve con «/» final y se redirige (301) si se pide sin ella. Desde la Fase 13 ya no
+     * queda ninguna carpeta de juego con `index.html` (son vistas Blade): el ejemplo es `/lineaTiempo/`.
      */
     public function test_las_carpetas_con_index_html_se_sirven_y_redirigen(): void
     {
-        $this->assertSame(200, $this->pedir('/juegos/juegos/puzzle/')[0]);
-        $this->assertSame(301, $this->pedir('/juegos/juegos/puzzle', $location)[0]);
-        $this->assertSame('/juegos/juegos/puzzle/', $location);
+        $this->assertSame(200, $this->pedir('/lineaTiempo/')[0]);
+        $this->assertSame(301, $this->pedir('/lineaTiempo', $location)[0]);
+        $this->assertSame('/lineaTiempo/', $location);
+    }
+
+    /**
+     * Fase 13: las siete carpetas de juego (lista de config/juegos.php) las atiende Laravel. Con barra -> 200 con la
+     * vista; sin barra -> 301 a la forma con barra conservando la consulta; `/index.html` -> 301 (lo emite Laravel).
+     * Las demás carpetas sin index.html siguen sin responder y un slug desconocido no llega a ninguna vista.
+     */
+    public function test_los_juegos_se_sirven_desde_laravel(): void
+    {
+        foreach (require dirname(__DIR__, 2).'/config/juegos.php' as $slug) {
+            [$codigo, $tipo, $cuerpo] = $this->pedir("/juegos/juegos/$slug/");
+            $this->assertSame(200, $codigo, $slug);
+            $this->assertStringContainsString('text/html', $tipo, $slug);
+            $this->assertStringContainsString('<title>', $cuerpo, $slug);
+
+            $this->assertSame(301, $this->pedir("/juegos/juegos/$slug?a=1", $location)[0], $slug);
+            $this->assertSame("/juegos/juegos/$slug/?a=1", $location, $slug);
+
+            $this->assertSame(301, $this->pedir("/juegos/juegos/$slug/index.html", $location)[0], $slug);
+            $this->assertSame($this->base."/juegos/juegos/$slug/", $location, $slug);
+        }
+        // Los archivos estáticos de las carpetas de juego siguen sirviéndose tal cual, con su content-type.
+        $estaticos = [
+            '/juegos/juegos/laberinto/js/preguntas.json' => 'json',
+            '/juegos/juegos/puzzle/categorias.json' => 'json',
+            '/juegos/juegos/sopa_letras/datos.json' => 'json',
+            '/juegos/juegos/juego_ahorcado/pistas.json' => 'json',
+            '/juegos/juegos/completa/completa.json' => 'json',
+            '/juegos/juegos/banderas-color/json_banderas.json' => 'json',
+            '/juegos/juegos/arrastra/data.js' => 'javascript',
+            '/juegos/juegos/arrastra/estilo-pagina.css' => 'text/css',
+            '/juegos/juegos/sopa_letras/juego.js' => 'javascript',
+            '/juegos/juegos/sounds/ok.mp3' => 'audio/mpeg',
+        ];
+        foreach ($estaticos as $ruta => $tipoEsperado) {
+            [$codigo, $tipo] = $this->pedir($ruta);
+            $this->assertSame(200, $codigo, $ruta);
+            $this->assertStringContainsString($tipoEsperado, $tipo, $ruta);
+        }
+        // Las subcarpetas de los juegos no se listan (el router da 404; Apache, 403 por -Indexes).
+        foreach (['/juegos/juegos/laberinto/js/', '/juegos/juegos/laberinto/js', '/juegos/juegos/laberinto/css/', '/juegos/juegos/puzzle/img/'] as $ruta) {
+            [$codigo, , $cuerpo] = $this->pedir($ruta);
+            $this->assertContains($codigo, [403, 404], $ruta);
+            $this->assertStringNotContainsString('preguntas.json', $cuerpo, $ruta);
+        }
+        // Distinción de mayúsculas (como Apache) y carpetas hermanas sin vista: no llegan a Laravel.
+        foreach (['/juegos/juegos/Puzzle/', '/juegos/juegos/assets/', '/juegos/juegos/sounds/', '/juegos/juegos/mapas/'] as $ruta) {
+            $this->assertContains($this->pedir($ruta)[0], [403, 404], $ruta);
+        }
     }
 
     /**

@@ -1,86 +1,36 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laberinto Espacial</title>
-    <link rel="stylesheet" href="css/css2.css">
-    <link rel="stylesheet" href="../../librerias/bootstrap-5.3/css/bootstrap.min.css">
-    <script src="../../librerias/bootstrap-5.3/js/bootstrap.bundle.min.js"></script>
-    <script type="text/javascript" src="../assets/bootstrap/jquery.min.js"></script>
-    <script src="../../../js/explora-api.js"></script>
-    <link rel="stylesheet" href="../../css/pantalla_completa.css">
-    <link rel="stylesheet" href="../../librerias/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="../../css/terminar_juego.css">
-    <title>Laberinto Espacial</title>
-    <style>
-        .swal2-popup {
-            display: none;
-            position: relative;
-            box-sizing: border-box;
-            grid-template-columns: minmax(0, 100%);
-            max-width: 100%;
-            padding: 0 0 1.25em;
-            border: none;
-            border-radius: 44px !important;
-            background: #3f3f3fba !important;
-            color: #545454;
-            font-family: inherit;
-            font-size: 1rem;
-            border: 10px solid #919090cf !important;
-            width: 75vw !important;
-        }
+{{--
+    Juego «laberinto» (Fase 13): migración de public/juegos/juegos/laberinto/index.html (se eliminó) a Blade.
+    Laberinto Espacial (nombre enviado a /api/resultados: «laberinto»). Datos en js/preguntas.json (fetch relativo). Estilo propio en estilo-pagina.css (antes <style> inline). El original traía un segundo <title> duplicado: se omite (el layout ya emite uno).
 
-        .swal2-title {
-            color: #ffffff !important;
-            font-size: 2em !important;
-            font-family: 'DS-Digital' !important;
-        }
-        
-        .swal2-styled.swal2-confirm, .swal2-styled.swal2-cancel {
-           border: 4px solid white !important;
-           font-size: 1.7rem !important;
-        }
+    URL canónica: /juegos/juegos/laberinto/ (CON barra final). Casi todo lo que carga el juego en ejecución (JSON, sonidos, imágenes
+    por JS, url() de CSS) es RELATIVO a la URL de la página, por eso JuegoController redirige la forma sin barra.
+    Los recursos del HTML pasan por asset() (URL absolutas). El orden de CSS y JS es el del original (cascada y
+    dependencias: jQuery antes de explora-api.js y este antes de terminar_juego.js). Sin datos del servidor y sin salida sin escapar.
+    El <style> inline se extrajo a estilo-pagina.css, enlazado en la MISMA posición del <head> (misma cascada).
+--}}
+@extends('layouts.juego')
 
-        #modal_guardar_resultado .modal-content{
-            border: 4px solid #bfbebe !important;
-        }
+@section('titulo', 'Laberinto Espacial')
+@section('viewport', 'width=device-width, initial-scale=1.0')
+@section('atributos_body')style="overflow: hidden;"@endsection
 
-        #row_guardar_resultado {
-            background: linear-gradient(90deg, #bfbebe 57%, #bfbebe 55%, #656464 2%, #494848 100%) !important;
-        }
+@push('cabecera')
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/laberinto/css/css2.css') }}">
+        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        @include('juegos.partials.explora-api')
+        @include('juegos.partials.pantalla-css')
+        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
+        @include('juegos.partials.terminar-css')
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/laberinto/estilo-pagina.css') }}">
+@endpush
 
-        #row_guardar_resultado .col-lg-7 input, #row_guardar_resultado .col-lg-7 select, #row_guardar_resultado .col-lg-7 span {
-            color: #8b8b8b !important;
-        }
-
-        .text-color {
-            color: #ffffff !important;
-        }
-
-        .text-color-claro {
-            color: #575757 !important;
-        }
-
-        .ranking_item{
-            background-color: #000000 !important;
-        }
-
-        .ranking_item_2{
-            background-color: #2b2b2b !important;
-        }
-
-        .clase_border_avatar {
-            border: 10px solid #2b2b2b;
-            background-color: #2b2b2b !important;
-        }
-    </style>
-</head>
-<body style="overflow: hidden;">
+@section('juego')
 <div id="contenedor_general" class="contenedor_general">
     <div class="game-container" id="game-container" style="position: relative;">
         <table id="mapa"></table>
-        <img id="player" class="player" style="transform: rotate(45deg);" src="css/mario.gif">
+        <img id="player" class="player" style="transform: rotate(45deg);" src="{{ asset('juegos/juegos/laberinto/css/mario.gif') }}">
     </div>
     <div style="display: flex; justify-content: space-around; align-items: center; height: 83vh; flex-direction: column;  width: 240px;">
         <div id="timer">
@@ -116,10 +66,10 @@
 
 <div class="pregunta" id="pregunta">
     <div class="contenedor_pregunta" style="width: 70%; position: relative; z-index: 10; display: flex; align-items: center;">
-        <img src="css/nave2.webp" style="width: 25%; height: 25%;" alt="">
+        <img src="{{ asset('juegos/juegos/laberinto/css/nave2.webp') }}" style="width: 25%; height: 25%;" alt="">
         <div class="contenedor_respuesta">
-            <img src="css/bandera.png" style="width: 115%; height: 100%; z-index: -1; position: absolute; top: 0; left: 0; pointer-events: none;" alt="">
-            <img src="css/perdio_gano.png" id="perdio_gano" alt="">
+            <img src="{{ asset('juegos/juegos/laberinto/css/bandera.png') }}" style="width: 115%; height: 100%; z-index: -1; position: absolute; top: 0; left: 0; pointer-events: none;" alt="">
+            <img src="{{ asset('juegos/juegos/laberinto/css/perdio_gano.png') }}" id="perdio_gano" alt="">
             <h1 id="pregunta_text">Pregunta</h1>
             <br>
             <div id="opciones_container" style="width: 100%;" class="row"></div>
@@ -134,8 +84,8 @@
             <div class="modal-body" style="background-color: #000000a8 !important; border-radius: 20px;">
                 <h5 class="modal-title" id="miModalLabel" style="color: #ffffff; font-size: 40px; font-family: 'DS-Digital'; font-weight: bold; width: 100%; text-align: center;">Selecciona un nivel</h5>
                 <div style="display: flex; justify-content: space-around; align-items: center; height: 100%; padding: 40px;">
-                    <div class="card_nivel" onclick="seleccionar_nivel(1)" style="background-image: url(css/Recurso_1.png);"></div>
-                    <div class="card_nivel" onclick="seleccionar_nivel(2)" style="background-image: url(css/Recurso_3.png);"></div>
+                    <div class="card_nivel" onclick="seleccionar_nivel(1)" style="background-image: url({{ asset('juegos/juegos/laberinto/css/Recurso_1.png') }});"></div>
+                    <div class="card_nivel" onclick="seleccionar_nivel(2)" style="background-image: url({{ asset('juegos/juegos/laberinto/css/Recurso_3.png') }});"></div>
                 </div>
             </div>
         </div>
@@ -156,11 +106,11 @@
         </div>
     </div>
 </div>
+@endsection
 
-<script src="../../js/terminar_juego.js"></script>
-<script src="../assets/bootstrap/sweetalert.js"></script>
-<script src="../../js/pantalla_completa.js"></script>
-<script src="js/js2.js"></script>
-
-</body>
-</html>
+@push('pie')
+        @include('juegos.partials.terminar-js')
+        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
+        @include('juegos.partials.pantalla-js')
+        <script src="{{ asset('juegos/juegos/laberinto/js/js2.js') }}"></script>
+@endpush

@@ -1,13 +1,15 @@
 <?php
 
 /**
- * COMPUERTA DE EQUIVALENCIA (Fases 10, 11 y 12): compara el HTML ORIGINAL de cada página migrada a Blade (los archivos
+ * COMPUERTA DE EQUIVALENCIA (Fases 10 a 13): compara el HTML ORIGINAL de cada página migrada a Blade (los archivos
  * estáticos que ya no existen en el árbol de trabajo, recuperados de git) con el HTML que renderiza ahora Laravel.
  *
  * Páginas comparadas y su REFERENCIA por defecto (el commit donde vive su HTML original):
  *   - `index` (portada, ruta `/`)           -> 0c60734 (Fase 10; el último commit con `public/index.html`).
  *   - cinco mapas temáticos (`/<slug>`)     -> 0c7c594 (Fase 9; el último commit con `public/<slug>.html`).
  *   - `juegos` (portal, ruta `/juegos`, SIN sesión) -> bb4b68b (Fase 11; el último commit con `public/juegos/index.html`).
+ *   - los 7 juegos (`/juegos/juegos/<slug>/`, slugs de config/juegos.php) -> b97b191 (Fase 12; el último commit con sus
+ *     `public/juegos/juegos/<slug>/index.html`). Ver «JUEGOS (Fase 13)» más abajo.
  * Cada original se lee con `git show <referencia>:laravel/public/<archivo>` (`index.html`, `<slug>.html`, `juegos/index.html`).
  *
  * El PERFIL (`/perfil`) NO se compara por texto: el original era un formulario vacío que rellenaba el JS y la vista
@@ -20,7 +22,8 @@
  *
  *     php tests/Equivalencia/comparar-paginas.php [--ver-diferencias] [--ref=<pagina>:<commit>]...
  *
- *   - `--ref=<pagina>:<commit>`: cambia la referencia de UNA página (repetible; `<pagina>` es `index` o el slug del mapa),
+ *   - `--ref=<pagina>:<commit>`: cambia la referencia de UNA página (repetible; `<pagina>` es `index`, `juegos` o el slug de un
+ *     mapa o de un juego),
  *     p. ej. `--ref=index:0c60734 --ref=etnias:0c7c594`. `--ref=*:<commit>` la cambia en todas.
  *   - `--ver-diferencias`: imprime también cada diferencia ADMITIDA (siempre se imprimen las NO admitidas).
  *
@@ -62,6 +65,24 @@
  *     `perfil` en vez de `miPerfil.html`; y el estado inicial de la barra lo pinta el servidor: sin sesión `#btn-iniciar`
  *     sale con `display: block` (antes `none` y lo mostraba el JS). También cambia de sitio el <meta viewport> (el
  *     layout base lo escribe tras el <title>; el original, antes).
+ *
+ * JUEGOS (Fase 13). Cada juego se compara con su `index.html` original (b97b191). Además de los pasos 1 a 6:
+ *   7. Las URL RELATIVAS del original (`href`/`src` y los `url(...)` de los atributos `style`) se resuelven contra su carpeta
+ *      (`juegos/juegos/<slug>/`, con cualquier número de `../`); el render ya trae URL absolutas con asset().
+ *   8. El JS inline NO se descarta (en los juegos sí se compara): el `<style>` extraído a `estilo-pagina.css` y el
+ *      `<script>` inline de sopa_letras extraído a `juego.js` se REINTEGRAN en el render (se sustituye el
+ *      `<link>`/`<script src>` por el contenido del archivo, sin su comentario de cabecera) y se comparan TEXTO A TEXTO.
+ *   9. `<title>`: se retiran de ambos lados y se compara el PRIMERO del original con el del render (cuatro originales traían
+ *      un segundo <title> duplicado o lo escribían tras otros metas; el layout lo emite una vez, tras el charset).
+ *  10. `<body >` y `<body>` se igualan.
+ * Diferencias ADMITIDAS de los juegos (cualquier otra es un FALLO):
+ *   - URL absolutas con asset() (7), `<style>` -> `<link estilo-pagina.css>` en el mismo sitio (8), `<script>` inline de sopa
+ *     -> `<script src juego.js>` en el mismo sitio (8), `<title>` duplicado o movido (9).
+ *   - banderas-color: `<html lang="en">` pasa a `lang="es"` (el layout; el contenido está en español). sopa_letras: el
+ *     original no declaraba `lang` ni `<meta charset>`: el layout añade `lang="es"` y `<meta charset="utf-8">` (la respuesta
+ *     ya salía como UTF-8 por cabecera HTTP). sopa_letras y juego_ahorcado conservan su ausencia de `<meta viewport>`.
+ *   - Portal: los siete enlaces a un juego pasan de `…/<slug>/index.html` a `…/<slug>/` (URL canónica con barra, Fase 13).
+ *   - Ninguna otra (ids, clases, onclick, modales, orden de CSS y JS) puede cambiar.
  */
 
 use App\Models\Pedigital\Usuario;
@@ -88,6 +109,7 @@ $verAdmitidas = in_array('--ver-diferencias', $argv, true);
 const REFERENCIA_INDEX = '0c60734';
 const REFERENCIA_MAPAS = '0c7c594';
 const REFERENCIA_JUEGOS = 'bb4b68b';
+const REFERENCIA_PAGINAS_JUEGO = 'b97b191';
 
 // Páginas a comparar: nombre => [ruta que se pide a Laravel, archivo original en laravel/public/, referencia git,
 // carpeta contra la que se resuelven las URL relativas del original (null = ninguna: el original ya colgaba de la raíz)].
@@ -96,12 +118,16 @@ foreach (array_keys(config('mapas')) as $slug) {
     $paginas[$slug] = ['/'.$slug, $slug.'.html', REFERENCIA_MAPAS, null];
 }
 $paginas['juegos'] = ['/juegos', 'juegos/index.html', REFERENCIA_JUEGOS, 'juegos/'];
+// Fase 13: las siete páginas de juego (la carpeta del original es la misma que sirve la URL canónica con barra).
+foreach (config('juegos') as $slugJuego) {
+    $paginas[$slugJuego] = ['/juegos/juegos/'.$slugJuego.'/', 'juegos/juegos/'.$slugJuego.'/index.html', REFERENCIA_PAGINAS_JUEGO, 'juegos/juegos/'.$slugJuego.'/'];
+}
 
 foreach (array_slice($argv, 1) as $a) {
     if ($a === '--ver-diferencias') {
         continue;
     }
-    if (! preg_match('/^--ref=([A-Za-z0-9_*]+):([A-Za-z0-9._~^\/-]+)$/', $a, $m)) {
+    if (! preg_match('/^--ref=([A-Za-z0-9_*-]+):([A-Za-z0-9._~^\/-]+)$/', $a, $m)) {
         // Solo se aceptan referencias git «normales» (se pasan a un comando de shell).
         fwrite(STDERR, "Argumento no válido: $a\n");
         exit(2);
@@ -119,7 +145,7 @@ foreach (array_slice($argv, 1) as $a) {
 
 /**
  * Resuelve una URL relativa del HTML ORIGINAL contra la carpeta de la que colgaba (paso 5c de la cabecera).
- * Solo se contempla un nivel de `../` (es lo que usa el portal). Se dejan igual las URL absolutas, las que empiezan por
+ * Admite cualquier número de `../` (el portal usa uno; los juegos, hasta tres). Se dejan igual las URL absolutas, las que empiezan por
  * `/`, los anclas, `javascript:` y `data:`.
  *
  * @param  string  $url  Valor del atributo o de `location.href`.
@@ -132,29 +158,61 @@ function resolverRelativa(string $url, string $base): string
         return $url;
     }
 
-    return str_starts_with($url, '../') ? substr($url, 3) : $base.$url;
+    // Se resuelve segmento a segmento: `..` sube un nivel (los juegos usan hasta tres: `../../../js/explora-api.js`).
+    $partes = array_values(array_filter(explode('/', $base), static fn ($p) => $p !== ''));
+    foreach (explode('/', $url) as $segmento) {
+        if ($segmento === '..') {
+            array_pop($partes);
+        } elseif ($segmento !== '.') {
+            $partes[] = $segmento;
+        }
+    }
+
+    return implode('/', $partes);
 }
 
 /**
  * Normaliza un documento HTML a una lista de «tokens» comparables (ver cabecera, pasos 1 a 6).
  *
  * @param  string  $html  Documento completo.
- * @param  string|null  $baseOriginal  Carpeta contra la que se resuelven las URL relativas (solo para el ORIGINAL del portal).
+ * @param  string|null  $baseOriginal  Carpeta contra la que se resuelven las URL relativas (solo para el ORIGINAL del portal y de los juegos).
+ * @param  bool  $conservarScripts  true (juegos, paso 8): NO se descarta el JS inline ni los scripts nuevos; se compara todo.
+ * @param  bool  $quitarTitulos  true (juegos, paso 9): se retiran los <title> (se comparan aparte).
  * @return string[] Tokens ya recortados y sin vacíos.
  */
-function normalizar(string $html, ?string $baseOriginal = null): array
+function normalizar(string $html, ?string $baseOriginal = null, bool $conservarScripts = false, bool $quitarTitulos = false): array
 {
     if ($baseOriginal !== null) {
+        // El JS inline no se toca (sus cadenas pueden contener `src="…"` de HTML generado): se aparta mientras se resuelven las URL.
+        $apartados = [];
+        $html = preg_replace_callback('#<script\b(?![^>]*\bsrc\s*=)[^>]*>.*?</script>#is', static function ($m) use (&$apartados) {
+            $apartados[] = $m[0];
+
+            return '@@SCRIPT'.(count($apartados) - 1).'@@';
+        }, $html);
         $html = preg_replace_callback('/\b(src|href)="([^"]*)"/i', static fn ($m) => $m[1].'="'.resolverRelativa($m[2], $baseOriginal).'"', $html);
-        $html = preg_replace_callback("/location\.href = '([^']*)'/", static fn ($m) => "location.href = '".resolverRelativa($m[1], $baseOriginal)."'", $html);
+        // Paso 7: `url(...)` de los atributos style (rutas relativas del original).
+        $html = preg_replace_callback('/\bstyle="([^"]*)"/i', static fn ($m) => 'style="'.preg_replace_callback('/url\((["\']?)([^)"\']*)\1\)/', static fn ($u) => 'url('.resolverRelativa($u[2], $baseOriginal).')', $m[1]).'"', $html);
+        if (! $conservarScripts) {
+            // (En los juegos el «volver» `location.href = '../../index.html'` es idéntico en ambos lados: no se resuelve.)
+            $html = preg_replace_callback("/location\.href = '([^']*)'/", static fn ($m) => "location.href = '".resolverRelativa($m[1], $baseOriginal)."'", $html);
+        }
+        $html = preg_replace_callback('/@@SCRIPT(\d+)@@/', static fn ($m) => $apartados[(int) $m[1]], $html);
     }
+    $html = preg_replace('/^\xEF\xBB\xBF/', '', $html); // BOM UTF-8 inicial (sopa_letras lo traía; el render no)
     $html = preg_replace('/<meta charset="[^"]*">/i', '<meta charset="utf-8">', $html);
     $html = str_replace('-->iv>', '-->', $html);
     $html = preg_replace('/<!--.*?-->/s', '', $html);
     // <script> sin atributo src (JS inline); los que llevan src se conservan.
-    $html = preg_replace_callback('#<script\b([^>]*)>(.*?)</script>#is', static fn ($m) => preg_match('/\bsrc\s*=/i', $m[1]) ? $m[0] : '', $html);
-    // Scripts nuevos con el JS extraído: no existían en el original (ver paso 2).
-    $html = preg_replace('#<script\b[^>]*\bsrc="[^"]*js/(?:mapa-comun|mapa-tematico|inicio|anio-pie)\.js"[^>]*></script>#i', '', $html);
+    if (! $conservarScripts) {
+        $html = preg_replace_callback('#<script\b([^>]*)>(.*?)</script>#is', static fn ($m) => preg_match('/\bsrc\s*=/i', $m[1]) ? $m[0] : '', $html);
+        // Scripts nuevos con el JS extraído: no existían en el original (ver paso 2).
+        $html = preg_replace('#<script\b[^>]*\bsrc="[^"]*js/(?:mapa-comun|mapa-tematico|inicio|anio-pie)\.js"[^>]*></script>#i', '', $html);
+    }
+    if ($quitarTitulos) {
+        $html = preg_replace('#<title>.*?</title>#is', '', $html);
+        $html = preg_replace('/<body\s+>/i', '<body>', $html);
+    }
     $html = str_replace('http://localhost/', '', $html);
     // iniciarTour('x') / iniciarTour("x") con escapes \uXXXX: se deja la forma 'x' sin escapes.
     $html = preg_replace_callback('/iniciarTour\((["\'])(.*?)\1\)/u', static function ($m) {
@@ -349,9 +407,63 @@ foreach ($paginas as $slug => [$rutaPagina, $archivoOriginal, $referencia, $base
         $fallos++;
     }
 
-    $a = normalizar($original, $baseOriginal);
-    $b = normalizar($respuesta->getContent());
     $admitidas = [];
+    $esJuego = in_array($slug, config('juegos'), true);
+    $contenido = $respuesta->getContent();
+
+    if ($esJuego) {
+        // Pasos 8 y 9 (ver cabecera): se reintegra el CSS/JS extraído y se comparan aparte los <title>.
+        $carpetaJuego = __DIR__.'/../../public/juegos/juegos/'.$slug.'/';
+        $reintegrar = static function (string $archivo) use ($carpetaJuego): ?string {
+            if (! is_file($carpetaJuego.$archivo)) {
+                return null;
+            }
+
+            // Se quita el comentario de documentación de cabecera (lo único que el archivo añade al código original).
+            return preg_replace('#^\s*/\*.*?\*/\s*#s', '', (string) file_get_contents($carpetaJuego.$archivo), 1);
+        };
+        $contenido = preg_replace_callback('#<link rel="stylesheet" href="http://localhost/juegos/juegos/'.preg_quote($slug, '#').'/estilo-pagina\.css">#', static function ($m) use ($reintegrar, &$admitidas) {
+            $admitidas[] = '+ (<style> extraído a estilo-pagina.css, reintegrado y comparado)';
+
+            return '<style>'.$reintegrar('estilo-pagina.css').'</style>';
+        }, $contenido);
+        $contenido = preg_replace_callback('#<script src="http://localhost/juegos/juegos/'.preg_quote($slug, '#').'/juego\.js"></script>#', static function ($m) use ($reintegrar, &$admitidas) {
+            $admitidas[] = '+ (<script> inline extraído a juego.js, reintegrado y comparado)';
+
+            return '<script>'.$reintegrar('juego.js').'</script>';
+        }, $contenido);
+        // El original lleva exactamente un <style> inline por juego: si el render no reintegró uno, el enlace no está.
+        if (substr_count($original, '<style') !== 1 || ! str_contains($contenido, '<style>')) {
+            echo "    NO ADMITIDA  $slug: el <style> inline del original no tiene su <link estilo-pagina.css> en el render\n";
+            $fallos++;
+        }
+        preg_match('#<title>(.*?)</title>#s', $original, $tituloOriginal);
+        preg_match('#<title>(.*?)</title>#s', $contenido, $tituloRender);
+        if (($tituloOriginal[1] ?? 'a') !== html_entity_decode($tituloRender[1] ?? 'b')) {
+            echo "    NO ADMITIDA  $slug: <title> original «".($tituloOriginal[1] ?? '').'» y renderizado «'.($tituloRender[1] ?? '')."»\n";
+            $fallos++;
+        }
+        $titulosExtra = substr_count($original, '<title>') - 1;
+        if ($titulosExtra > 0) {
+            $admitidas[] = "- ($titulosExtra <title> duplicado(s) del original, el layout emite uno)";
+        }
+    }
+
+    // Portal: cada enlace a un juego pasaba de `…/<slug>/index.html` a la URL canónica `…/<slug>/` (Fase 13).
+    if ($slug === 'juegos') {
+        $original = preg_replace_callback('#(?<![\w/])(juegos/(?:'.implode('|', array_map('preg_quote', config('juegos'))).'))/index\.html#', static function ($m) use (&$admitidas) {
+            $admitidas[] = '- (enlace del portal '.$m[1].'/index.html -> '.$m[1].'/)';
+
+            return $m[1].'/';
+        }, $original, -1, $enlaces);
+        if ($enlaces !== count(config('juegos'))) {
+            echo '    NO ADMITIDA  portal: se esperaban '.count(config('juegos'))." enlaces a juegos en el original y hay $enlaces\n";
+            $fallos++;
+        }
+    }
+
+    $a = normalizar($original, $baseOriginal, $esJuego, $esJuego);
+    $b = normalizar($contenido, null, $esJuego, $esJuego);
 
     // Admitida: coordilleras no tenía #final. Se compara el resto y se informa del bloque añadido.
     $tenia = quitarBloqueFinal($a)[1];
@@ -371,14 +483,25 @@ foreach ($paginas as $slug => [$rutaPagina, $archivoOriginal, $referencia, $base
     //  - `- <div class="modal-body quizmodal">`: la apertura sin estilo del `.quizmodal` anidado (cuatro mapas).
     $anidado = in_array($slug, ['coordilleras', 'etnias', 'parques_naturales', 'vertientes'], true);
     $cupos = [
-        '- </div>' => $slug === 'juegos' ? 0 : 1 + ($anidado ? 1 : 0) + ($slug === 'vertientes' ? 1 : 0) + ($slug === 'index' ? 1 : 0),
+        '- </div>' => $slug === 'juegos' || $esJuego ? 0 : 1 + ($anidado ? 1 : 0) + ($slug === 'vertientes' ? 1 : 0) + ($slug === 'index' ? 1 : 0),
         '- <div class="modal-body quizmodal">' => $anidado ? 1 : 0,
     ];
 
     // Fase 12: diferencias EXACTAS admitidas, con su cupo. Primero las de las seis páginas del mapa (enlace del menú
     // circular a los juegos) y luego las del portal (ver cabecera).
     $exactas = [];
-    if ($slug !== 'juegos') {
+    if ($esJuego) {
+        // Diferencias propias de los juegos (ver cabecera, «Diferencias ADMITIDAS de los juegos»).
+        if ($slug === 'banderas-color') {
+            $exactas['- <html lang="en">'] = 1;
+            $exactas['+ <html lang="es">'] = 1;
+        }
+        if ($slug === 'sopa_letras') {
+            $exactas['- <html>'] = 1;
+            $exactas['+ <html lang="es">'] = 1;
+            $exactas['+ <meta charset="utf-8">'] = 1;
+        }
+    } elseif ($slug !== 'juegos') {
         $exactas['- <a id="btn_menu_juegos" href="juegos/index.html" target="_blank" class="menu-item itemm2">'] = 1;
         $exactas['+ <a id="btn_menu_juegos" href="juegos" target="_blank" class="menu-item itemm2">'] = 1;
     } else {

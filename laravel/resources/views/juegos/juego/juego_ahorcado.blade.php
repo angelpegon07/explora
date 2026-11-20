@@ -1,65 +1,33 @@
-<!DOCTYPE html>
-<html lang="es">
+{{--
+    Juego «juego_ahorcado» (Fase 13): migración de public/juegos/juegos/juego_ahorcado/index.html (se eliminó) a Blade.
+    Ahorcado. Sin <meta viewport> en el original: se conserva así (sección `sin_viewport`). Palabras en pistas.json.
 
-<head>
-  <meta charset="utf-8">
-  <link rel="stylesheet" href="estilo-ahoracado.css">
-  <link rel="stylesheet" href="../../librerias/fontawesome/css/all.min.css">
+    URL canónica: /juegos/juegos/juego_ahorcado/ (CON barra final). Casi todo lo que carga el juego en ejecución (JSON, sonidos, imágenes
+    por JS, url() de CSS) es RELATIVO a la URL de la página, por eso JuegoController redirige la forma sin barra.
+    Los recursos del HTML pasan por asset() (URL absolutas). El orden de CSS y JS es el del original (cascada y
+    dependencias: jQuery antes de explora-api.js y este antes de terminar_juego.js). Sin datos del servidor y sin salida sin escapar.
+    El <style> inline se extrajo a estilo-pagina.css, enlazado en la MISMA posición del <head> (misma cascada).
+--}}
+@extends('layouts.juego')
 
-  <link rel="stylesheet" href="../../librerias/bootstrap-5.3/css/bootstrap.min.css">
-  <script src="../../librerias/bootstrap-5.3/js/bootstrap.bundle.min.js"></script>
-  <script type="text/javascript" src="../assets/bootstrap/jquery.min.js"></script>
-  <script src="../../../js/explora-api.js"></script>
+@section('titulo', 'Adivina la Palabra')
+@section('sin_viewport', 'sí')
+@section('atributos_body')style="display: flex; justify-content: center; width: 100%; height: 100vh; overflow: hidden;"@endsection
 
-  <script src="../assets/bootstrap/sweetalert.js"></script>
-  <link rel="stylesheet" href="../../css/pantalla_completa.css">
-  <link rel="stylesheet" href="../../css/terminar_juego.css">
+@push('cabecera')
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/juego_ahorcado/estilo-ahoracado.css') }}">
+        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        @include('juegos.partials.explora-api')
+        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
+        @include('juegos.partials.pantalla-css')
+        @include('juegos.partials.terminar-css')
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/juego_ahorcado/estilo-pagina.css') }}">
+@endpush
 
-  <title>Adivina la Palabra</title>
-
-  <style>
-    #modal_guardar_resultado .modal-content{
-      border: 4px solid #fbd1bc !important;
-    }
-
-    #row_guardar_resultado {
-      background: linear-gradient(90deg, #fbd1bc 57%, #fbd1bc 55%, #9d6a41 2%, #9d6a41 100%) !important;
-    }
-
-    #row_guardar_resultado .col-lg-7 input,
-    #row_guardar_resultado .col-lg-7 select,
-    #row_guardar_resultado .col-lg-7 span {
-      color: #8d6b50 !important;
-    }
-
-    #row_guardar_resultado .col-lg-7 input::placeholder {
-      color: #8d6b50 !important;
-    }
-
-    .text-color {
-      color: #fbd1bc !important;
-    }
-
-    .text-color-claro {
-      color: #80502b !important;
-    }
-
-    .ranking_item {
-      background-color: #472810 !important;
-    }
-
-    .ranking_item_2 {
-      background-color: #7b5537 !important;
-    }
-
-    .clase_border_avatar {
-      border: 10px solid #7b5537;
-      background-color: #7b5537 !important;
-    }
-  </style>
-</head>
-
-<body style="display: flex; justify-content: center; width: 100%; height: 100vh; overflow: hidden;">
+@section('juego')
   <div style="display: none" class="overlay">
     <div class="nube">
       <p class="borde2" id="bienvenida"></p>
@@ -78,7 +46,7 @@
   </div>
 
   <div style="text-align: center; display: none; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.5s ease-in-out;" id="final" class="final">
-    <img src="../assets/images/victoria.webp" id="imagen_final" style="width: 560px; height: auto;">
+    <img src="{{ asset('juegos/juegos/assets/images/victoria.webp') }}" id="imagen_final" style="width: 560px; height: auto;">
     <br>
     <h1 style="font-size: 25pt; padding-bottom: 0px;" class="borde2" id="texto_final"></h1>
     <div class="row">
@@ -114,18 +82,18 @@
       <div class="col-3" style="height: 265px; padding: 5px; padding-top: 5px;">
         <div
           style="    background-color: #ffffff; border: 5px solid #c25c37; height: 100%; border-radius: 10px; overflow: hidden; padding-top: 10px;">
-          <img src="img/ahorcado_6.png" alt="" id="image6" style="display: block">
-          <img src="img/ahorcado_5.png" alt="" id="image5" style="display: none">
-          <img src="img/ahorcado_4.png" alt="" id="image4" style="display: none">
-          <img src="img/ahorcado_3.png" alt="" id="image3" style="display: none">
-          <img src="img/ahorcado_2.png" alt="" id="image2" style="display: none">
-          <img src="img/ahorcado_1.png" alt="" id="image1" style="display: none">
-          <img src="img/ahorcado_0.png" alt="" id="image0" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_6.png') }}" alt="" id="image6" style="display: block">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_5.png') }}" alt="" id="image5" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_4.png') }}" alt="" id="image4" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_3.png') }}" alt="" id="image3" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_2.png') }}" alt="" id="image2" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_1.png') }}" alt="" id="image1" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_0.png') }}" alt="" id="image0" style="display: none">
         </div>
       </div>
       <div class="col-6" style="padding-top: 5px; padding-bottom: 5px; padding-left: 9px; padding-right: 9px;">
         <div style="overflow: visible; position: relative;padding-left: 28pt;padding-right: 27pt;">
-          <img src="img/fondo_tabla_fichas.png" alt="" id="fondo_tabla_fichas">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/fondo_tabla_fichas.png') }}" alt="" id="fondo_tabla_fichas">
           <div class="col-12">
             <div class="flex-row" id="abcdario">
             </div>
@@ -154,10 +122,10 @@
     </div>
     <h3 id="acierto"></h3>
   </div>
+@endsection
 
-  <script src="../../js/terminar_juego.js"></script>
-  <script src="../../js/pantalla_completa.js"></script>
-  <script src="ahorcado.js"></script>
-</body>
-
-</html>
+@push('pie')
+        @include('juegos.partials.terminar-js')
+        @include('juegos.partials.pantalla-js')
+        <script src="{{ asset('juegos/juegos/juego_ahorcado/ahorcado.js') }}"></script>
+@endpush

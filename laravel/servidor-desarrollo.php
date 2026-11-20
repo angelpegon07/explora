@@ -33,7 +33,10 @@
  *     donde `DirectoryIndex index.php index.html` entrega `/` al front controller). Las demás carpetas: sin index.html
  *     -> 404; con index.html se sirve ESE archivo desde el propio router. Una carpeta pedida sin «/» final se
  *     redirige (301). EXCEPCIÓN (Fase 12): `/juegos` y `/juegos/` (solo esas dos) también van a Laravel, que sirve el
- *     portal de juegos, igual que la regla `RewriteRule ^juegos/?$ index.php` de Apache.
+ *     portal de juegos, igual que la regla `RewriteRule ^juegos/?$ index.php` de Apache. EXCEPCIÓN (Fase 13): las siete
+ *     carpetas `/juegos/juegos/<slug>/` listadas en config/juegos.php: con «/» final -> Laravel (vista del juego); sin ella
+ *     -> 301 a la forma con barra; `/juegos/juegos/<slug>/index.html` (ya inexistente) lo redirige Laravel. Los archivos de
+ *     esas carpetas se sirven como siempre y las demás carpetas sin index.html siguen dando 404.
  *  7. Ruta que NO existe como archivo ni carpeta (y que pasó los filtros anteriores) -> Laravel, igual que el
  *     `RewriteRule ^ index.php` de `public/.htaccess` en Apache. Así funcionan las páginas Blade (`/climatico`),
  *     sus redirecciones (`/climatico.html` -> 301) y el 404 propio de Laravel para lo desconocido. Una ruta con «/»
@@ -211,6 +214,22 @@ if ($minusculas === ['juegos']) {
     // Portal de juegos (Fase 12): `/juegos` y `/juegos/` son una CARPETA real, pero los atiende Laravel (equivale a la
     // regla `RewriteRule ^juegos/?$ index.php` de public/.htaccess). Solo estas dos URL: `/juegos/js/`, `/juegos/css/`…
     // siguen sin index.html -> 404 (más abajo) y `/juegos/css/styles.css` se sirve como archivo.
+    return explora_delegar_en_laravel(false);
+}
+if (count($segmentos) === 3 && $segmentos[0] === 'juegos' && $segmentos[1] === 'juegos' && in_array($segmentos[2], require __DIR__.'/config/juegos.php', true)) {
+    // Páginas de juego (Fase 13): `/juegos/juegos/<slug>/` es una CARPETA real sin index.html (su HTML es una vista Blade).
+    // Equivale a la regla `juegos/juegos/(…)/?$` de public/.htaccess. La lista de slugs sale de config/juegos.php
+    // (arreglo PHP plano, una sola fuente de verdad); se compara con distinción de mayúsculas, como Apache.
+    if (! str_ends_with($ruta, '/')) {
+        // Sin barra: las rutas relativas del juego (datos.json, ../sounds/…) exigen la forma con barra. Se reconstruye desde
+        // los segmentos codificados (sin reflejar la ruta cruda) y se conserva la cadena de consulta.
+        $consulta = (string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY);
+        http_response_code(301);
+        header('Location: /'.implode('/', array_map('rawurlencode', $segmentos)).'/'.($consulta !== '' ? '?'.preg_replace('/[\r\n]/', '', $consulta) : ''));
+
+        return true;
+    }
+
     return explora_delegar_en_laravel(false);
 }
 if ($real === $raiz) {

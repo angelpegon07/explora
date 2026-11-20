@@ -14,6 +14,7 @@
     Secciones (rellena cada vista; `@yield` NO vuelve a escapar lo que ya escapó Blade al definirlo):
       @section('titulo', '…')       texto del <title> (con la forma de dos argumentos Blade lo escapa; en bloque, usar {{ }}).
       @section('viewport', '…')     (opcional) contenido del <meta viewport>. Por defecto `width=device-width, initial-scale=1`.
+      @section('sin_viewport', 'sí')  (opcional, Fase 13) NO emite el <meta viewport>: para páginas que no lo tenían (sopa y ahorcado).
       @section('atributos_html')    (opcional) atributos extra de <html>, p. ej. ` style="…"` (con espacio inicial).
       @section('atributos_body')    (opcional) atributos extra de <body>, con espacio inicial.
       @section('favicon')           (opcional) sustituye al <link rel="shortcut icon"> por defecto; vacío = sin favicon aquí.
@@ -28,7 +29,9 @@
     <head>
         <meta charset="utf-8">
         <title>@yield('titulo')</title>
+        @sectionMissing('sin_viewport')
         <meta name="viewport" content="@yield('viewport', 'width=device-width, initial-scale=1')">
+        @endif
         @section('favicon')
         <link rel="shortcut icon" href="{{ asset('juegos/images/Isotipo.png') }}">
         @show

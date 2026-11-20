@@ -59,10 +59,16 @@ configuración del mapa pasada desde Blade (`@json`). Cubre M01–M03 y M12 (tut
 `/juegos/` (carpeta real) en `.htaccess` y en `servidor-desarrollo.php`; 301 de `/miPerfil.html` y `/juegos/index.html`;
 compuerta de equivalencia ampliada (portal + comprobación estructural del perfil). Detalle en `REGISTRO_CAMBIOS.md`.
 
-### Fase 13 — Los 7 juegos
-`laberinto`, `banderas-color`, `puzzle`, `sopa_letras`, `juego_ahorcado`, `arrastra`, `completa`, un layout común de juego.
-Decisión pendiente heredada: M19–M21 (`arrastra`, `completa`, `mapas` no enlazados en el menú): ¿se publican o se retiran?
-Los 2.217 archivos de `banderas-color` se revisan (duplicados y peso).
+### Fase 13 — Los 7 juegos — ✔ HECHA
+`laberinto`, `banderas-color`, `puzzle`, `sopa_letras`, `juego_ahorcado`, `arrastra`, `completa` en Blade con un layout común de juego.
+**Decisión heredada M19–M21 (resuelta):** `arrastra` y `completa` SÍ son accesibles (el portal los enlaza desde su modal) y se migran como los
+demás; `juegos/juegos/mapas` NO es una página: son solo imágenes (`gris/`, `marron/`) referenciadas por 6 juegos.
+**Revisión de `banderas-color`:** tiene 69 archivos (los «2.217» eran anteriores a la Fase 7B); su inventario de duplicados y peso está en
+`INVENTARIO_JUEGOS.md` (sin borrar nada: la unificación de librerías queda recomendada para una fase posterior).
+**Hecha:** `layouts/juego` (extiende `base`) con parciales en `juegos/partials`, vistas `juegos/juego/<slug>`, `config/juegos.php` (lista cerrada,
+una sola fuente de verdad), `JuegoController`, URL canónica `/juegos/juegos/<slug>/` CON barra (las rutas relativas de cada juego dependen de ella;
+sin barra y `/index.html` dan 301), regla explícita en `.htaccess` y en `servidor-desarrollo.php`, `<style>` inline extraído a `estilo-pagina.css` y el
+`<script>` inline de sopa a `juego.js`, compuerta de equivalencia ampliada con los 7 juegos y chequeo de rutas literales. Detalle en `REGISTRO_CAMBIOS.md`.
 
 ### Fase 14 — IA: chat y corrector (Fase 6 original)
 Requiere decidir antes (ver `PENDIENTE_TRABAJO_IA.md`): dónde corre el modelo, proveedor/privacidad (menores), límites de uso,

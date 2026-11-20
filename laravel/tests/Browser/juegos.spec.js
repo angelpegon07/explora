@@ -6,8 +6,8 @@ import { test, expect } from '@playwright/test';
  * Las filas creadas llevan el prefijo «E2E-» y las borra fixtures.php (setup y teardown).
  */
 
-const COMPLETA = '/juegos/juegos/completa/index.html';
-const BANDERAS = '/juegos/juegos/banderas-color/index.html';
+const COMPLETA = '/juegos/juegos/completa/';
+const BANDERAS = '/juegos/juegos/banderas-color/';
 
 // Comprueba el flujo de invitado: guardar resultado -> POST 201 -> el ranking refleja al jugador.
 test('invitado guarda un resultado (201) y aparece en el ranking', async ({ page }) => {

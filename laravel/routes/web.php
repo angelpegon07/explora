@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\InicioController;
+use App\Http\Controllers\JuegoController;
 use App\Http\Controllers\MapaTematicoController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PortalJuegosController;
@@ -91,3 +92,27 @@ Route::get('/juegos/index.html', static function (Request $request) {
 
     return redirect()->to('/juegos'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Páginas de los 7 juegos (Fase 13)
+|--------------------------------------------------------------------------
+|
+| URL canónica: `/juegos/juegos/{slug}/` (CON barra final: las rutas relativas de cada juego dependen de ella). Los slugs
+| válidos salen de config/juegos.php y `where()` los fija como lista cerrada, así que cualquier otro nombre da el 404
+| normal de Laravel. El controlador sirve la vista con barra y redirige (301) la forma sin barra.
+|
+| Igual que con `/juegos`, esas carpetas son CARPETAS reales (guardan JS, CSS, JSON, sonidos…) y ni Apache ni el router
+| de desarrollo las envían a Laravel por defecto: `public/.htaccess` y `servidor-desarrollo.php` tienen una regla
+| explícita para esos slugs (y solo para ellos; los archivos estáticos de la carpeta siguen sirviéndose directamente).
+|
+| Los `index.html` antiguos se eliminaron; sus URL (enlaces guardados) redirigen con 301 a la forma canónica.
+*/
+$patronJuegos = implode('|', array_map(static fn (string $slug): string => preg_quote($slug, '#'), config('juegos')));
+
+Route::get('/juegos/juegos/{slug}', JuegoController::class)
+    ->where('slug', $patronJuegos)
+    ->name('juego');
+
+Route::get('/juegos/juegos/{slug}/index.html', [JuegoController::class, 'redirigirACanonica'])
+    ->where('slug', $patronJuegos);

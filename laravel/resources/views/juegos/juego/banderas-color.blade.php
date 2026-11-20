@@ -1,89 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="../../librerias/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
-    <script src="jquery.min.js"></script>
-    <script src="../../../js/explora-api.js"></script>
-    <script src="assets/sweetalert/sweetalert.js"></script>
-    <script src="bootstrap/bootstrap.bundle.min.js"></script>
-    <script src="bootstrap/popper.min.js"></script>
-    <link rel="stylesheet" href="../../css/pantalla_completa.css">
-    <link rel="stylesheet" href="../../css/terminar_juego.css">
-    <title>La Bandera de Colombia</title>
-    <style>
-        .swal2-popup {
-            display: none;
-            position: relative;
-            box-sizing: border-box;
-            grid-template-columns: minmax(0, 100%);
-            width: 32em;
-            max-width: 100%;
-            padding: 0 0 1.25em;
-            border: none;
-            border-radius: 44px !important;
-            background: #ffca33cb !important;
-            color: #545454;
-            font-family: inherit;
-            font-size: 1rem;
-            border: 10px solid #bf6100e0 !important;
-            color: black !important;
-            width: 75vw !important;
-        }
+{{--
+    Juego «banderas-color» (Fase 13): migración de public/juegos/juegos/banderas-color/index.html (se eliminó) a Blade.
+    Pinta la bandera / Adivina la bandera. Usa SU PROPIO Bootstrap 4.6.2 + jQuery 3.7.1 + SweetAlert 11.17 (carpetas bootstrap/, jquery.min.js y assets/sweetalert/), NO el Bootstrap 5.3 compartido. El original declaraba <html lang="en">; el layout usa lang="es" (el contenido está en español).
 
-        div:where(.swal2-icon).swal2-question {
-            border-color: #bf6100e0;
-            color: #bf6100e0;
-        }
-        
-        .swal2-styled.swal2-confirm, .swal2-styled.swal2-cancel {
-           border: 4px solid white !important;
-           font-family: cursive !important;
-           font-size: 1.7rem !important;
-        }
+    URL canónica: /juegos/juegos/banderas-color/ (CON barra final). Casi todo lo que carga el juego en ejecución (JSON, sonidos, imágenes
+    por JS, url() de CSS) es RELATIVO a la URL de la página, por eso JuegoController redirige la forma sin barra.
+    Los recursos del HTML pasan por asset() (URL absolutas). El orden de CSS y JS es el del original (cascada y
+    dependencias: jQuery antes de explora-api.js y este antes de terminar_juego.js). Sin datos del servidor y sin salida sin escapar.
+    El <style> inline se extrajo a estilo-pagina.css, enlazado en la MISMA posición del <head> (misma cascada).
+--}}
+@extends('layouts.juego')
 
-        #modal_guardar_resultado .modal-content{
-            border: 4px solid #fbf2dd !important;
-        }
+@section('titulo', 'La Bandera de Colombia')
+@section('viewport', 'width=device-width, initial-scale=1.0')
+@section('atributos_body')style="display: flex; justify-content: space-between; align-items: center; height: 100vh !important; margin: 0; flex-direction: column; overflow: hidden;"@endsection
 
-        #row_guardar_resultado {
-            background: linear-gradient(90deg, #fbf2dd 57%, #fbf2dd 55%, #f7833d 2%, #f17d35 100%) !important;
-        }
+@push('cabecera')
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/banderas-color/style.css') }}">
+        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/banderas-color/bootstrap/bootstrap.min.css') }}">
+        <script src="{{ asset('juegos/juegos/banderas-color/jquery.min.js') }}"></script>
+        @include('juegos.partials.explora-api')
+        <script src="{{ asset('juegos/juegos/banderas-color/assets/sweetalert/sweetalert.js') }}"></script>
+        <script src="{{ asset('juegos/juegos/banderas-color/bootstrap/bootstrap.bundle.min.js') }}"></script>
+        <script src="{{ asset('juegos/juegos/banderas-color/bootstrap/popper.min.js') }}"></script>
+        @include('juegos.partials.pantalla-css')
+        @include('juegos.partials.terminar-css')
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/banderas-color/estilo-pagina.css') }}">
+@endpush
 
-        #row_guardar_resultado .col-lg-7 input, #row_guardar_resultado .col-lg-7 select, #row_guardar_resultado .col-lg-7 span {
-            color: #777777 !important;
-        }
-
-        #row_guardar_resultado .col-lg-7 input::placeholder {
-            color: #777777 !important;
-        }
-
-        .text-color {
-            color: #fbe8bc !important;
-        }
-
-        .text-color-claro {
-            color: #ff7c08 !important;
-        }
-
-        .ranking_item{
-            background-color: #873300 !important;
-        }
-
-        .ranking_item_2{
-            background-color: #fb5f00 !important;
-        }
-
-        .clase_border_avatar {
-            border: 10px solid #fb5f00;
-            background-color: #fb5f00 !important;
-        }
-    </style>
-</head>
-<body style="display: flex; justify-content: space-between; align-items: center; height: 100vh !important; margin: 0; flex-direction: column; overflow: hidden;">
+@section('juego')
     <div id="contenedor_juego1" style="display: none;">
         <div class="header" style="background-color: #a2b81b;">
             <h6 style="width: 99%; text-align: right;">Pregunta <span id="pregunta"></span> de 10</h6>
@@ -141,7 +86,7 @@
                 </div>
             </div>
             <div class="col-md-9" style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
-                <img src="assets/fondo2.png" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: -1; opacity: 0.5; pointer-events: none;" alt="fondo">
+                <img src="{{ asset('juegos/juegos/banderas-color/assets/fondo2.png') }}" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: -1; opacity: 0.5; pointer-events: none;" alt="fondo">
                 <h5 style="-webkit-text-stroke: 2px #012644; width: 75%;color: #ffffff; background-color: #004386;padding: 15px;border-radius: 10px; border: 6px solid #3a3a3a9c; text-align: center;">Selecciona la bandera de <br> <span id="departamento_adivinar">Prueba</span></h5>
                 <br>
                 <div class="contenedor_banderas" style="width: 55%">
@@ -166,12 +111,12 @@
                     <div class="row">
                         <div class="col-md-6" style="display: flex; justify-content: center; align-items: center;">
                             <div class="cajon_juego" onclick="iniciarJuego('adivina')">
-                                <img src="assets/juego2.png" style="width: 100%; height: 100%;" alt="bandera correcta">
+                                <img src="{{ asset('juegos/juegos/banderas-color/assets/juego2.png') }}" style="width: 100%; height: 100%;" alt="bandera correcta">
                             </div>
                         </div>
                         <div class="col-md-6" style="display: flex; justify-content: center; align-items: center;">
                             <div class="cajon_juego" onclick="iniciarJuego('pinta')">
-                                <img src="assets/juego1.png" style="width: 100%; height: 100%;" alt="bandera correcta">
+                                <img src="{{ asset('juegos/juegos/banderas-color/assets/juego1.png') }}" style="width: 100%; height: 100%;" alt="bandera correcta">
                             </div>
                         </div>
                     </div>
@@ -179,8 +124,10 @@
             </div>
         </div>
     </div>
-    <script src="../../js/terminar_juego.js"></script>
-    <script src="../../js/pantalla_completa.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+@endsection
+
+@push('pie')
+        @include('juegos.partials.terminar-js')
+        @include('juegos.partials.pantalla-js')
+        <script src="{{ asset('juegos/juegos/banderas-color/script.js') }}"></script>
+@endpush

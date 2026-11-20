@@ -7,9 +7,9 @@ import { test, expect } from '@playwright/test';
  */
 const PAGINAS = [
     '/', '/climatico', '/coordilleras', '/etnias', '/parques_naturales', '/vertientes', '/perfil', '/juegos',
-    '/juegos/juegos/arrastra/index.html', '/juegos/juegos/banderas-color/index.html',
-    '/juegos/juegos/completa/index.html', '/juegos/juegos/juego_ahorcado/index.html',
-    '/juegos/juegos/laberinto/index.html', '/juegos/juegos/puzzle/index.html', '/juegos/juegos/sopa_letras/index.html',
+    '/juegos/juegos/arrastra/', '/juegos/juegos/banderas-color/',
+    '/juegos/juegos/completa/', '/juegos/juegos/juego_ahorcado/',
+    '/juegos/juegos/laberinto/', '/juegos/juegos/puzzle/', '/juegos/juegos/sopa_letras/',
 ];
 
 for (const ruta of PAGINAS) {

@@ -85,7 +85,7 @@ test('/juegos/index.html redirige a /juegos y /juegos/ responde 200', async ({ r
     expect((await request.get('/juegos/')).status()).toBe(200);
 
     // Un enlace `../../index.html` desde una página de juego termina en el portal.
-    await page.goto('/juegos/juegos/puzzle/index.html');
+    await page.goto('/juegos/juegos/puzzle/');
     await page.goto('/juegos/index.html');
     await expect(page).toHaveURL(/\/juegos$/);
     await expect(page.locator('.puzzle-piece')).toHaveCount(6);

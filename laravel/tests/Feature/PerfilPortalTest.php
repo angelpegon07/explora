@@ -375,7 +375,7 @@ class PerfilPortalTest extends TestCase
         foreach ($urls[1] as $u) {
             $this->assertMatchesRegularExpression('#^(https?://|\#|/$)#i', $u, "URL no absoluta en el portal: $u");
         }
-        $this->assertStringContainsString(asset('juegos/juegos/laberinto/index.html'), $html);
+        $this->assertStringContainsString(asset('juegos/juegos/laberinto').'/', $html);
         $this->assertStringContainsString(asset('juegos/js/anio-pie.js'), $html);
     }
 

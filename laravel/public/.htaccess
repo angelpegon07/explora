@@ -43,6 +43,15 @@ RedirectMatch 404 /\.(git|env)
     # No habilita listados de directorio: el resto de carpetas sin index siguen dando 403 por `-Indexes`.
     RewriteRule ^juegos/?$ index.php [L]
 
+    # Páginas de los 7 juegos (Fase 13): cada una es una CARPETA real (JS, CSS, JSON, sonidos…) sin index.html desde que
+    # su HTML pasó a Blade, así que las reglas genéricas (`!-d`) no la enviarían a Laravel. Esta regla manda al front
+    # controller EXACTAMENTE `/juegos/juegos/<slug>/` y `/juegos/juegos/<slug>` (la ruta de Laravel redirige 301 la forma
+    # sin barra, porque el JS del juego resuelve sus archivos relativos a la URL CON barra). Con Apache real mod_dir podría
+    # haber redirigido antes a la forma con barra: es equivalente. No afecta a los archivos de esas carpetas (el patrón
+    # termina en el slug) y no habilita listados (`-Indexes` sigue vigente). La lista debe coincidir con config/juegos.php:
+    # lo vigila tests/Feature/JuegosPaginasTest. `/juegos/juegos/<slug>/index.html` ya no existe y cae en la regla genérica.
+    RewriteRule ^juegos/juegos/(laberinto|banderas-color|puzzle|sopa_letras|juego_ahorcado|arrastra|completa)/?$ index.php [L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

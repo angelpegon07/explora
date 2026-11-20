@@ -145,7 +145,7 @@
                             <img src="{{ asset('juegos/images/ficha1.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle" style="z-index: 100;">
                                 <p class="puzzle-description">LLeva la nave a las estaciones espaciales y responde las preguntas.</p>
-                                <a href="{{ asset('juegos/juegos/laberinto/index.html') }}" class="btn btn-warning mt-3" style="color: black !important">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/laberinto') }}/" class="btn btn-warning mt-3" style="color: black !important">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -167,7 +167,7 @@
                             <img src="{{ asset('juegos/images/ficha6.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle" style="z-index: 100;">
                                 <p class="puzzle-description">Pinta o adivina las banderas de los departamentos de Colombia.</p>
-                                <a href="{{ asset('juegos/juegos/banderas-color/index.html') }}" class="btn btn-success mt-3">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/banderas-color') }}/" class="btn btn-success mt-3">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -189,7 +189,7 @@
                             <img src="{{ asset('juegos/images/ficha3.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle" style="z-index: 100;">
                                 <p class="puzzle-description">Sigue las instrucciones y arma el rompecabezas.</p>
-                                <a href="{{ asset('juegos/juegos/puzzle/index.html') }}" class="btn btn-info mt-3">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/puzzle') }}/" class="btn btn-info mt-3">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -211,7 +211,7 @@
                             <img src="{{ asset('juegos/images/ficha4.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle">
                                 <p class="puzzle-description">Explora la rica historia de Colombia a través de juegos interactivos.</p>
-                                <a href="{{ asset('juegos/juegos/sopa_letras/index.html') }}" class="btn btn-danger mt-3">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/sopa_letras') }}/" class="btn btn-danger mt-3">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -255,7 +255,7 @@
                             <img src="{{ asset('juegos/images/ficha2.png') }}" alt="Banderas" class="puzzle-image">
                             <div class="body-puzzle">
                                 <p class="puzzle-description">Sigue las pistas y completa la palabra, antes de agotar tus intentos.</p>
-                                <a href="{{ asset('juegos/juegos/juego_ahorcado/index.html') }}" class="btn btn-purple mt-3">¡Jugar!</a>
+                                <a href="{{ asset('juegos/juegos/juego_ahorcado') }}/" class="btn btn-purple mt-3">¡Jugar!</a>
                             </div>
                         </div>
                     </div>
@@ -280,12 +280,12 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-6">
-                            <div class="card-juego" onclick="location.href = '{{ asset('juegos/juegos/arrastra/index.html') }}'">
+                            <div class="card-juego" onclick="location.href = '{{ asset('juegos/juegos/arrastra') }}/'">
                                 <img style="width: 110%; height: 110%" src="{{ asset('juegos/images/drag.png') }}" alt="Banderas">
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="card-juego" onclick="location.href = '{{ asset('juegos/juegos/completa/index.html') }}'">
+                            <div class="card-juego" onclick="location.href = '{{ asset('juegos/juegos/completa') }}/'">
                                 <img style="width: 110%; height: 110%" src="{{ asset('juegos/images/completa.png') }}"  alt="Banderas">
                             </div>
                         </div>

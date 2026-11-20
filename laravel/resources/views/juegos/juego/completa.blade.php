@@ -1,68 +1,32 @@
-<!DOCTYPE html>
-<html lang="es">
+{{--
+    Juego «completa» (Fase 13): migración de public/juegos/juegos/completa/index.html (se eliminó) a Blade.
+    Completa la oración. Datos en completa.json; la fuente TitanOne se carga desde completa/fuente/. El original traía un segundo <title> duplicado: se omite.
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Completa la Oración</title>
+    URL canónica: /juegos/juegos/completa/ (CON barra final). Casi todo lo que carga el juego en ejecución (JSON, sonidos, imágenes
+    por JS, url() de CSS) es RELATIVO a la URL de la página, por eso JuegoController redirige la forma sin barra.
+    Los recursos del HTML pasan por asset() (URL absolutas). El orden de CSS y JS es el del original (cascada y
+    dependencias: jQuery antes de explora-api.js y este antes de terminar_juego.js). Sin datos del servidor y sin salida sin escapar.
+    El <style> inline se extrajo a estilo-pagina.css, enlazado en la MISMA posición del <head> (misma cascada).
+--}}
+@extends('layouts.juego')
 
+@section('titulo', 'Completa la Oración')
+@section('viewport', 'width=device-width, initial-scale=1.0')
 
-    <link rel="stylesheet" href="../../librerias/bootstrap-5.3/css/bootstrap.min.css">
-    <script src="../../librerias/bootstrap-5.3/js/bootstrap.bundle.min.js"></script>
-    <script type="text/javascript" src="../assets/bootstrap/jquery.min.js"></script>
-    <script src="../../../js/explora-api.js"></script>
+@push('cabecera')
+        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        @include('juegos.partials.explora-api')
+        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/completa/styles.css') }}">
+        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
+        @include('juegos.partials.pantalla-css')
+        @include('juegos.partials.terminar-css')
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/completa/estilo-pagina.css') }}">
+@endpush
 
-    <link rel="stylesheet" href="../../librerias/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
-    <script src="../assets/bootstrap/sweetalert.js"></script>
-
-    <link rel="stylesheet" href="../../css/pantalla_completa.css">
-    <link rel="stylesheet" href="../../css/terminar_juego.css">
-    <title>Completa la Oración</title>
-
-    <style>
-        #modal_guardar_resultado .modal-content{
-            border: 4px solid #fbd1bc !important;
-        }
-
-        #row_guardar_resultado {
-            background: linear-gradient(90deg, #fbd1bc 57%, #fbd1bc 55%, #9d6a41 2%, #9d6a41 100%) !important;
-        }
-
-        #row_guardar_resultado .col-lg-7 input,
-        #row_guardar_resultado .col-lg-7 select,
-        #row_guardar_resultado .col-lg-7 span {
-            color: #8d6b50 !important;
-        }
-
-        #row_guardar_resultado .col-lg-7 input::placeholder {
-            color: #8d6b50 !important;
-        }
-
-        .text-color {
-            color: #492e19 !important;
-        }
-
-        .text-color-claro {
-            color: #80502b !important;
-        }
-
-        .ranking_item {
-            background-color: #472810 !important;
-        }
-
-        .ranking_item_2 {
-            background-color: #7b5537 !important;
-        }
-
-        .clase_border_avatar {
-            border: 10px solid #7b5537;
-            background-color: #7b5537 !important;
-        }
-    </style>
-</head>
-
-<body>
+@section('juego')
     <div class="container">
         <!-- Header del Juego -->
 
@@ -124,9 +88,10 @@
                     class="fas fa-arrow-left"></i></button>
         </section>
     </div>
-    <script src="../../js/terminar_juego.js"></script>
-    <script src="../../js/pantalla_completa.js"></script>
-    <script src="script.js"></script>
-</body>
+@endsection
 
-</html>
+@push('pie')
+        @include('juegos.partials.terminar-js')
+        @include('juegos.partials.pantalla-js')
+        <script src="{{ asset('juegos/juegos/completa/script.js') }}"></script>
+@endpush
