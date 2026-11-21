@@ -3,7 +3,7 @@
 Fecha: 2026-11-19 · Rama `migracion-laravel` (etiqueta de recuperación `pre-migracion-laravel`) · Sin push a ningún remoto.
 
 ## 1. Qué se entrega
-- **Laravel 10.50.4 en `laravel/`**: API de lectura (fichas, quiz), sesión por cookie + CSRF, perfil/avatar (`perfiles_explora`), resultados, ranking e historial. `pedigital` se usa solo en lectura.
+- **Laravel 10.50.4 en la raíz del repositorio**: API de lectura (fichas, quiz), sesión por cookie + CSRF, perfil/avatar (`perfiles_explora`), resultados, ranking e historial. `pedigital` se usa solo en lectura.
 - **Frontend conmutado** a esa API (`js/explora-api.js`); los 7 PHP legados sustituidos responden 410.
 - **Fase 7B**: Font Awesome 83 MB → 3 MB, GIF 169 MB → 47 MB (WebP), MP4 30,8 → 19,0 MB, jQuery 3.5.1, Mapplic 3 → 2 variantes, build ligero `dist/`.
 - **Pruebas**: PHPUnit 118 (1.136 aserciones) · Playwright 53 (Chromium) · `.htaccess` verificados con Apache 2.4.56 real.
@@ -16,12 +16,12 @@ Fecha: 2026-11-19 · Rama `migracion-laravel` (etiqueta de recuperación `pre-mi
 | **Abiertos por decisión** | SEC-02, SEC-08, SEC-11, FUN-03/04/05 (chat y corrector con IA: ver PENDIENTE_TRABAJO_IA.md) |
 | **Aceptados** | SEC-06 (el puntaje lo calcula el navegador; no se puede garantizar su honestidad con la arquitectura actual) |
 | **Requieren autorización sobre datos** | DAT-02, DAT-04, DAT-05, DAT-07 (imágenes base64: la ficha del depto 10 pesa ~46 MB), REN-02/REN-03 |
-| **Cerrados en el afinado final** | FUN-10 (la opción «Volcanes» muestra «Próximamente» en vez de llevar a una página inexistente), CAL-04 parcial (`.DS_Store` fuera del repo y en `.gitignore`), Pint sin avisos en todo `laravel/` |
+| **Cerrados en el afinado final** | FUN-10 (la opción «Volcanes» muestra «Próximamente» en vez de llevar a una página inexistente), CAL-04 parcial (`.DS_Store` fuera del repo y en `.gitignore`), Pint sin avisos en todo el proyecto |
 | **Sin tocar (bajo impacto o requieren decisión)** | FUN-07 (enlaces `#` en el menú de juegos), TEC-04 y DAT-06 (esquema), CAL-03, CAL-04 resto (`jsons/unir.html` público con jQuery por CDN, `ViajaPED/package.json` sin uso) |
 
 ## 3. Riesgos residuales (lo que el responsable debe saber)
 1. **El chat legado sigue activo** con credenciales de MySQL (usuario con privilegios altos) escritas en `chat.php` y `chat copy.php`. Rotarlas es obligatorio antes de publicar.
-2. Los 3 `conexion*.php` tienen cambios locales ajenos sin confirmar.
+2. ~~Los 3 `conexion*.php` tienen cambios locales ajenos sin confirmar.~~ (Fase 15: los 3 `conexion*.php` se eliminaron del repositorio; siguen en la etiqueta `pre-retiro-legado`.)
 3. Probado solo en Chromium y con Apache por CGI; faltan Firefox, Safari y mod_php/php-fpm.
 4. El contenido editorial de las fichas se inserta como HTML por diseño: si esa fuente se comprometiera habría XSS.
 5. Los datos antiguos con HTML siguen en la base (ahora se muestran como texto, pero no se limpiaron).
@@ -31,3 +31,8 @@ Fecha: 2026-11-19 · Rama `migracion-laravel` (etiqueta de recuperación `pre-mi
 - Autorizar el despliegue (ver PROPUESTA_DESPLIEGUE.md).
 - Abrir el trabajo de IA (chat y corrector) como proyecto aparte.
 - Decidir la migración de datos (fecha a `datetime`, FK, imágenes base64 a archivos).
+
+## 5. Nota de la Fase 15 (2026-11-20): credenciales en el historial de git
+Las contraseñas de MySQL escritas en los archivos `conexion*.php` (retirados en la Fase 15) y en `chat.php` / `chat copy.php` (que se mantienen) **siguen en el historial
+de git** y en la etiqueta `pre-retiro-legado`: borrar los archivos no las invalida. Su **rotación (y, si se decide, la limpieza del historial) es decisión del
+responsable** y no se ha ejecutado. Mientras el chat siga aplazado, `chat*.php` se ejecuta sin protección bajo Apache (ver `DESPLIEGUE_APACHE.md`).

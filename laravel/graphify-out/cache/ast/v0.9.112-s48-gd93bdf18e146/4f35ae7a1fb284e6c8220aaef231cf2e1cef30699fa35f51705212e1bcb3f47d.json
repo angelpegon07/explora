@@ -1,1 +1,0 @@
-{"nodes": [{"id": "$graphify-root$_tests_legacy_harness_conexion_php", "label": "conexion.php", "file_type": "code", "source_file": "tests/Legacy/harness/conexion.php", "source_location": "L1"}], "edges": [], "raw_calls": [], "php_type_table": {"path": "$graphify-root$/tests/Legacy/harness/conexion.php", "table": {"conexion": "mysqli"}}}

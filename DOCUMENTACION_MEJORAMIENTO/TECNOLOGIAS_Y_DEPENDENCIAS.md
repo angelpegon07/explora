@@ -7,7 +7,7 @@ Fuente: inspección de cabeceras de archivos y código. No hay gestores de depen
 | Elemento | Detalle | Evidencia |
 |---|---|---|
 | Lenguaje | PHP plano (versión no determinable; usa `??`, por lo que ≥ 7.0) | `mapplic/php/chat.php` |
-| Framework | Ninguno en el legado de la raíz; **Laravel 10.50.4** en `laravel/` (migración en curso) | ausencia de `composer.json`/`artisan` en la raíz; `laravel/composer.json` |
+| Framework | Ninguno en el legado de la raíz; **Laravel 10.50.4** (aplicación en la raíz del repositorio; antes en `laravel/`) | ausencia de `composer.json`/`artisan` en la raíz; `composer.json` de la raíz |
 | Acceso a BD | `mysqli` (procedural/OO) | `conexion*.php` |
 | Motor BD | MySQL 8.0.41 (según los dumps y la instalación local; producción por confirmar) | uso de `mysqli`, charset `utf8` |
 | Bases de datos | `explora` (contenido, juegos) y `pedigital` (usuarios) | `conexion.php`, `conexion_pedigital.php` |

@@ -1,7 +1,7 @@
 # GUÍA PARA CONECTAR EL FRONTEND A LA API NUEVA
 
 Estado: **CONMUTACIÓN HECHA en la Fase 7 (2026-11-19).** Esta guía se conserva como referencia de lo que se cambió y de los riesgos que siguen vigentes; los pasos 1–11 están implementados (ver REGISTRO_CAMBIOS.md). Texto original: el frontend NO estaba conectado. Esta guía reúne, en orden, lo que hay que cambiar en el sitio estático para
-usar los endpoints de `laravel/` (ficha, quiz, sesión y avatar). Fuente: revisión de contrato de la Fase 4
+usar los endpoints de la API Laravel (ficha, quiz, sesión y avatar). Fuente: revisión de contrato de la Fase 4
 (agente de compatibilidad) contrastada con el código; las comprobaciones empíricas están marcadas.
 
 ## Qué NO cambia
@@ -68,7 +68,7 @@ Los cuerpos de respuesta son compatibles campo a campo con el legado (las 16 cla
 
 ## Pruebas manuales recomendadas tras conectar
 Flujo completo en navegador: iniciar sesión → abrir una ficha (incluida la del departamento 10, ≈48 MB) → hacer el quiz
-→ cambiar el avatar → cerrar sesión → comprobar 401/419 con la sesión caducada. Desde la Fase 7 **sí hay pruebas de navegador automatizadas** (Playwright, 36 pruebas; ver `laravel/README.md`).
+→ cambiar el avatar → cerrar sesión → comprobar 401/419 con la sesión caducada. Desde la Fase 7 **sí hay pruebas de navegador automatizadas** (Playwright, 36 pruebas; ver `README.md`).
 
 ## Resultado de la conmutación (Fase 7)
 - **Hecho:** pasos 1–11. Mismo origen (router de desarrollo y `.htaccess`); `js/explora-api.js` (CSRF por petición, errores 401/419/422/429, escape de HTML); `verMas.js`, `quiz.js`, `iniciarSesion.js`, `miPerfil/script.js` y `terminar_juego.js` usan la API nueva; los 7 PHP sustituidos responden 410.

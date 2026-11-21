@@ -1,0 +1,131 @@
+{{--
+    Juego «juego_ahorcado» (Fase 13): migración de public/juegos/juegos/juego_ahorcado/index.html (se eliminó) a Blade.
+    Ahorcado. Sin <meta viewport> en el original: se conserva así (sección `sin_viewport`). Palabras en pistas.json.
+
+    URL canónica: /juegos/juegos/juego_ahorcado/ (CON barra final). Casi todo lo que carga el juego en ejecución (JSON, sonidos, imágenes
+    por JS, url() de CSS) es RELATIVO a la URL de la página, por eso JuegoController redirige la forma sin barra.
+    Los recursos del HTML pasan por asset() (URL absolutas). El orden de CSS y JS es el del original (cascada y
+    dependencias: jQuery antes de explora-api.js y este antes de terminar_juego.js). Sin datos del servidor y sin salida sin escapar.
+    El <style> inline se extrajo a estilo-pagina.css, enlazado en la MISMA posición del <head> (misma cascada).
+--}}
+@extends('layouts.juego')
+
+@section('titulo', 'Adivina la Palabra')
+@section('sin_viewport', 'sí')
+@section('atributos_body')style="display: flex; justify-content: center; width: 100%; height: 100vh; overflow: hidden;"@endsection
+
+@push('cabecera')
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/juego_ahorcado/estilo-ahoracado.css') }}">
+        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        @include('juegos.partials.explora-api')
+        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
+        @include('juegos.partials.pantalla-css')
+        @include('juegos.partials.terminar-css')
+        <link rel="stylesheet" href="{{ asset('juegos/juegos/juego_ahorcado/estilo-pagina.css') }}">
+@endpush
+
+@section('juego')
+  <div style="display: none" class="overlay">
+    <div class="nube">
+      <p class="borde2" id="bienvenida"></p>
+    </div>
+    <div style="z-index: 1003;position: absolute;top: 20pt;left: 20pt;">
+      <button onclick="cerrar_anuncio()" id="btnomitir" class="btn btn-warning"
+        style="width: auto; padding: 4pt; border-radius: 8pt; font-size: 30px; color: black;">Omitir <i
+          style="color: black" class="fa fa-forward" aria-hidden="true"></i></button>
+    </div>
+  </div>
+
+  <div
+    style="display: none; background-color: rgba(255, 255, 255, 0.664); width: 100%; height: 100%; position: fixed; z-index: 100;"
+    id="fondo_blanco">
+
+  </div>
+
+  <div style="text-align: center; display: none; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.5s ease-in-out;" id="final" class="final">
+    <img src="{{ asset('juegos/juegos/assets/images/victoria.webp') }}" id="imagen_final" style="width: 560px; height: auto;">
+    <br>
+    <h1 style="font-size: 25pt; padding-bottom: 0px;" class="borde2" id="texto_final"></h1>
+    <div class="row">
+      <div class="col-12" style="padding-bottom: 0pt; margin-top: 0px;">
+        <h1 style="font-size: 25pt; padding: 12px;" class="borde2">¿Quieres jugar nuevamente?</h1>
+      </div>
+      <div class="col-3"></div>
+      <div class="col-3 text-center">
+        <button style="width: 80%;border-radius: 20pt; font-size: 23px; -webkit-text-stroke: 1px #1a3b0c;"
+          onclick="window.location.reload(1)" class="btn btn-success">Si, jugar</button>
+      </div>
+      <div class="col-3 text-center">
+        <button style="width: 80%; border-radius: 20pt; font-size: 23px; -webkit-text-stroke: 1px #4d0d0d;"
+          onclick="location.href='/juegos'" class="btn btn-danger">No,
+          salir</button>
+      </div>
+      <div class="col-3"></div>
+    </div>
+  </div>
+
+  <div id="principal" style="width: 1200px;" class="main-container">
+    <br>
+    <div class="row">
+      <div class="col-9 text-center">
+        <h2 class="subtitulo">Adivina la palabra "<span style="color: #00fffa" id="categoria"></span>"</h2>
+      </div>
+      <div class="col-3" style="display: flex; align-items: center">
+        <h2 class="subtitulo" style="font-size: 20px" id="numero"></h2>
+      </div>
+    </div>
+    <br>
+    <div class="row">
+      <div class="col-3" style="height: 265px; padding: 5px; padding-top: 5px;">
+        <div
+          style="    background-color: #ffffff; border: 5px solid #c25c37; height: 100%; border-radius: 10px; overflow: hidden; padding-top: 10px;">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_6.png') }}" alt="" id="image6" style="display: block">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_5.png') }}" alt="" id="image5" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_4.png') }}" alt="" id="image4" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_3.png') }}" alt="" id="image3" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_2.png') }}" alt="" id="image2" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_1.png') }}" alt="" id="image1" style="display: none">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/ahorcado_0.png') }}" alt="" id="image0" style="display: none">
+        </div>
+      </div>
+      <div class="col-6" style="padding-top: 5px; padding-bottom: 5px; padding-left: 9px; padding-right: 9px;">
+        <div style="overflow: visible; position: relative;padding-left: 28pt;padding-right: 27pt;">
+          <img src="{{ asset('juegos/juegos/juego_ahorcado/img/fondo_tabla_fichas.png') }}" alt="" id="fondo_tabla_fichas">
+          <div class="col-12">
+            <div class="flex-row" id="abcdario">
+            </div>
+          </div>
+          <div class="col-12"></div>
+        </div>
+      </div>
+      <div class="col-3">
+        <div class="text-center opciones">
+          <p style="opacity: 0;">Opciones</p>
+          <br>
+          <button style="background-color: #ac6529" onclick="inicio()" id="reset"><i class="fa fa-forward"
+              aria-hidden="true"></i> Saltar </button>
+          <button style="background-color: #d04833" onclick="location.href='/juegos'" id="pista"><i
+              class="fa fa-arrow-left" aria-hidden="true"></i> Volver</button>
+        </div>
+      </div>
+    </div>
+    <br>
+    <h2 id="pista_palabra" style="font-size: 1.5rem; padding: 10px; background-color: #fafafaa8; width: auto; border-radius: 10px;" class="text-center"></h2>
+    <div>
+      <h2 class="palabra" id="palabra"></h2>
+    </div>
+    <div id="turnos">
+      <h3 class="text-center">Intentos restantes: <span id="intentos">6</span></h3>
+    </div>
+    <h3 id="acierto"></h3>
+  </div>
+@endsection
+
+@push('pie')
+        @include('juegos.partials.terminar-js')
+        @include('juegos.partials.pantalla-js')
+        <script src="{{ asset('juegos/juegos/juego_ahorcado/ahorcado.js') }}"></script>
+@endpush

@@ -1,0 +1,110 @@
+# ---------------------------------------------------------------------------------------------------------------
+# Explora: configuración de Apache del ÚNICO documento raíz del sitio (DocumentRoot = <raíz>/public).
+# Requiere AllowOverride All y mod_rewrite. Guía completa: DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md
+#
+# Como .env, vendor/, storage/ y la documentación quedan FUERA del docroot, ya no hace falta un .htaccess
+# en la raíz del repositorio para ocultarlos (Fase 9). Aquí solo quedan las reglas de seguridad del propio sitio.
+# ---------------------------------------------------------------------------------------------------------------
+
+# Sin listado de directorios (evita exponer el contenido de carpetas sin index) y sin negociación de contenido
+# (MultiViews haría que /api/x resolviera a un archivo x.* por sorpresa).
+Options -Indexes -MultiViews
+
+# La raíz «/» la atiende Laravel (la portada es la vista `inicio`, Fase 11): index.php va PRIMERO. Las carpetas
+# del sitio estático con su propio index.html siguen sirviéndolo, porque allí no hay index.php. (`/juegos/` ya no es
+# una de ellas desde la Fase 12: la atiende Laravel mediante la regla `^juegos/?$` de más abajo.)
+DirectoryIndex index.php index.html
+
+# Nunca servir el repositorio Git ni archivos .env (credenciales), en cualquier nivel de la ruta. Defensa en
+# profundidad: ninguno debería existir bajo el docroot.
+RedirectMatch 404 /\.(git|env)
+
+# Los archivos `conexion*.php` del PHP legado (credenciales de MySQL escritas en el código) se ELIMINARON del repositorio en
+# la Fase 15. Esta regla se mantiene como defensa en profundidad: si alguien volviera a copiar uno, no se serviría.
+<FilesMatch "^conexion.*\.php$">
+    Require all denied
+</FilesMatch>
+
+# Volcados, copias y archivos de proyecto que nunca deben descargarse.
+# `map` = source maps de Bootstrap (juegos/librerias/bootstrap-5.3/**/*.map): solo los pide la consola del navegador (ninguna
+# página los necesita para funcionar) y exponen el código fuente original de la librería.
+<FilesMatch "\.(sql|gz|zip|md|sh|lock|log|bak|map)$">
+    Require all denied
+</FilesMatch>
+
+# Cabeceras de seguridad también para los archivos ESTÁTICOS (CSS, JS, imágenes...), que Apache sirve sin pasar por PHP.
+# Los mismos valores los añade a las respuestas de Laravel el middleware App\Http\Middleware\CabecerasSeguridad (lo vigila
+# tests/Feature/CabecerasSeguridadTest). `always` las envía también en errores (403, 404...). Sin mod_headers se ignora el bloque.
+# HSTS y CSP NO se añaden aquí a propósito: HSTS solo con HTTPS ya funcionando y la CSP primero en modo Report-Only
+# (ver DESPLIEGUE_APACHE.md, «Lista de comprobación de despliegue seguro»).
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # No revelar la versión de PHP (complementa `expose_php = Off` en php.ini).
+    Header unset X-Powered-By
+</IfModule>
+
+# Caché larga para las imágenes de /contenido/ (Fase 16A): el nombre de cada archivo es el sha256 de su contenido, así que una URL
+# nunca cambia de contenido y el navegador puede guardarla un año sin revalidar. Se marca la petición con SetEnvIf y se pone
+# la cabecera solo a esas respuestas (no afecta al resto de reglas de seguridad de arriba). Sin los módulos se ignora.
+<IfModule mod_setenvif.c>
+    SetEnvIfNoCase Request_URI "^/contenido/.+\.(png|jpg|gif|webp)$" EXPLORA_CONTENIDO_INMUTABLE=1
+</IfModule>
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable" env=EXPLORA_CONTENIDO_INMUTABLE
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Portal de juegos (Fase 12): /juegos y /juegos/ son una CARPETA real (guarda css/, js/, juegos/…), así que las
+    # reglas genéricas de abajo (`!-d`) no la enviarían a Laravel. Esta regla manda EXACTAMENTE esas dos URL al
+    # front controller (`^juegos/?$` no coincide con /juegos/css/…, /juegos/juegos/… ni /juegos/js/) y va ANTES de
+    # DirectoryIndex/mod_dir, que de otro modo redirigiría /juegos a /juegos/ y no encontraría index.html.
+    # No habilita listados de directorio: el resto de carpetas sin index siguen dando 403 por `-Indexes`.
+    RewriteRule ^juegos/?$ index.php [L]
+
+    # Páginas de los 7 juegos (Fase 13): cada una es una CARPETA real (JS, CSS, JSON, sonidos…) sin index.html desde que
+    # su HTML pasó a Blade, así que las reglas genéricas (`!-d`) no la enviarían a Laravel. Esta regla manda al front
+    # controller EXACTAMENTE `/juegos/juegos/<slug>/` y `/juegos/juegos/<slug>` (la ruta de Laravel redirige 301 la forma
+    # sin barra, porque el JS del juego resuelve sus archivos relativos a la URL CON barra). Con Apache real mod_dir podría
+    # haber redirigido antes a la forma con barra: es equivalente. No afecta a los archivos de esas carpetas (el patrón
+    # termina en el slug) y no habilita listados (`-Indexes` sigue vigente). La lista debe coincidir con config/juegos.php:
+    # lo vigila tests/Feature/JuegosPaginasTest. `/juegos/juegos/<slug>/index.html` ya no existe y cae en la regla genérica.
+    RewriteRule ^juegos/juegos/(laberinto|banderas-color|puzzle|sopa_letras|juego_ahorcado|arrastra|completa)/?$ index.php [L]
+
+    # Línea de tiempo y ViajaPED (Fase 15): igual que los juegos, son CARPETAS reales (JS, CSS, JSON, imágenes) sin index.html
+    # desde que su HTML pasó a Blade. Esta regla manda al front controller EXACTAMENTE `/lineaTiempo/` y `/ViajaPED/` (y
+    # sus formas sin barra, que la ruta de Laravel redirige 301 a la canónica CON barra: el JS de la página carga
+    # `eventos.json`, `data.json` e `img/…` relativos a ella). Respeta mayúsculas. No afecta a los archivos de esas carpetas
+    # (el patrón termina en el slug) ni habilita listados (`-Indexes` sigue vigente). La lista debe coincidir con
+    # config/paginas_estaticas.php: lo vigila tests/Feature/PaginasEstaticasTest. `<slug>/index.html` ya no existe: cae en la
+    # regla genérica y Laravel lo redirige (301).
+    RewriteRule ^(lineaTiempo|ViajaPED)/?$ index.php [L]
+
+    # Imágenes de las fichas (Fase 16A): `/contenido/` lo genera `php artisan explora:externalizar-imagenes` a partir de la base de
+    # datos. Solo se sirven png/jpg/gif/webp; cualquier otra cosa bajo esa carpeta (html, svg, txt, php, carpetas…) da 404
+    # aunque exista en disco. Así el contenido de la base nunca puede servirse como página o script. Equivale al punto 5b de
+    # servidor-desarrollo.php (lo vigila tests/Feature/ServidorDesarrolloTest). Va ANTES del front controller para responder 404
+    # sin pasar por PHP.
+    RewriteRule ^contenido/(?!.*\.(png|jpg|gif|webp)$) - [NC,R=404,L]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Front controller de Laravel: todo lo que no sea un archivo o carpeta real (p. ej. /api/...) lo atiende
+    # index.php, que ve la ruta COMPLETA con el prefijo «api». También recoge las 7 URL de los PHP legados retirados
+    # (`/mapplic/php/iniciarSesion.php`, `/juegos/php/guardar_resultado.php`…), que ya no existen como archivo: Laravel
+    # responde 410 Gone (routes/web.php, lista en config/servicios_retirados.php). `/mapplic/php/chat.php` SÍ existe y lo
+    # sigue sirviendo PHP (el chat queda fuera de esta fase; ver DESPLIEGUE_APACHE.md).
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
