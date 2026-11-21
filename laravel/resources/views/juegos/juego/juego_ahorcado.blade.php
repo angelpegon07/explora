@@ -60,7 +60,7 @@
       </div>
       <div class="col-3 text-center">
         <button style="width: 80%; border-radius: 20pt; font-size: 23px; -webkit-text-stroke: 1px #4d0d0d;"
-          onclick="location.href='../../index.html'" class="btn btn-danger">No,
+          onclick="location.href='/juegos'" class="btn btn-danger">No,
           salir</button>
       </div>
       <div class="col-3"></div>
@@ -107,7 +107,7 @@
           <br>
           <button style="background-color: #ac6529" onclick="inicio()" id="reset"><i class="fa fa-forward"
               aria-hidden="true"></i> Saltar </button>
-          <button style="background-color: #d04833" onclick="location.href='../../index.html'" id="pista"><i
+          <button style="background-color: #d04833" onclick="location.href='/juegos'" id="pista"><i
               class="fa fa-arrow-left" aria-hidden="true"></i> Volver</button>
         </div>
       </div>

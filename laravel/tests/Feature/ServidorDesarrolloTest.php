@@ -167,7 +167,7 @@ class ServidorDesarrolloTest extends TestCase
     /**
      * Fase 12: `/perfil`, `/juegos` y `/juegos/` los atiende Laravel aunque `public/juegos/` sea una CARPETA real (el
      * router la envía a Laravel solo para esas dos URL exactas); las URL antiguas redirigen con 301 (con su consulta) y
-     * las páginas HTML de cada juego, que llaman a `../../index.html`, siguen llegando al portal por esa redirección.
+     * las URL antiguas `/juegos/index.html` (marcadores guardados; los «volver» de los juegos ya apuntan directo a `/juegos`) siguen llegando al portal por esa redirección.
      */
     public function test_el_perfil_y_el_portal_se_sirven_desde_laravel(): void
     {
@@ -284,18 +284,49 @@ class ServidorDesarrolloTest extends TestCase
 
     /**
      * Una carpeta con index.html se sirve con «/» final y se redirige (301) si se pide sin ella. Desde la Fase 15 ya no queda
-     * ninguna carpeta PROPIA con `index.html` (todas son vistas Blade); el único ejemplo es la demo de terceros de la sopa de
-     * letras (`wordfind-master/example/`), que no se toca. Si algún día se elimina, la prueba se omite.
+     * ninguna carpeta con `index.html` en `public/` (todas las páginas son vistas Blade; la demo de terceros de la sopa de letras
+     * se retiró en la verificación posterior), así que la prueba crea una CARPETA TEMPORAL bajo `public/` y la borra siempre al
+     * terminar (aunque falle): el servidor atiende lo que haya en disco en cada petición.
      */
     public function test_las_carpetas_con_index_html_se_sirven_y_redirigen(): void
     {
-        $carpeta = '/juegos/juegos/sopa_letras/wordfind-master/example';
-        if (! is_file(dirname(__DIR__, 2).'/public'.$carpeta.'/index.html')) {
-            $this->markTestSkipped('Ya no queda ninguna carpeta con index.html servida como archivo.');
+        $nombre = '_prueba_carpeta_'.bin2hex(random_bytes(4));
+        $carpeta = dirname(__DIR__, 2).'/public/'.$nombre;
+        mkdir($carpeta);
+        file_put_contents($carpeta.'/index.html', '<!doctype html><title>Carpeta temporal</title>');
+
+        try {
+            [$codigo, $tipo, $cuerpo] = $this->pedir("/$nombre/");
+            $this->assertSame(200, $codigo);
+            $this->assertStringContainsString('text/html', $tipo);
+            $this->assertStringContainsString('Carpeta temporal', $cuerpo);
+
+            $this->assertSame(301, $this->pedir("/$nombre", $location)[0]);
+            $this->assertSame("/$nombre/", $location);
+        } finally {
+            @unlink($carpeta.'/index.html');
+            @rmdir($carpeta);
         }
-        $this->assertSame(200, $this->pedir($carpeta.'/')[0]);
-        $this->assertSame(301, $this->pedir($carpeta, $location)[0]);
-        $this->assertSame($carpeta.'/', $location);
+    }
+
+    /**
+     * Ya no queda ninguna carpeta propia con `index.html` bajo `public/` (salvo dependencias locales sin versionar): si
+     * reapareciera alguna, esta prueba avisa para que se decida si debe pasar a Blade (como las demás páginas).
+     */
+    public function test_no_quedan_carpetas_con_index_html_en_public(): void
+    {
+        $raiz = dirname(__DIR__, 2).'/public';
+        $encontrados = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveCallbackFilterIterator(
+            new \RecursiveDirectoryIterator($raiz, \FilesystemIterator::SKIP_DOTS),
+            static fn (\SplFileInfo $f): bool => $f->getFilename() !== 'node_modules',
+        ));
+        foreach ($it as $archivo) {
+            if ($archivo->getFilename() === 'index.html') {
+                $encontrados[] = $archivo->getPathname();
+            }
+        }
+        $this->assertSame([], $encontrados);
     }
 
     /**
@@ -478,6 +509,10 @@ class ServidorDesarrolloTest extends TestCase
             '/.git/HEAD',
             '/DOCUMENTACION_MEJORAMIENTO/REGISTRO_CAMBIOS.md',
             '/dump.sql',
+            // Source maps de Bootstrap (existen en disco; solo los pide la consola del navegador): bloqueados como en public/.htaccess.
+            '/juegos/librerias/bootstrap-5.3/css/bootstrap.min.css.map',
+            '/juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js.map',
+            '/JUEGOS/LIBRERIAS/BOOTSTRAP-5.3/CSS/BOOTSTRAP.CSS.MAP',
         ];
 
         return array_combine($rutas, array_map(static fn (string $r): array => [$r], $rutas));
@@ -510,5 +545,41 @@ class ServidorDesarrolloTest extends TestCase
     public function test_el_recorrido_de_directorios_se_rechaza(): void
     {
         $this->assertContains($this->pedir('/%2e%2e/etc/passwd')[0], [400, 404]);
+    }
+
+    /**
+     * Una barra codificada (`%2F`, en mayúsculas o minúsculas) en la ruta se rechaza con 400, como lo hace Apache por defecto
+     * (`AllowEncodedSlashes Off`). Antes el router la decodificaba y `/juegos/juegos%2Fpuzzle/` llegaba a Laravel (200 en
+     * desarrollo, error en Apache). `%2E%2E` ya se rechazaba por separado (recorrido de directorios).
+     */
+    public function test_una_barra_codificada_se_rechaza(): void
+    {
+        foreach ([
+            '/juegos/juegos%2Fpuzzle/',
+            '/juegos/juegos%2fpuzzle/',
+            '/climatico%2Fx',
+            '/api%2Fsesion',
+            '/%2F',
+            '/js/%2Fexplora-api.js',
+        ] as $ruta) {
+            $this->assertSame(400, $this->pedir($ruta)[0], $ruta);
+        }
+        // Una consulta con %2F no es parte de la ruta: sigue funcionando.
+        $this->assertSame(200, $this->pedir('/climatico?x=a%2Fb')[0]);
+    }
+
+    /**
+     * Los source maps (`*.map`) dan 404 en el router aunque existan en disco, y la lista de extensiones sensibles del router
+     * es la MISMA que la de `public/.htaccess` (si se añade una en un sitio y no en el otro, esta prueba falla).
+     */
+    public function test_las_extensiones_sensibles_coinciden_con_el_htaccess(): void
+    {
+        $this->assertFileExists(dirname(__DIR__, 2).'/public/juegos/librerias/bootstrap-5.3/css/bootstrap.min.css.map');
+        $this->assertSame(404, $this->pedir('/juegos/librerias/bootstrap-5.3/css/bootstrap.min.css.map')[0]);
+
+        $this->assertSame(1, preg_match('/<FilesMatch "\\\.\(([a-z|]+)\)\$">\s*Require all denied/', file_get_contents(dirname(__DIR__, 2).'/public/.htaccess'), $ht));
+        $this->assertSame(1, preg_match('/preg_match\(\'\/\\\.\(([a-z|]+)\)\$\/\', end\(\$minusculas\)\)/', file_get_contents(dirname(__DIR__, 2).'/servidor-desarrollo.php'), $router));
+        $this->assertSame($ht[1], $router[1]);
+        $this->assertContains('map', explode('|', $ht[1]));
     }
 }

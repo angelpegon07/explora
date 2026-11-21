@@ -51,6 +51,27 @@ test('un localStorage obsoleto no muestra el perfil si el servidor no tiene sesi
     expect(await page.evaluate(() => window.localStorage.getItem('usuario'))).toBeNull();
 });
 
+// Si GET /api/sesion NO se puede completar (red caída, 503), no se sabe nada nuevo: la barra conserva lo que pintó el servidor
+// (aquí, CON sesión) y no pasa a «Iniciar sesión» aunque localStorage esté vacío. Solo un 401 real cambia el estado.
+for (const [nombre, fallo] of /** @type {const} */ ([
+    ['la petición se aborta (red)', (/** @type {import('@playwright/test').Route} */ ruta) => ruta.abort('failed')],
+    ['responde 503', (/** @type {import('@playwright/test').Route} */ ruta) => ruta.fulfill({ status: 503, contentType: 'application/json', body: '{}' })],
+])) {
+    test(`el portal con sesión de servidor conserva la barra si GET /api/sesion falla: ${nombre}`, async ({ page }) => {
+        await iniciarSesionPorApi(page);
+        // Regex y no glob: explora-api.js pide con `cache: false`, que añade `?_=<marca>` a la URL y un glob `**/api/sesion` no casaría.
+        await page.route(/\/api\/sesion(\?.*)?$/, (ruta) => (ruta.request().method() === 'GET' ? fallo(ruta) : ruta.continue()));
+
+        await page.goto('/juegos');
+        await page.waitForLoadState('networkidle');
+        // localStorage vacío: antes del arreglo, sesionConfirmada pasaba a true y la barra mostraba «Iniciar sesión».
+        expect(await page.evaluate(() => window.localStorage.getItem('usuario'))).toBeNull();
+        await expect(page.locator('#btn-perfil')).toBeVisible();
+        await expect(page.locator('#btn-cerrar')).toBeVisible();
+        await expect(page.locator('#btn-iniciar')).toBeHidden();
+    });
+}
+
 // Iniciar sesión desde el propio portal actualiza la barra sin recargar.
 test('iniciar sesión desde el portal actualiza la barra', async ({ page }) => {
     await page.goto('/juegos');
@@ -74,7 +95,7 @@ test('el portal conserva fichas, modal y año del pie', async ({ page }) => {
     await expect(page.locator('#year')).toHaveText(String(new Date().getFullYear()));
 });
 
-// Las URL antiguas redirigen (301): /juegos/index.html (también la usan ~20 enlaces `../../index.html` de los juegos).
+// Las URL antiguas redirigen (301): /juegos/index.html (marcadores antiguos; los «volver» de los juegos ya apuntan directo a `/juegos`).
 test('/juegos/index.html redirige a /juegos y /juegos/ responde 200', async ({ request, page }) => {
     const r = await request.get('/juegos/index.html?x=1', { maxRedirects: 0 });
     expect(r.status()).toBe(301);
@@ -84,7 +105,7 @@ test('/juegos/index.html redirige a /juegos y /juegos/ responde 200', async ({ r
 
     expect((await request.get('/juegos/')).status()).toBe(200);
 
-    // Un enlace `../../index.html` desde una página de juego termina en el portal.
+    // El marcador antiguo `/juegos/index.html` termina en el portal.
     await page.goto('/juegos/juegos/puzzle/');
     await page.goto('/juegos/index.html');
     await expect(page).toHaveURL(/\/juegos$/);
@@ -97,4 +118,18 @@ test('las carpetas sin index no se listan', async ({ request }) => {
         const r = await request.get(ruta);
         expect([403, 404]).toContain(r.status());
     }
+});
+
+// El «volver» de las páginas de juego apunta directo a /juegos: llega al portal SIN pasar por el 301 de /juegos/index.html.
+test('el botón volver de un juego va directo a /juegos (sin redirección 301)', async ({ page }) => {
+    /** @type {string[]} */
+    const respuestas = [];
+    page.on('response', (r) => { if (r.request().isNavigationRequest()) respuestas.push(`${r.status()} ${new URL(r.url()).pathname}`); });
+
+    await page.goto('/juegos/juegos/puzzle/');
+    await page.locator('#btn_salir').evaluate((boton) => /** @type {HTMLElement} */ (boton).click());
+    await expect(page).toHaveURL(/\/juegos$/);
+    await expect(page.locator('.puzzle-piece')).toHaveCount(6);
+
+    expect(respuestas.filter((r) => r.includes('index.html'))).toEqual([]);
 });

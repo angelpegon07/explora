@@ -113,7 +113,7 @@
                 <h3>MENÚ</h3>
                 <button onclick="resetGame()" id="resetGame" class="btn btn-warning"><i class="fas fa-sync-alt"></i>
                     REINICIAR</button>
-                <button onclick="window.location.href='../../index.html'" id="checkAnswers" class="btn btn-danger"><i
+                <button onclick="window.location.href='/juegos'" id="checkAnswers" class="btn btn-danger"><i
                         class="fas fa-arrow-left"></i> SALIR</button>
             </div>
             <img src="{{ asset('juegos/juegos/arrastra/img/flotante.png') }}" class="flotante" alt="">

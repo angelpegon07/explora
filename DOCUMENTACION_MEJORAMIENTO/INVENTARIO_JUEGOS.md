@@ -33,7 +33,7 @@ Método: `grep -rIl -e "<nombre>" public/juegos resources app routes tests` (sin
 | `laberinto/css/Recurso_2.png`, `laberinto/css/Recurso 7.png` | 19.517 + 6.217 B | Sin referencias (la página usa `Recurso_1.png` y `Recurso_3.png`). |
 | `juego_ahorcado/img/{verbos,narracion,medios}.png` | 83.112 + 120.326 + 53.636 B | Sin referencias; `ahorcado.js` solo construye `img/nivel_N.png`, `ahorcado_N.png`, etc., y las categorías de `pistas.json` (mapa_politico, etapas_bandera_colombia, parques_nacionales…) no coinciden con esos nombres. |
 | `arrastra/img/card.png` | 28.772 B | Sin referencias (`data.js` solo usa `etnias/capitales/parques/colombia.webp`). |
-| `sopa_letras/wordfind-master/` (5 archivos, 48 KB: `Readme.md`, `example/index.html`, `example/scripts/wordfindgame.js`, `example/styles/style.css`, `src/wordfind.js`) | ~48 KB | Ninguna referencia a la ruta `wordfind-master`: es la copia de ejemplo de la librería; el juego usa su propio `sopa_letras/wordfind.js` (que ya difiere del de `src/`). **Ojo:** `example/index.html` sigue siendo una página estática accesible por URL. |
+| `sopa_letras/wordfind-master/` (5 archivos, 48 KB: `Readme.md`, `example/index.html` [ELIMINADO en la verificación posterior: demo de la librería, servida por URL y sin referencias], `example/scripts/wordfindgame.js`, `example/styles/style.css`, `src/wordfind.js`) | ~48 KB | Ninguna referencia a la ruta `wordfind-master`: es la copia de ejemplo de la librería; el juego usa su propio `sopa_letras/wordfind.js` (que ya difiere del de `src/`). **Ojo:** `example/index.html` sigue siendo una página estática accesible por URL. |
 
 Descartado a propósito: `puzzle/etnias/37-40.png` y `puzzle/geografia/37-41.png` NO son huérfanos aunque su nombre no aparezca escrito: `puzzle/script.js` forma la ruta con `categoria.id + "/" + aleatorio(1..categoria.imagenes) + ".png"` y `categorias.json` declara 40 y 41 imágenes.
 
@@ -41,7 +41,7 @@ Descartado a propósito: `puzzle/etnias/37-40.png` y `puzzle/geografia/37-41.png
 
 - `laberinto`: `css/perdio_gano.png` (en el HTML, `#perdio_gano`) no existe; el JS lo reemplaza al jugar (`recursos.spec.js` ya lo tolera).
 - `sopa_letras/style.css`, línea 19: `url(../portadas/sopa_letras.png)` apunta a `juegos/juegos/portadas/`, que no existe.
-- El «volver» `../../index.html` de los juegos apunta a `/juegos/index.html`, que ya no es un archivo: lo redirige Laravel (301) a `/juegos`.
+- (Resuelto en la verificación posterior a la Fase 15) El «volver» de los juegos era `../../index.html`, que apuntaba a `/juegos/index.html` (ya no es un archivo: lo redirigía Laravel con 301 a `/juegos`). Ahora los 13 usos de los JS y los 11 de las vistas Blade apuntan directamente a `/juegos`; `/juegos/index.html` sigue redirigiendo solo para marcadores antiguos.
 
 `tests/Feature/JuegosRutasTest` exige que estas dos sean EXACTAMENTE las únicas rutas literales rotas.
 

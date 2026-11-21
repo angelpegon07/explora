@@ -48,7 +48,7 @@
         <p id="tiempo">00:00</p>
         <button id="btn_ayuda" class="rounded-circle btn btn-primary"><i class="fas fa-eye"></i></button>
         <button id="btn_reiniciar" class="rounded-circle btn btn-primary"><i class="fas fa-undo"></i></button>
-        <button id="btn_salir" onclick="window.location.href = '../../index.html'" class="rounded-circle btn btn-primary"><i class="fas fa-arrow-left"></i></button>
+        <button id="btn_salir" onclick="window.location.href = '/juegos'" class="rounded-circle btn btn-primary"><i class="fas fa-arrow-left"></i></button>
     </div>
 
     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="false"

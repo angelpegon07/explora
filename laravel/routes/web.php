@@ -27,6 +27,44 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
 |--------------------------------------------------------------------------
+| Rutas SIN sesión ni cookies (verificación posterior a la Fase 15)
+|--------------------------------------------------------------------------
+|
+| Todo este archivo cuelga del grupo `web` (cookies cifradas, sesión, errores de sesión, CSRF). Las páginas que NO pintan
+| datos del usuario no necesitan nada de eso, y mantenerlo tenía costes reales: cada GET anónimo creaba un archivo en
+| `storage/framework/sessions` (un script podía llenar el disco/los inodos) y emitía `Set-Cookie` (`explora_session` y
+| `XSRF-TOKEN`), con lo que ningún proxy/CDN podía cachear la página. Por eso se las excluye del grupo con
+| `withoutMiddleware()` (en Laravel 10 funciona también con middleware que vienen de un GRUPO: se comprueba por clase).
+|
+|  - SIN sesión: la portada `/`, los 5 mapas, los 7 juegos, `/lineaTiempo/`, `/ViajaPED/` y TODAS las redirecciones 301.
+|  - CON sesión (no están en estos grupos): `/perfil` y `/juegos` (pintan el estado de sesión del usuario) y toda la API.
+|
+| El login por JavaScript sigue funcionando en las páginas sin sesión: la cookie CSRF (`XSRF-TOKEN`) y la de sesión las
+| entrega `GET /api/sesion` (ruta de la API, que sí tiene sesión), que `js/explora-api.js` pide al cargar cada página.
+|
+| `$sinSesion` es la MISMA lista que usa el grupo `web` de app/Http/Kernel.php (sin SubstituteBindings, que sí se conserva).
+*/
+$sinSesion = [
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    VerifyCsrfToken::class,
+];
+
+/*
+|--------------------------------------------------------------------------
+| Listas de config vacías (verificación posterior a la Fase 15)
+|--------------------------------------------------------------------------
+|
+| Cada grupo de rutas basado en una lista de config (`mapas`, `juegos`, `paginas_estaticas`, `servicios_retirados`) se
+| registra SOLO si la lista no está vacía: con una lista vacía el patrón `where()` queda vacío y Symfony lanza «Routing
+| requirement cannot be empty», lo que rompería TODAS las rutas (incluido `route:list`). Sin elementos, simplemente no hay
+| esas URL (404). Lo vigila tests/Feature/RutasListasVaciasTest.
+*/
+
+/*
+|--------------------------------------------------------------------------
 | Portada (Fase 11)
 |--------------------------------------------------------------------------
 |
@@ -34,12 +72,14 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 | enlaces externos y la propia aplicación, redirige con 301 a `/` y conserva la cadena de consulta (el fragmento
 | `#…` del «deeplinking» de Mapplic lo mantiene el navegador).
 */
-Route::get('/', InicioController::class)->name('inicio');
+Route::withoutMiddleware($sinSesion)->group(static function (): void {
+    Route::get('/', InicioController::class)->name('inicio');
 
-Route::get('/index.html', static function (Request $request) {
-    $consulta = $request->getQueryString();
+    Route::get('/index.html', static function (Request $request) {
+        $consulta = $request->getQueryString();
 
-    return redirect()->to('/'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
+        return redirect()->to('/'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
+    });
 });
 
 /*
@@ -57,16 +97,20 @@ Route::get('/index.html', static function (Request $request) {
 */
 $patronMapas = implode('|', array_map(static fn (string $slug): string => preg_quote($slug, '#'), array_keys(config('mapas'))));
 
-Route::get('/{slug}', MapaTematicoController::class)
-    ->where('slug', $patronMapas)
-    ->name('mapa');
+if ($patronMapas !== '') {
+    Route::withoutMiddleware($sinSesion)->group(static function () use ($patronMapas): void {
+        Route::get('/{slug}', MapaTematicoController::class)
+            ->where('slug', $patronMapas)
+            ->name('mapa');
 
-Route::get('/{slug}.html', static function (Request $request, string $slug) {
-    // Se conserva la cadena de consulta; el fragmento (#…, usado por el «deeplinking» de Mapplic) lo mantiene el navegador.
-    $consulta = $request->getQueryString();
+        Route::get('/{slug}.html', static function (Request $request, string $slug) {
+            // Se conserva la cadena de consulta; el fragmento (#…, usado por el «deeplinking» de Mapplic) lo mantiene el navegador.
+            $consulta = $request->getQueryString();
 
-    return redirect()->to('/'.$slug.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
-})->where('slug', $patronMapas);
+            return redirect()->to('/'.$slug.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
+        })->where('slug', $patronMapas);
+    });
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -87,16 +131,19 @@ Route::get('/{slug}.html', static function (Request $request, string $slug) {
 Route::get('/perfil', PerfilController::class)->name('perfil');
 Route::get('/juegos', PortalJuegosController::class)->name('juegos');
 
-Route::get('/miPerfil.html', static function (Request $request) {
-    $consulta = $request->getQueryString();
+// Las redirecciones de las URL antiguas NO usan sesión (ver «Rutas SIN sesión» arriba), a diferencia de las páginas a las que apuntan.
+Route::withoutMiddleware($sinSesion)->group(static function (): void {
+    Route::get('/miPerfil.html', static function (Request $request) {
+        $consulta = $request->getQueryString();
 
-    return redirect()->to('/perfil'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
-});
+        return redirect()->to('/perfil'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
+    });
 
-Route::get('/juegos/index.html', static function (Request $request) {
-    $consulta = $request->getQueryString();
+    Route::get('/juegos/index.html', static function (Request $request) {
+        $consulta = $request->getQueryString();
 
-    return redirect()->to('/juegos'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
+        return redirect()->to('/juegos'.($consulta !== null && $consulta !== '' ? '?'.$consulta : ''), 301);
+    });
 });
 
 /*
@@ -116,12 +163,17 @@ Route::get('/juegos/index.html', static function (Request $request) {
 */
 $patronJuegos = implode('|', array_map(static fn (string $slug): string => preg_quote($slug, '#'), config('juegos')));
 
-Route::get('/juegos/juegos/{slug}', JuegoController::class)
-    ->where('slug', $patronJuegos)
-    ->name('juego');
+if ($patronJuegos !== '') {
+    // Sin sesión: las páginas de juego no pintan datos del usuario (el JS pide la sesión a /api/sesion).
+    Route::withoutMiddleware($sinSesion)->group(static function () use ($patronJuegos): void {
+        Route::get('/juegos/juegos/{slug}', JuegoController::class)
+            ->where('slug', $patronJuegos)
+            ->name('juego');
 
-Route::get('/juegos/juegos/{slug}/index.html', [JuegoController::class, 'redirigirACanonica'])
-    ->where('slug', $patronJuegos);
+        Route::get('/juegos/juegos/{slug}/index.html', [JuegoController::class, 'redirigirACanonica'])
+            ->where('slug', $patronJuegos);
+    });
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -139,12 +191,16 @@ $patronPaginasEstaticas = implode('|', array_map(static fn (string $slug): strin
 
 // OJO: el parámetro se llama `pagina` y no `slug` A PROPÓSITO: Laravel indexa las rutas por su URI literal (`{slug}`) y una
 // segunda `/{slug}` (la de los mapas temáticos, arriba) la PISARÍA en silencio.
-Route::get('/{pagina}', PaginaEstaticaController::class)
-    ->where('pagina', $patronPaginasEstaticas)
-    ->name('pagina-estatica');
+if ($patronPaginasEstaticas !== '') {
+    Route::withoutMiddleware($sinSesion)->group(static function () use ($patronPaginasEstaticas): void {
+        Route::get('/{pagina}', PaginaEstaticaController::class)
+            ->where('pagina', $patronPaginasEstaticas)
+            ->name('pagina-estatica');
 
-Route::get('/{pagina}/index.html', [PaginaEstaticaController::class, 'redirigirACanonica'])
-    ->where('pagina', $patronPaginasEstaticas);
+        Route::get('/{pagina}/index.html', [PaginaEstaticaController::class, 'redirigirACanonica'])
+            ->where('pagina', $patronPaginasEstaticas);
+    });
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -164,15 +220,11 @@ Route::get('/{pagina}/index.html', [PaginaEstaticaController::class, 'redirigirA
 |  - `mapplic/php/chat.php` y `chat copy.php` NO están en la lista: esta ruta no los toca (Apache sirve el archivo; el
 |    router de desarrollo, que los desactiva a propósito, responde 404).
 */
-$patronRetirados = '(?i:'.implode('|', array_map(static fn (string $ruta): string => preg_quote($ruta, '#'), config('servicios_retirados'))).')';
+$patronRetirados = implode('|', array_map(static fn (string $ruta): string => preg_quote($ruta, '#'), config('servicios_retirados')));
 
-Route::any('/{servicio}', static fn () => response()->json(['status' => 'error', 'mensaje' => 'Servicio retirado'], 410, [], JSON_UNESCAPED_UNICODE))
-    ->where('servicio', $patronRetirados)
-    ->withoutMiddleware([
-        EncryptCookies::class,
-        AddQueuedCookiesToResponse::class,
-        StartSession::class,
-        ShareErrorsFromSession::class,
-        VerifyCsrfToken::class,
-    ])
-    ->name('servicio-retirado');
+if ($patronRetirados !== '') {
+    Route::any('/{servicio}', static fn () => response()->json(['status' => 'error', 'mensaje' => 'Servicio retirado'], 410, [], JSON_UNESCAPED_UNICODE))
+        ->where('servicio', '(?i:'.$patronRetirados.')')
+        ->withoutMiddleware($sinSesion)
+        ->name('servicio-retirado');
+}

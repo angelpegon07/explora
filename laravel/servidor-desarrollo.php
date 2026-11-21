@@ -18,7 +18,7 @@
  * hasta 48 MB, de modo que una descarga lenta bloquearía el resto de la página.
  *
  * Orden de decisiones (el primero que aplica responde):
- *  1. Ruta inválida (byte nulo, `..` o `\`)              -> 400.
+ *  1. Ruta inválida (byte nulo, `..`, `\` o `%2F` codificado) -> 400.
  *  2. `/api` o `/api/...`                                -> Laravel (laravel/public/index.php).
  *     (Las demás rutas que no existen en disco también llegan a Laravel; ver el punto 6.)
  *  3. Segmentos ocultos (`.git`, `.env`, `.htaccess`…)   -> 404 (defensa en profundidad: no deberían existir).
@@ -28,7 +28,7 @@
  *     dan 410 JSON; cualquier otro PHP da 404 (también `conexion*.php`, que ya no existen). En DESARROLLO el chat
  *     (`mapplic/php/chat.php` y `chat copy.php`) queda DESACTIVADO a propósito: usa credenciales reales de MySQL
  *     escritas en el código y no debe ejecutarse desde este servidor.
- *  5. Extensiones sensibles (sql, gz, zip, md, sh, lock, log, bak) -> 404.
+ *  5. Extensiones sensibles (sql, gz, zip, md, sh, lock, log, bak, map) -> 404.
  *  6. Archivo existente dentro de la raíz -> `return false` y `php -S` lo sirve. Carpetas: la RAÍZ `/` la atiende
  *     Laravel (desde la Fase 11 la portada es la vista `inicio`; ya no existe `public/index.html`, igual que en Apache,
  *     donde `DirectoryIndex index.php index.html` entrega `/` al front controller). Las demás carpetas: sin index.html
@@ -148,10 +148,13 @@ function explora_delegar_en_laravel(bool $esApi): bool
 
 // EXPLORA_RAIZ_SITIO permite apuntar a otra raíz con el mismo router; por defecto, el documento raíz laravel/public.
 $raiz = realpath(getenv('EXPLORA_RAIZ_SITIO') ?: __DIR__.'/public');
-$ruta = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
+$rutaCruda = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$ruta = rawurldecode($rutaCruda);
 
-// 1) Rutas con byte nulo, «..» o barra invertida: intento de salir de la raíz o de confundir al servidor.
-if (str_contains($ruta, "\0") || str_contains($ruta, '..') || str_contains($ruta, '\\')) {
+// 1) Rutas con byte nulo, «..», barra invertida o barra codificada (`%2F`): intento de salir de la raíz o de confundir al
+//    servidor. La barra codificada se rechaza como lo hace Apache por defecto (`AllowEncodedSlashes Off`): si no, se
+//    decodificaba y `/juegos/juegos%2Fpuzzle/` llegaba a Laravel como `/juegos/juegos/puzzle/` (200 en dev, error en Apache).
+if (str_contains($ruta, "\0") || str_contains($ruta, '..') || str_contains($ruta, '\\') || stripos($rutaCruda, '%2f') !== false) {
     return explora_responder_texto(400, 'Solicitud no válida');
 }
 
@@ -184,8 +187,8 @@ foreach ($minusculas as $s) {
     }
 }
 
-// 5) Archivos que nunca deben descargarse.
-if ($minusculas !== [] && preg_match('/\.(sql|gz|zip|md|sh|lock|log|bak)$/', end($minusculas))) {
+// 5) Archivos que nunca deben descargarse (`map`: source maps de Bootstrap, igual que en public/.htaccess).
+if ($minusculas !== [] && preg_match('/\.(sql|gz|zip|md|sh|lock|log|bak|map)$/', end($minusculas))) {
     return explora_responder_texto(404, 'No encontrado');
 }
 

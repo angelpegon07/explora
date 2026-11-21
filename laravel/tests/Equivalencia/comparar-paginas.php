@@ -84,6 +84,8 @@
  *     original no declaraba `lang` ni `<meta charset>`: el layout añade `lang="es"` y `<meta charset="utf-8">` (la respuesta
  *     ya salía como UTF-8 por cabecera HTTP). sopa_letras y juego_ahorcado conservan su ausencia de `<meta viewport>`.
  *   - Portal: los siete enlaces a un juego pasan de `…/<slug>/index.html` a `…/<slug>/` (URL canónica con barra, Fase 13).
+ *   - «Volver»: `'../../index.html'` pasa a `'/juegos'` (verificación posterior a la Fase 15; se comprueba que el número de
+ *     ocurrencias coincide en el original y en la página renderizada).
  *   - Ninguna otra (ids, clases, onclick, modales, orden de CSS y JS) puede cambiar.
  *
  * PÁGINAS ESTÁTICAS (Fase 15: `lineaTiempo`, `ViajaPED`). Se comparan con su `index.html` original (25acea1) con los pasos 1 a 7,
@@ -493,6 +495,21 @@ foreach ($paginas as $slug => [$rutaPagina, $archivoOriginal, $referencia, $base
         $titulosExtra = substr_count($original, '<title>') - 1;
         if ($titulosExtra > 0) {
             $admitidas[] = "- ($titulosExtra <title> duplicado(s) del original, el layout emite uno)";
+        }
+    }
+
+    // Juegos: el «volver» pasó de `'../../index.html'` (que obligaba a un salto 301 a `/juegos`) a `'/juegos'` directo
+    // (verificación posterior a la Fase 15). Se admite SOLO ese cambio de cadena y se exige que cada ocurrencia del original
+    // corresponda a una de `'/juegos'` en la página renderizada (mismo número, en los mismos botones: el resto se compara igual).
+    if ($esJuego) {
+        $original = str_replace("'../../index.html'", "'/juegos'", $original, $volver);
+        for ($i = 0; $i < $volver; $i++) {
+            $admitidas[] = "- (volver '../../index.html' -> '/juegos')";
+        }
+        $renderizados = substr_count($contenido, "'/juegos'");
+        if ($volver !== $renderizados) {
+            echo "    NO ADMITIDA  volver: el original tenía $volver enlaces '../../index.html' y la página renderizada tiene $renderizados '/juegos'\n";
+            $fallos++;
         }
     }
 

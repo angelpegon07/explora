@@ -40,7 +40,7 @@ btnSiguiente.addEventListener('click', siguientePregunta);
 btnReiniciar.addEventListener('click', reiniciarJuego);
 
 btnVolver.addEventListener('click', () => {
-    location.href = '../../index.html';
+    location.href = '/juegos';
 });
 
 btnActualizar.addEventListener('click', () => {

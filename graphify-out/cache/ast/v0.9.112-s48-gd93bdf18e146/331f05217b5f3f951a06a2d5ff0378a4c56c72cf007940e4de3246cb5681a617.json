@@ -1,1 +1,0 @@
-{"nodes": [{"id": "$graphify-root$_mapplic_php_conexion_php", "label": "conexion.php", "file_type": "code", "source_file": "mapplic/php/conexion.php", "source_location": "L1"}], "edges": [], "raw_calls": [], "php_type_table": {"path": "$graphify-root$/mapplic/php/conexion.php", "table": {"conexion": "mysqli"}}}

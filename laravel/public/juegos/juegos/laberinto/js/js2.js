@@ -441,7 +441,7 @@ function replay() {
         cancelButtonText: 'No',
     }).then((result) => {
         if (result.isConfirmed) {
-            window.location.href = '../../index.html';
+            window.location.href = '/juegos';
         }
     });
 }
@@ -622,7 +622,7 @@ function mostrar_finalJuego() {
     
     var html_opciones = '';
     html_opciones += `<div class="col-md-6"><button style="font-size: 25px; font-weight: bold;" class="btn btn-warning" onclick="window.location.reload(1)">${opciones[0]}</button></div>`;
-    html_opciones += `<div class="col-md-6"><button style="font-size: 25px; font-weight: bold;" class="btn btn-dark" onclick="location.href='../../index.html'">${opciones[1]}</button></div>`;
+    html_opciones += `<div class="col-md-6"><button style="font-size: 25px; font-weight: bold;" class="btn btn-dark" onclick="location.href='/juegos'">${opciones[1]}</button></div>`;
     
     $opciones_container.html(html_opciones);
 

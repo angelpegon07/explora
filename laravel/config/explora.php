@@ -46,4 +46,12 @@ return [
 
     /* Máximo de filas que devuelve el historial de un usuario (las más recientes). */
     'historial_max' => 500,
+
+    /*
+     * Hosts ADICIONALES que se aceptan en la cabecera `Host` (además del de APP_URL), separados por comas en
+     * TRUSTED_HOSTS: nombres exactos como `www.explora.edu.co` (sin esquema ni puerto; no son expresiones regulares).
+     * Ver App\Http\Middleware\TrustHosts. Se lee aquí (y no con env() en el middleware) para que funcione con
+     * `php artisan config:cache`.
+     */
+    'hosts_confiables' => array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_HOSTS', ''))))),
 ];

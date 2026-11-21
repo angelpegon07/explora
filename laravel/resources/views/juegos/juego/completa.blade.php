@@ -34,7 +34,7 @@
         <!-- Sección de Categorías -->
         <section id="seccion-categorias" style="position: relative;" class="seccion">
             <h1>Selecciona una Categoría</h1>
-            <button id="btn-volver" onclick="location.href = '../../index.html'"
+            <button id="btn-volver" onclick="location.href = '/juegos'"
                 style="position: absolute; top: -13px; right: -10px;" class="btn-menu"></button>
             <div id="categorias-container" class="categorias row">
                 <!-- Las categorías se cargarán dinámicamente aquí -->
@@ -62,7 +62,7 @@
                 <div class="col-3" style="padding: 0px;">
                     <div class="game-header oculto">
                         <div style="width: 100%; display: flex; justify-content: space-around;">
-                            <button id="btn-volver" onclick="location.href = '../../index.html'" class="btn-menu">
+                            <button id="btn-volver" onclick="location.href = '/juegos'" class="btn-menu">
                             </button>
                             <button id="btn-actualizar" class="btn-menu">
                             </button>
@@ -84,7 +84,7 @@
             <div id="resultado-final"></div>
             <button id="btn-reiniciar" class="btn-reiniciar">Jugar de Nuevo <i
                     class="fa-solid fa-rotate-left"></i></button>
-            <button id="btn-volver-final" onclick="location.href = '../../index.html'" class="btn-reiniciar">Volver <i
+            <button id="btn-volver-final" onclick="location.href = '/juegos'" class="btn-reiniciar">Volver <i
                     class="fas fa-arrow-left"></i></button>
         </section>
     </div>

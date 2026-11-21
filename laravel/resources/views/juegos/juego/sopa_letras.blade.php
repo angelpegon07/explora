@@ -68,7 +68,7 @@
       </div>
       <div class="col-3 text-center">
         <button style="width: 80%; border-radius: 20pt; font-size: 23px; -webkit-text-stroke: 1px #4d0d0d;"
-          onclick="location.href='../../index.html'" class="btn btn-danger">No,
+          onclick="location.href='/juegos'" class="btn btn-danger">No,
           salir</button>
       </div>
       <div class="col-3"></div>
@@ -108,7 +108,7 @@
                     <br>
                     <button id='solve' class="btn btn-warning btn-lg"> <i class="fa fa-check"></i> Resolver</button>
                     <br>
-                    <button onclick="location.href='../../index.html'" class="btn btn-danger btn-lg"> <i
+                    <button onclick="location.href='/juegos'" class="btn btn-danger btn-lg"> <i
                         class="fa fa-arrow-left"></i> Volver</button>
                   </div>
                 </div>

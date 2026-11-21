@@ -309,12 +309,15 @@
 
   /**
    * Consulta GET /api/sesion y sincroniza localStorage con el servidor.
-   *  - 200: guarda el usuario y resuelve con él.
-   *  - 401: limpia localStorage y resuelve con null (no hay sesión).
-   *  - Otro error (0, 5xx, 419): NO toca localStorage; resuelve con null.
-   * Siempre dispara $(document).trigger('explora:sesion', [usuario|null]).
-   * La llamada también deja la cookie XSRF-TOKEN lista (útil para invitados).
-   * @returns {Object} Promesa jQuery que siempre se resuelve (usuario o null);
+   *  - 200: guarda el usuario y resuelve con él (comprobada = true).
+   *  - 401: limpia localStorage y resuelve con null (comprobada = true: el servidor CONFIRMÓ que no hay sesión).
+   *  - Otro error (0 = red, 5xx, 419...): NO toca localStorage; resuelve con null y comprobada = false
+   *    («no se pudo comprobar»). Quien reciba null debe mirar `comprobada` antes de concluir que no hay sesión:
+   *    un fallo transitorio no prueba nada, y la página pudo haber sido pintada por el servidor CON sesión.
+   * Siempre dispara $(document).trigger('explora:sesion', [usuario|null, comprobada]).
+   * La llamada también deja la cookie XSRF-TOKEN lista (útil para invitados, y NECESARIA en las páginas sin sesión
+   * del servidor, que no entregan esa cookie por sí mismas).
+   * @returns {Object} Promesa jQuery que siempre se resuelve con (usuario|null, comprobada:boolean);
    *                   se rechaza solo si jQuery no existe.
    */
   function sincronizarSesion() {
@@ -324,10 +327,14 @@
     var $ = window.jQuery;
     var diferido = $.Deferred();
 
-    /** Notifica a la página y resuelve la promesa. */
-    function terminar(usuario) {
-      $(document).trigger('explora:sesion', [usuario]);
-      diferido.resolve(usuario);
+    /**
+     * Notifica a la página y resuelve la promesa.
+     * @param {Object|null} usuario Usuario de la sesión o null.
+     * @param {boolean} comprobada true si el servidor respondió de forma concluyente (200 o 401); false si no se pudo comprobar.
+     */
+    function terminar(usuario, comprobada) {
+      $(document).trigger('explora:sesion', [usuario, comprobada]);
+      diferido.resolve(usuario, comprobada);
     }
 
     peticion('GET', 'sesion', null, { cache: false })
@@ -335,17 +342,18 @@
         var usuario = respuesta && respuesta.usuario_objeto;
         if (usuario && typeof usuario === 'object') {
           guardarSesionLocal(usuario);
-          terminar(usuario);
+          terminar(usuario, true);
         } else {
-          // 200 sin usuario: respuesta inesperada, no se altera la caché.
-          terminar(null);
+          // 200 sin usuario: respuesta inesperada, no se altera la caché ni se da por comprobada la sesión.
+          terminar(null, false);
         }
       })
       .fail(function (xhr) {
-        // Solo el 401 prueba que no hay sesión; un fallo transitorio no debe
-        // cerrar la sesión local del usuario.
-        if (xhr && xhr.status === 401) { limpiarSesionLocal(); }
-        terminar(null);
+        // Solo el 401 prueba que no hay sesión; un fallo transitorio (red, 5xx, 419) no debe
+        // cerrar la sesión local del usuario NI hacer creer a la página que no la hay.
+        var sinSesion = !!(xhr && xhr.status === 401);
+        if (sinSesion) { limpiarSesionLocal(); }
+        terminar(null, sinSesion);
       });
 
     return diferido.promise();

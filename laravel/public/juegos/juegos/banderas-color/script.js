@@ -80,7 +80,7 @@ function mostrarBanderas() {
                     if(result.isConfirmed) {
                         window.location.reload(1);
                     }else{
-                        location.href = '../../index.html';
+                        location.href = '/juegos';
                     }
                 });
             }else{
@@ -101,7 +101,7 @@ function mostrarBanderas() {
                     if(result.isConfirmed) {
                         window.location.reload(1);
                     }else{
-                        location.href = '../../index.html';
+                        location.href = '/juegos';
                     }
                 });
             }
@@ -329,7 +329,7 @@ function iniciarTimer() {
                 if(result.isConfirmed) {
                     window.location.reload(1);
                 }else{
-                    location.href = '../../index.html';
+                    location.href = '/juegos';
                 }
             });
 
@@ -385,7 +385,7 @@ function seleccionarBandaAdivinar(bandera, div) {
                     if(result.isConfirmed) {
                         window.location.reload(1);
                     }else{
-                        location.href = '../../index.html';
+                        location.href = '/juegos';
                     }
                 });
             }else{
@@ -406,7 +406,7 @@ function seleccionarBandaAdivinar(bandera, div) {
                     if(result.isConfirmed) {
                         window.location.reload(1);
                     }else{
-                        location.href = '../../index.html';
+                        location.href = '/juegos';
                     }
                 }); 
             }

@@ -10,7 +10,7 @@ Continúa el trabajo de las Fases 0–8 (ver `INFORME_FINAL.md` y `laravel/READM
 | Backend / API | Laravel 10 (sesión, fichas, quiz, juegos, perfil) | Igual + chat y corrector con IA |
 | Páginas | 6 mapas + `miPerfil` + `corrector` + portal de juegos + 7 juegos + línea de tiempo: HTML estático en la raíz, servido junto a Laravel | Vistas Blade con layouts y parciales, rutas web de Laravel |
 | Documento raíz del servidor | Raíz del repo (mezcla sitio, PHP legado y `laravel/`) | **Solo `laravel/public/`** |
-| Assets | CSS/JS sueltos en la raíz, copias duplicadas, `build-sitio.mjs` | `laravel/public/` + Vite para lo propio |
+| Assets | CSS/JS sueltos en la raíz, copias duplicadas, `build-sitio.mjs` *(histórico: el script y `dist/` ya se retiraron en la Fase 9)* | `laravel/public/` + Vite para lo propio |
 | PHP legado | `mapplic/php/*`, `juegos/php/*` (7 bloqueados con 410; chat activo) | Eliminado |
 
 Del grafo de código (`graphify-out/`): el núcleo del backend ya está desacoplado (controladores finos → modelos
@@ -27,7 +27,7 @@ Eloquent; `Usuario` es el único puente entre autenticación, perfil y modelos d
 
 - **Estrangulador, no big bang:** cada fase deja el sitio funcionando y con pruebas en verde (PHPUnit 118 + Playwright 53 hoy).
 - **Mismas URLs públicas:** cada página HTML antigua (`/climatico.html`, etc.) redirige 301 a la ruta nueva hasta decidir retirarla.
-- **Una página por vez**, empezando por las simples; `index.html` (956 líneas, la más compleja) va después de tener layout y plantilla de mapa probados.
+- **Una página por vez**, empezando por las simples; `index.html` (956 líneas, la más compleja) va después de tener layout y plantilla de mapa probados *(histórico: la portada se migró en la Fase 11 y `index.html` ya no existe)*.
 - **Nada de reescribir las librerías de terceros** (Mapplic, jQuery, SweetAlert2, driver.js, Bootstrap): se sirven tal cual desde `public/` y se actualizan aparte.
 - **Prueba antes y después:** capturas y pruebas Playwright de la página original sirven de contrato de la Blade.
 - Rama nueva `migracion-blade` desde `main` (etiqueta de recuperación `pre-migracion-blade`).
@@ -119,7 +119,7 @@ Sin HTML ni PHP plano de aplicación fuera de `laravel/`; el servidor sirve solo
 verde; credenciales rotadas; documentación y `README` al día.
 
 ## 8. Decisiones del líder tras la Fase 10 (2026-11-19)
-- **Pendiente para la Fase 11:** unificar el `.modal-body.quizmodal` anidado (clave `quiz_anidado` en `config/mapas.php`) y quitar el `</div>` sobrante tras `#contenedorVideo`, ambos defectos heredados que se conservaron para garantizar la equivalencia.
+- **Pendiente para la Fase 11 (RESUELTO en la Fase 11: la clave `quiz_anidado` ya no existe en `config/mapas.php`; se conserva el texto original como histórico):** unificar el `.modal-body.quizmodal` anidado (clave `quiz_anidado` en `config/mapas.php`) y quitar el `</div>` sobrante tras `#contenedorVideo`, ambos defectos heredados que se conservaron para garantizar la equivalencia.
 - **Sesión en las páginas Blade:** se mantiene el grupo `web` (la cookie de sesión/CSRF se necesita de todos modos para `/api/sesion`).
 - **`general.js`:** en la Fase 11, al migrar `index`, `seleccionarTipoMapa()` pasará a las URL sin `.html`; las redirecciones 301 quedan solo para marcadores antiguos.
 - **Compuerta de equivalencia:** los HTML originales ya no están en HEAD; el script usa por defecto `0c60734` para `index` y `0c7c594` para los mapas (configurable con `--ref=<pagina>:<commit>`).

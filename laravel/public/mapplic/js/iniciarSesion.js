@@ -23,8 +23,8 @@
 var avatar_seleccionado = 1;
 
 /**
- * Indica si ya se conoce el estado REAL de la sesión (respuesta de GET /api/sesion, o un inicio/cierre de sesión
- * hecho desde esta página). Mientras es false, verificarSesion() NO toca los botones de la barra de juegos: su estado
+ * Indica si ya se conoce el estado REAL de la sesión (respuesta CONCLUYENTE de GET /api/sesion —200 o 401; un fallo de
+ * red o un 5xx no cuentan—, o un inicio/cierre de sesión hecho desde esta página). Mientras es false, verificarSesion() NO toca los botones de la barra de juegos: su estado
  * inicial lo pintó el servidor y `localStorage` (solo una caché) podría contradecirlo y provocar un parpadeo.
  * @type {boolean}
  */
@@ -53,7 +53,13 @@ $(document).ready(function () {
     // Cuando termina la primera sincronización con el servidor, se vuelve a pintar:
     // así un cierre de sesión en otra pestaña o una sesión caducada se reflejan.
     if (window.ExploraApi && window.ExploraApi.sesionLista) {
-        window.ExploraApi.sesionLista.done(function () {
+        window.ExploraApi.sesionLista.done(function (usuario, comprobada) {
+            // Si NO se pudo comprobar (red caída, 5xx...) no se sabe nada nuevo: se deja lo que pintó el servidor y no se marca
+            // la sesión como confirmada. Si no, con `localStorage` vacío la barra de /juegos pasaría a «Iniciar sesión» aunque
+            // el servidor SÍ tuviera sesión. Solo el 401 (sin sesión) o un 200 (con ella) son respuestas concluyentes.
+            if (comprobada === false) {
+                return;
+            }
             // ExploraApi ya sincronizó localStorage con el servidor: desde ahora la caché es fiable.
             sesionConfirmada = true;
             refrescarInterfazSesion();

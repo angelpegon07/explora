@@ -34,7 +34,7 @@
             <h6 style="width: 99%; text-align: right;">Pregunta <span id="pregunta"></span> de 10</h6>
             <h3>Pinta la bandera de <span style="color: #e000ff;" id="departamento"></span></h3>
             <div class="botones_header" style="right: 0px; top: 6vh;">
-                <button id="boton_volver" onclick="location.href='../../index.html'" style="-webkit-text-stroke: transparent;" class="btn btn-danger"><i class="fas fa-arrow-left"></i></button>
+                <button id="boton_volver" onclick="location.href='/juegos'" style="-webkit-text-stroke: transparent;" class="btn btn-danger"><i class="fas fa-arrow-left"></i></button>
                 <button id="boton_actualizar" onclick="window.location.reload(1)" style="-webkit-text-stroke: transparent;" class="btn btn-info"><i class="fas fa-sync-alt"></i></button>
             </div>
         </div>
@@ -52,7 +52,7 @@
         <div class="header" style="background-color: #ffd600; padding-top: 10px; height: 130px; display: flex; justify-content: center; align-items: center;">
             <h1>ADIVINA LA BANDERA</h1>
             <div class="botones_header">
-                <button id="boton_volver" onclick="location.href='../../index.html'" style="-webkit-text-stroke: transparent;" class="btn btn-danger"><i class="fas fa-arrow-left"></i></button>
+                <button id="boton_volver" onclick="location.href='/juegos'" style="-webkit-text-stroke: transparent;" class="btn btn-danger"><i class="fas fa-arrow-left"></i></button>
                 <button id="boton_actualizar" onclick="window.location.reload(1)" style="-webkit-text-stroke: transparent;" class="btn btn-info"><i class="fas fa-sync-alt"></i></button>
             </div>
         </div>

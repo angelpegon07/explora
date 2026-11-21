@@ -358,7 +358,7 @@
             if (result.isConfirmed) {
               window.location.reload(0);
             }else{
-                window.location.href = '../../index.html';
+                window.location.href = '/juegos';
               }
           });
         }, 1500);

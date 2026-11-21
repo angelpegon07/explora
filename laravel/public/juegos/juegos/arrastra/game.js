@@ -182,7 +182,7 @@ gameArea.addEventListener('drop', (e) => {
                         if (result.isConfirmed) {
                             resetGame();
                         } else {
-                            window.location.href = '../../index.html';
+                            window.location.href = '/juegos';
                         }
                     });
                 }, 700);
@@ -360,7 +360,7 @@ function iniciarContador(minutos) {
                 if (result.isConfirmed) {
                     resetGame();
                 } else {
-                    window.location.href = '../../index.html';
+                    window.location.href = '/juegos';
                 }
             });
         }

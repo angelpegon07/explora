@@ -57,7 +57,8 @@ pero conviene aplicarlas de una en una y solo en bases de prueba hasta que se au
 
 ```
 public/                  ÚNICO documento raíz (Fase 9): index.php (front controller), .htaccess y todo el sitio estático
-                         (*.html, *.json, css/, js/, mapplic/, juegos/, images/, maps*/…; del PHP legado solo queda mapplic/php/chat*.php).
+                         (*.json, css/, js/, mapplic/, juegos/, images/, maps*/…; el ÚNICO HTML estático que queda es `corrector.html`;
+                         del PHP legado solo queda mapplic/php/chat*.php).
                          Desde la Fase 11 no hay `index.html`: la portada `/` es una vista Blade. Desde la Fase 12 tampoco
                          `miPerfil.html` ni `juegos/index.html` (perfil y portal de juegos son vistas Blade); las carpetas
                          `miPerfil/` y `juegos/` siguen existiendo con sus CSS/JS.
@@ -365,7 +366,8 @@ comprobar antes que el sistema operativo sea compatible. Las carpetas `test-resu
 
 | Variable | Valor por defecto | Para qué sirve |
 |---|---|---|
-| `SESSION_SECURE_COOKIE` | `false` | Cookie de sesión solo por HTTPS. **Poner `true` en producción** |
+| `SESSION_SECURE_COOKIE` | sin definir (`null` en `config/session.php`: la cookie NO se marca `Secure`; `.env.example` trae `false`) | Cookie de sesión solo por HTTPS. **Poner `true` en producción con HTTPS** |
+| `TRUSTED_HOSTS` | vacío | Hosts adicionales aceptados en la cabecera `Host` (nombres exactos separados por comas; el de `APP_URL` siempre se acepta, y en `local`/`testing` también `localhost`, `127.0.0.1` y `[::1]`). Otro `Host` da 400 (`App\Http\Middleware\TrustHosts`) |
 | `CORS_ALLOWED_ORIGINS` | vacío | Otros orígenes permitidos (separados por comas). Vacío = solo el mismo origen |
 | `QUIZ_INCLUIR_RESPUESTAS` | `true` | Enviar `correcta`/`respuesta` al navegador (ver aviso en la API del quiz) |
 | `AVATARES_MAX` | `35` | Cantidad de avatares (`juegos/images/avatars/N.png`) |

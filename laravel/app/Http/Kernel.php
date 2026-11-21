@@ -3,11 +3,13 @@
 namespace App\Http;
 
 use App\Http\Middleware\Authenticate;
+use App\Http\Middleware\CabecerasSeguridad;
 use App\Http\Middleware\CuentaActiva;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\TrimStrings;
+use App\Http\Middleware\TrustHosts;
 use App\Http\Middleware\TrustProxies;
 use App\Http\Middleware\ValidateSignature;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -38,7 +40,11 @@ class Kernel extends HttpKernel
      * @var array<int, class-string|string>
      */
     protected $middleware = [
-        // \App\Http\Middleware\TrustHosts::class,
+        // Cabeceras de seguridad en toda respuesta de Laravel (también redirecciones y errores). Va la PRIMERA para que
+        // envuelva incluso el 400 de un host no confiable.
+        CabecerasSeguridad::class,
+        // Host de confianza (400 si la cabecera Host no es la de APP_URL/TRUSTED_HOSTS): antes de cualquier URL absoluta.
+        TrustHosts::class,
         TrustProxies::class,
         HandleCors::class,
         PreventRequestsDuringMaintenance::class,

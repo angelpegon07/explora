@@ -118,8 +118,9 @@ class JuegosRutasTest extends TestCase
             }
 
             foreach ($rutas as $ruta => $origen) {
-                // El «volver» (`../../index.html`) apunta a `/juegos/index.html`: ya no es un archivo, Laravel lo redirige (301) a
-                // `/juegos` (lo cubre JuegosPaginasTest/PerfilPortalTest), así que no se exige en disco.
+                // Los «volver» ya apuntan directamente a `/juegos` (test_el_volver_apunta_directo_al_portal). Se conserva la excepción
+                // por si reaparece una referencia antigua a `../../index.html`: `/juegos/index.html` ya no es un archivo (lo redirige
+                // Laravel con 301, lo cubre JuegosPaginasTest/PerfilPortalTest), así que no se exige en disco.
                 if ($ruta === 'juegos/index.html') {
                     continue;
                 }
@@ -137,5 +138,30 @@ class JuegosRutasTest extends TestCase
         sort($esperadas);
         $this->assertGreaterThan(100, $comprobadas, 'el escaneo debería haber comprobado muchas rutas');
         $this->assertSame($esperadas, $faltan, 'Referencias rotas distintas de las conocidas (se esperaba exactamente la lista CONOCIDAS_ROTAS)');
+    }
+
+    /**
+     * Los enlaces «volver» de los juegos (JS propio y vistas Blade) apuntan DIRECTAMENTE a `/juegos`: ya no quedan usos de
+     * `../../index.html`, que obligaba a un salto 301 (`/juegos/index.html` -> `/juegos`). Esa URL antigua sigue redirigiendo
+     * para los marcadores guardados (lo cubre JuegosPaginasTest).
+     */
+    public function test_el_volver_apunta_directo_al_portal(): void
+    {
+        $raiz = dirname(__DIR__, 2);
+        $archivos = array_merge(
+            glob($raiz.'/public/juegos/juegos/*/*.js') ?: [],
+            glob($raiz.'/public/juegos/juegos/*/js/*.js') ?: [],
+            glob($raiz.'/resources/views/juegos/juego/*.blade.php') ?: [],
+        );
+        $this->assertNotEmpty($archivos);
+
+        $conVolver = 0;
+        foreach ($archivos as $archivo) {
+            $contenido = (string) file_get_contents($archivo);
+            $this->assertStringNotContainsString('../../index.html', $contenido, basename($archivo).' aún enlaza ../../index.html');
+            $conVolver += substr_count($contenido, "'/juegos'");
+        }
+        // 13 usos en los JS + 11 en las vistas Blade.
+        $this->assertSame(24, $conVolver, 'Número de enlaces «volver» a /juegos');
     }
 }

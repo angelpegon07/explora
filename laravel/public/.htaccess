@@ -26,9 +26,24 @@ RedirectMatch 404 /\.(git|env)
 </FilesMatch>
 
 # Volcados, copias y archivos de proyecto que nunca deben descargarse.
-<FilesMatch "\.(sql|gz|zip|md|sh|lock|log|bak)$">
+# `map` = source maps de Bootstrap (juegos/librerias/bootstrap-5.3/**/*.map): solo los pide la consola del navegador (ninguna
+# página los necesita para funcionar) y exponen el código fuente original de la librería.
+<FilesMatch "\.(sql|gz|zip|md|sh|lock|log|bak|map)$">
     Require all denied
 </FilesMatch>
+
+# Cabeceras de seguridad también para los archivos ESTÁTICOS (CSS, JS, imágenes...), que Apache sirve sin pasar por PHP.
+# Los mismos valores los añade a las respuestas de Laravel el middleware App\Http\Middleware\CabecerasSeguridad (lo vigila
+# tests/Feature/CabecerasSeguridadTest). `always` las envía también en errores (403, 404...). Sin mod_headers se ignora el bloque.
+# HSTS y CSP NO se añaden aquí a propósito: HSTS solo con HTTPS ya funcionando y la CSP primero en modo Report-Only
+# (ver DESPLIEGUE_APACHE.md, «Lista de comprobación de despliegue seguro»).
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # No revelar la versión de PHP (complementa `expose_php = Off` en php.ini).
+    Header unset X-Powered-By
+</IfModule>
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
