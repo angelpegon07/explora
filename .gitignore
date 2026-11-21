@@ -1,3 +1,8 @@
+# ---------------------------------------------------------------
+# .gitignore unificado (Reestructuración: la aplicación Laravel vive en la raíz)
+# Une las reglas del antiguo .gitignore raíz y del de laravel/.
+# ---------------------------------------------------------------
+
 # Dumps de BD (GitHub rechaza archivos >100MB; explora.sql ~360MB)
 *.sql
 *.sql.gz
@@ -6,8 +11,47 @@
 # Dependencias
 node_modules/
 **/node_modules/
+/node_modules
+/vendor
 
 # Grafos de conocimiento generados por graphify (se regeneran; no se versionan)
 graphify-out/
 graphify-out-laravel/
 .DS_Store
+
+# Caché de PHPUnit y artefactos de pruebas
+/.phpunit.cache
+.phpunit.result.cache
+/playwright-report
+/test-results
+/blob-report
+
+# Artefactos de compilación de Vite / enlaces de almacenamiento
+/public/build
+/public/hot
+/public/storage
+
+# Imágenes de las fichas generadas por `php artisan explora:externalizar-imagenes` (Fase 16A): nunca se versionan.
+/public/contenido/
+# Carpetas de prueba del comando (dentro de public/, con otro nombre) y su sandbox.
+/public/contenido-*/
+
+# Claves y entorno (el .env real nunca se versiona)
+/storage/*.key
+.env
+.env.*
+!.env.example
+.env.backup
+.env.production
+auth.json
+
+# Vagrant/Homestead y registros de gestores de paquetes
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+
+# Editores
+/.fleet
+/.idea
+/.vscode

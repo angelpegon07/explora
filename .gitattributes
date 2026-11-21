@@ -1,2 +1,13 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Reestructuración: unificado con el antiguo laravel/.gitattributes (más estricto: LF).
+# El antiguo de la raíz solo tenía `* text=auto`, que queda incluido en la regla siguiente.
+* text=auto eol=lf
+
+*.blade.php diff=html
+*.css diff=css
+*.html diff=html
+*.md diff=markdown
+*.php diff=php
+
+/.github export-ignore
+CHANGELOG.md export-ignore
+.styleci.yml export-ignore
