@@ -29,6 +29,7 @@ sustituidos por la API se eliminaron (siguen en la etiqueta git `pre-retiro-lega
 | 14 | Chat y corrector con IA | cancelada en este repositorio (chat aplazado; el corrector se desarrolla en otro proyecto) |
 | 15 | `lineaTiempo` y `ViajaPED` en Blade; retiro del PHP legado sustituido (7 scripts) y de las pruebas que dependían de él | ✔ |
 | 16A | Imágenes base64 de las fichas a archivos: comando `explora:externalizar-imagenes` (dry-run por defecto, `--aplicar`, `--revertir`, `--verificar`). **Implementado y verificado en el sandbox; NO ejecutado contra la base real** (pendiente de autorización) | ✔ (código) / pendiente de aplicar |
+| 16B | Esquema, fechas, índices y FK: migraciones `…000003` (`resultado_juegos.creado_en` + índices) y `…000004` (índices y FK de `departamento_descripcion`), doble escritura de `creado_en` y comando de solo lectura `explora:auditar-integridad`. **Aplicadas solo a `explora_test`/`explora_migtest`; NO a la base real** (pendiente de autorización) | ✔ (código) / pendiente de aplicar |
 
 ## Requisitos
 
@@ -372,6 +373,41 @@ el usuario de la app tiene permisos sobre ella; si no existe, las pruebas se omi
 y una carpeta `public/contenido-prueba-*` que también borra. `tests/Unit/ImagenesEmbebidasTest.php` cubre las funciones puras. El router y
 `.htaccess` se vigilan en `ServidorDesarrolloTest` y `tests/Browser/contenido.spec.js`. El router de desarrollo con `EXPLORA_SOLO_BD_PRUEBA=1`
 acepta bases `*_test` y `*_migtest`.
+
+### Esquema, fechas, índices y claves foráneas (Fase 16B)
+
+Dos migraciones ADITIVAS (no borran ni cambian el tipo de ninguna columna) y un comando de auditoría de solo lectura.
+**No se han aplicado a la base real `explora`**: solo a `explora_test` y al sandbox `explora_migtest`. Procedimiento en
+`../DOCUMENTACION_MEJORAMIENTO/PROPUESTA_DESPLIEGUE.md` («Fase 16B»).
+
+| Migración | Qué hace |
+|---|---|
+| `2026_11_21_000003_ampliar_resultado_juegos_creado_en_e_indices` | DAT-03, fase «expandir»: añade `resultado_juegos.creado_en DATETIME NULL` y la rellena desde `fecha` (texto `d-m-Y H:i:s`) donde el formato es válido; lo no interpretable (vacío, basura, `31-02-2026`…) queda en NULL y se cuenta en el aviso. Crea `idx_resultado_ranking (nombre_juego(32), nivel(16), categoria(100), puntaje DESC, tiempo ASC)` e `idx_resultado_historial (id_usuario, id)`. Idempotente; `down()` elimina solo eso |
+| `2026_11_21_000004_agregar_indices_y_fk_de_integridad` | DAT-04: índices `preguntas(departamento)` y `opciones_verfal(pregunta)`; FK `departamento_descripcion.departamento → list_departamentos.id` (ON UPDATE CASCADE, ON DELETE RESTRICT) **solo si no hay huérfanas** (si las hay: no falla, avisa con los ids). Idempotente; `down()` elimina solo lo añadido |
+
+**Orden de despliegue obligatorio: respaldo → `explora:auditar-integridad` → `php artisan migrate` → código nuevo → `explora:externalizar-imagenes`.**
+El código nuevo (`ResultadoJuegoController`/`ResultadoJuego`) escribe TAMBIÉN `creado_en`: sin la migración 000003 aplicada, guardar un resultado falla.
+(Con el código viejo y la migración aplicada no pasa nada: la columna admite NULL; esas filas quedan con `creado_en` NULL y la auditoría las cuenta.)
+La API no cambia: ranking e historial siguen leyendo y devolviendo `fecha` como texto `d-m-Y H:i:s`; leer `creado_en` y retirar `fecha` es la fase «contraer», pendiente y con autorización.
+
+```bash
+php artisan explora:auditar-integridad              # informe legible; código de salida 2 si hay problemas BLOQUEANTES para añadir una FK
+php artisan explora:auditar-integridad --json       # lo mismo en JSON (para scripts)
+php artisan explora:auditar-integridad --max-ids=50 # más ids de ejemplo por anomalía (por defecto 20; máx. 200)
+php artisan explora:auditar-integridad --conexion=<nombre>
+```
+
+El comando es de **solo lectura** (solo SELECT/INFORMATION_SCHEMA dentro de una transacción `READ ONLY` que el servidor hace cumplir) y no imprime contenido
+de campos largos (ids, conteos y, de `fecha`, una muestra de 30 caracteres sin caracteres de control). Informa de: relaciones lógicas (FK sí/no, huérfanos con ids, tipos y colaciones
+compatibles), `preguntas.departamento` (polimórfica, desglosada por `origen_pregunta`), duplicados en las 12 tablas 1:1, FK existentes (y las 13 autorreferenciadas de `regiones_*`),
+formatos de `resultado_juegos.fecha` (válidos/no interpretables, con muestra) y `creado_en` NULL, índices esperados presentes/ausentes y colaciones mezcladas. Código de salida:
+0 sin bloqueantes, 2 con bloqueantes (huérfanos o tipos incompatibles en una FK candidata), 1 si no pudo ejecutarse. **Con los datos actuales de `explora_test` da 2**: 4 filas
+de `opciones_verfal` apuntan a preguntas inexistentes (ids 223, 277, 278, 279); esa FK NO se crea (decisión del dueño del contenido). Se reportan y NO se tocan: `preguntas.departamento` (polimórfica, sin FK
+posible), `UNIQUE(departamento)` en las tablas 1:1 (hay duplicados), las FK autorreferenciadas de `regiones_*` (DAT-02), las FK entre bases (`id_usuario`, `usuario_id` → `pedigital.users`) y las colaciones (`utf8mb3`/`utf8mb4`).
+
+**Pruebas.** `tests/Feature/EsquemaIntegridadTest.php` (17) usa el sandbox `explora_migtest` como conexión por defecto (comprueba `SELECT DATABASE()` antes de escribir; nunca toca `explora_test`),
+parte del estado «antes de la 16B» en cada prueba y lo restaura al terminar. Para que el código nuevo pase el resto de la suite, las dos migraciones deben estar aplicadas también en `explora_test`
+(`DB_DATABASE=explora_test php artisan migrate --path=database/migrations/<archivo>`, una a una).
 
 ### Retiro del PHP legado (Fase 15)
 

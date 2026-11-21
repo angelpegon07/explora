@@ -28,8 +28,11 @@ class ResultadoJuegoController extends Controller
      * - Sin sesión (invitado, FUN-09): `id_usuario = 0` y los datos del cuerpo, ya validados.
      *
      * `fecha` se guarda como texto «d-m-Y H:i:s» (zona horaria de la aplicación, UTC), igual que el legado, porque la
-     * columna es de tipo texto (DAT-03) y el historial del frontend la separa por el espacio. Pasar a `datetime` exige
-     * una migración de datos autorizada.
+     * columna es de tipo texto (DAT-03) y el historial del frontend la separa por el espacio.
+     *
+     * Doble escritura (Fase 16B, patrón expandir/contraer de DAT-03): se escribe además `creado_en` (DATETIME) con el
+     * MISMO instante que `fecha`, tomado de una sola llamada a `now()` para que ambas columnas no puedan diferir ni
+     * siquiera por un cambio de segundo. Requiere la migración `2026_11_21_000003_…` aplicada antes de desplegar.
      *
      * @param  GuardarResultadoRequest  $request  Cuerpo ya validado.
      * @return JsonResponse 201 `{status:'success', mensaje}`; 422 si los datos no son válidos; 401 si la cuenta de la
@@ -39,6 +42,7 @@ class ResultadoJuegoController extends Controller
     {
         $datos = $request->validated();
         $usuario = $request->user('web');
+        $ahora = now();
 
         ResultadoJuego::create([
             'nombre_juego' => $datos['juego'],
@@ -50,7 +54,8 @@ class ResultadoJuegoController extends Controller
             'jugador' => $usuario ? $usuario->nombre_usuario : $datos['nombre'],
             'grado' => $usuario ? (string) $usuario->grado_usuario : (string) $datos['grado'],
             'avatar' => $usuario ? PerfilExplora::avatarDe((int) $usuario->getAuthIdentifier()).'.png' : $datos['avatar'],
-            'fecha' => now()->format('d-m-Y H:i:s'),
+            'fecha' => $ahora->format('d-m-Y H:i:s'),
+            'creado_en' => $ahora,
         ]);
 
         return response()->json(
