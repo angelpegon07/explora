@@ -45,6 +45,16 @@ RedirectMatch 404 /\.(git|env)
     Header unset X-Powered-By
 </IfModule>
 
+# Caché larga para las imágenes de /contenido/ (Fase 16A): el nombre de cada archivo es el sha256 de su contenido, así que una URL
+# nunca cambia de contenido y el navegador puede guardarla un año sin revalidar. Se marca la petición con SetEnvIf y se pone
+# la cabecera solo a esas respuestas (no afecta al resto de reglas de seguridad de arriba). Sin los módulos se ignora.
+<IfModule mod_setenvif.c>
+    SetEnvIfNoCase Request_URI "^/contenido/.+\.(png|jpg|gif|webp)$" EXPLORA_CONTENIDO_INMUTABLE=1
+</IfModule>
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable" env=EXPLORA_CONTENIDO_INMUTABLE
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
@@ -76,6 +86,13 @@ RedirectMatch 404 /\.(git|env)
     # config/paginas_estaticas.php: lo vigila tests/Feature/PaginasEstaticasTest. `<slug>/index.html` ya no existe: cae en la
     # regla genérica y Laravel lo redirige (301).
     RewriteRule ^(lineaTiempo|ViajaPED)/?$ index.php [L]
+
+    # Imágenes de las fichas (Fase 16A): `/contenido/` lo genera `php artisan explora:externalizar-imagenes` a partir de la base de
+    # datos. Solo se sirven png/jpg/gif/webp; cualquier otra cosa bajo esa carpeta (html, svg, txt, php, carpetas…) da 404
+    # aunque exista en disco. Así el contenido de la base nunca puede servirse como página o script. Equivale al punto 5b de
+    # servidor-desarrollo.php (lo vigila tests/Feature/ServidorDesarrolloTest). Va ANTES del front controller para responder 404
+    # sin pasar por PHP.
+    RewriteRule ^contenido/(?!.*\.(png|jpg|gif|webp)$) - [NC,R=404,L]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d

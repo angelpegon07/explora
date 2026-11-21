@@ -28,6 +28,7 @@ sustituidos por la API se eliminaron (siguen en la etiqueta git `pre-retiro-lega
 | 13 | Los 7 juegos (`/juegos/juegos/<slug>/`) en Blade con un layout común de juego | ✔ |
 | 14 | Chat y corrector con IA | cancelada en este repositorio (chat aplazado; el corrector se desarrolla en otro proyecto) |
 | 15 | `lineaTiempo` y `ViajaPED` en Blade; retiro del PHP legado sustituido (7 scripts) y de las pruebas que dependían de él | ✔ |
+| 16A | Imágenes base64 de las fichas a archivos: comando `explora:externalizar-imagenes` (dry-run por defecto, `--aplicar`, `--revertir`, `--verificar`). **Implementado y verificado en el sandbox; NO ejecutado contra la base real** (pendiente de autorización) | ✔ (código) / pendiente de aplicar |
 
 ## Requisitos
 
@@ -313,6 +314,65 @@ conexión no es local o no termina en `_test`. **Nombre histórico de variables:
 `pedigital_test`). Se llaman «LEGACY» porque antes también las usaba el arnés del PHP legado, que ya no existe; **no se renombraron**
 para no obligar a editar el `.env` de nadie.
 
+### Imágenes de las fichas fuera de la base (Fase 16A)
+
+Las fichas guardan imágenes como `<img src="data:image/...;base64,...">` dentro del HTML de la base `explora` (DAT-07: la ficha del
+depto 10 pesaba 48,6 MB). El comando saca esas imágenes a archivos que sirve Apache y deja en la base solo la URL.
+**El comando NO se ha ejecutado contra la base real**; se desarrolló y verificó solo en `explora_test`/`explora_migtest`.
+El procedimiento para producción está en `../DOCUMENTACION_MEJORAMIENTO/PROPUESTA_DESPLIEGUE.md` («Externalizar imágenes»).
+
+```bash
+php artisan explora:externalizar-imagenes                       # DRY-RUN (por defecto): no escribe nada; cifras por tabla/columna
+php artisan explora:externalizar-imagenes --aplicar             # escribe archivos y actualiza filas (una transacción por fila)
+php artisan explora:externalizar-imagenes --revertir            # vuelve a incrustar base64 leyendo los archivos
+php artisan explora:externalizar-imagenes --verificar=storage/logs/externalizar-imagenes-<fecha>.json   # compuerta posterior
+```
+
+| Opción | Efecto |
+|---|---|
+| `--dry-run` | Modo por defecto. Imprime filas afectadas, nº de imágenes, MB de base64 a quitar, archivos y MB a crear, duplicados, tipos reales y anomalías. No escribe ni archivos ni filas ni informe |
+| `--aplicar` | Escribe `<destino>/<2 hex>/<sha256>.<ext>` y sustituye SOLO el valor del `src` por `/contenido/fichas/<2 hex>/<sha256>.<ext>` |
+| `--revertir` | Reincrusta las URL de `contenido_url` como `data:` leyendo los archivos (comprueba su sha256). **Funcionalmente equivalente, no idéntico byte a byte**: el MIME declarado pasa a ser el real (p. ej. un GIF que decía `image/png` vuelve como `image/gif`) y el base64 es el estándar. No borra los archivos |
+| `--verificar=<informe>` | Comprueba un informe de `--aplicar`: cada archivo existe con su sha256 y cada fila contiene su URL. Código de salida 1 si algo falla. No modifica nada |
+| `--tabla=a,b` `--columna=x,y` | Limitan el recorrido (solo seleccionan entre lo descubierto; nunca se usan como identificador directo) |
+| `--limite=N` | Máximo de filas por columna |
+| `--destino=<carpeta>` | Otra carpeta de destino, **dentro de `public/`** (por defecto `config('explora.contenido_dir')` = `public/contenido/fichas`) |
+| `--conexion=<nombre>` | Conexión de base de datos (por defecto la del proyecto) |
+| `--base-real` + `--confirmo-respaldo` | Necesarias las DOS juntas para `--aplicar`/`--revertir` en una base cuyo nombre no acaba en `_test` o `_migtest` |
+
+**Cómo funciona.** Descubre por `INFORMATION_SCHEMA` todas las columnas `char/varchar/*text/*blob` de la base conectada que contienen
+`data:image/` (sin listas escritas a mano; `config('explora.externalizar_excluir')` excluye tablas técnicas como `sessions`, cuyo PHP
+serializado se rompería al cambiar longitudes) y procesa fila por fila por clave primaria: nunca carga una tabla entera. Para cada
+`<img src="data:...">`: decodifica base64 de forma estricta, detecta el tipo REAL por magic bytes (png, jpg, gif, webp; el MIME declarado
+miente) y nombra el archivo con el sha256 del contenido (deduplica y es idempotente). Otros tipos (SVG incluido) y los `data:image` que no
+son el `src` de un `<img>` se dejan intactos y se reportan; una fila con base64 inválido se deja entera sin tocar y se reporta. Cada fila
+va en su transacción (bloqueo `FOR UPDATE` solo mientras dura): primero se escriben los archivos (temporal + `rename`, verificando el
+hash) y luego se actualiza la fila; si algo falla, esa fila no cambia. Una segunda ejecución no cambia nada.
+El resto del HTML queda byte a byte igual; no se tocan `updated_at` ni otras columnas.
+
+**Guardas de seguridad.** `--aplicar` y `--revertir` se niegan a correr si la base no acaba en `_test`/`_migtest` salvo `--base-real` Y
+`--confirmo-respaldo` (el responsable confirma que hizo un `mysqldump`). `--destino` se rechaza si tiene `..`, byte nulo, queda fuera de
+`public/`, es `public/` mismo o pasa por un enlace simbólico que sale del docroot. Los nombres de archivo salen solo del hash. Las
+sentencias son parametrizadas y los identificadores los escapa el constructor de consultas.
+
+**Informe.** `--aplicar` y `--revertir` escriben `storage/logs/externalizar-imagenes-<fecha>.json` (tabla, columna, clave, nº de imágenes,
+sha256 y bytes; nunca el contenido): sirve de inventario, para `--verificar` y para saber qué revertir.
+
+**Servir los archivos.** `public/contenido/` está en `.gitignore` (nunca se versiona: producción lo genera con el comando a partir de los datos
+reales). `public/.htaccess` solo sirve png/jpg/gif/webp bajo `/contenido/` (todo lo demás da 404) con
+`Cache-Control: public, max-age=31536000, immutable`; `servidor-desarrollo.php` aplica la misma regla de tipos. No usar `storage:link`:
+el router de desarrollo rechaza enlaces simbólicos que salen del docroot.
+
+**Memoria.** Con las imágenes fuera, la ficha más pesada pasa de 27,9 MB (depto 14; el 10 de 48,6 MB) a 0,5 MB y el pico de PHP de 208 MB a 22 MB.
+`MemoriaParaFichas` sigue en 512M (configurable con `FICHAS_MEMORIA`): código y datos se despliegan por separado, y bajarlo antes de aplicar el
+comando en producción rompería la ficha del depto 10. Después de aplicar y verificar, basta `FICHAS_MEMORIA=128M` en el `.env`.
+
+**Pruebas.** `tests/Feature/ExternalizarImagenesTest.php` usa la base `explora_migtest` (debe existir: `CREATE DATABASE explora_migtest`;
+el usuario de la app tiene permisos sobre ella; si no existe, las pruebas se omiten) con tablas propias `tmp_ext_img_*` que borra al terminar,
+y una carpeta `public/contenido-prueba-*` que también borra. `tests/Unit/ImagenesEmbebidasTest.php` cubre las funciones puras. El router y
+`.htaccess` se vigilan en `ServidorDesarrolloTest` y `tests/Browser/contenido.spec.js`. El router de desarrollo con `EXPLORA_SOLO_BD_PRUEBA=1`
+acepta bases `*_test` y `*_migtest`.
+
 ### Retiro del PHP legado (Fase 15)
 
 Se eliminaron del repositorio (`git rm`), porque la API Laravel ya los sustituye y nadie los incluye:
@@ -371,6 +431,7 @@ comprobar antes que el sistema operativo sea compatible. Las carpetas `test-resu
 | `CORS_ALLOWED_ORIGINS` | vacío | Otros orígenes permitidos (separados por comas). Vacío = solo el mismo origen |
 | `QUIZ_INCLUIR_RESPUESTAS` | `true` | Enviar `correcta`/`respuesta` al navegador (ver aviso en la API del quiz) |
 | `AVATARES_MAX` | `35` | Cantidad de avatares (`juegos/images/avatars/N.png`) |
+| `FICHAS_MEMORIA` | `512M` | Memoria de PHP para la ruta de la ficha (`MemoriaParaFichas`). Bajar a `128M` solo tras aplicar `explora:externalizar-imagenes` en producción y verificarlo |
 | `API_POR_MINUTO` | `300` | Peticiones de lectura por minuto, por IP (o por usuario con sesión). Subido de 60 porque un aula entera comparte una IP (NAT) y cada página sincroniza la sesión al cargar |
 | `RESULTADOS_POR_MINUTO` | `10` | Partidas que puede guardar cada usuario (o IP, si es invitado) por minuto |
 | `PEDIGITAL_DB_*` | — | Conexión de solo lectura a la base de usuarios |
@@ -401,6 +462,6 @@ comprobar antes que el sistema operativo sea compatible. Las carpetas `test-resu
 
 ## Problemas conocidos
 
-Resumidos de `../DOCUMENTACION_MEJORAMIENTO/MATRIZ_HALLAZGOS.md`: imágenes base64 en el contenido (DAT-07), el legado
+Resumidos de `../DOCUMENTACION_MEJORAMIENTO/MATRIZ_HALLAZGOS.md`: imágenes base64 en el contenido (DAT-07; solución implementada en la Fase 16A, pendiente de aplicar en producción), el legado
 falla con la ficha del departamento 10 (FUN-11), FK ausentes o rotas en la base (DAT-02, DAT-04), fecha de resultados
 como texto (DAT-03). Ninguno se corrige en la base sin autorización.

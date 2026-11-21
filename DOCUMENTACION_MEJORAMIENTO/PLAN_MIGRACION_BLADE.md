@@ -89,6 +89,11 @@ sección 7 (queda PHP plano en `mapplic/php/`). **Rotar las credenciales de MySQ
 también las de los `conexion*.php` retirados); no se ejecutó.
 
 ### Fase 16 — Datos y cierre (con autorización sobre datos)
+**Fase 16A (imágenes base64 a archivos) — solución implementada, pendiente de aplicar en producción (2026-11-21):** comando `php artisan explora:externalizar-imagenes`
+(`App\Console\Commands\ExternalizarImagenes` + `App\Support\ImagenesEmbebidas`): dry-run por defecto, `--aplicar`, `--revertir`, `--verificar`, guardas `_test`/`_migtest`
+o `--base-real --confirmo-respaldo`, archivos `public/contenido/fichas/<2 hex>/<sha256>.<ext>` (fuera de git; reglas en `.htaccess` y en el router). Verificado en el sandbox
+`explora_migtest`; **NO se ha ejecutado contra la base real** (procedimiento en `PROPUESTA_DESPLIEGUE.md`, paso 8). Marca DAT-07/REN-03/FUN-11 como «solución implementada,
+pendiente de aplicar en producción». DAT-02/04/05 (fecha a `datetime`, claves foráneas) siguen pendientes.
 DAT-02/04/05/07: fecha a `datetime`, claves foráneas, imágenes base64 a archivos (la ficha del depto 10 pesa ~46 MB). Pruebas en
 Firefox y Safari, informe final y despliegue (ver `PROPUESTA_DESPLIEGUE.md`).
 

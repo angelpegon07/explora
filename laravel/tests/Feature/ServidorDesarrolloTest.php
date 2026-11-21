@@ -582,4 +582,101 @@ class ServidorDesarrolloTest extends TestCase
         $this->assertSame($ht[1], $router[1]);
         $this->assertContains('map', explode('|', $ht[1]));
     }
+
+    /**
+     * Fase 16A: bajo `/contenido/` (imágenes de las fichas que genera `explora:externalizar-imagenes`) el router sirve los
+     * archivos png/jpg/gif/webp con su content-type, y NADA más: html, svg, txt, json, php, ocultos y carpetas dan 404 aunque
+     * existan en disco. La prueba crea sus propios archivos en una subcarpeta aleatoria y los borra al terminar.
+     */
+    public function test_contenido_sirve_solo_imagenes(): void
+    {
+        $publico = dirname(__DIR__, 2).'/public';
+        $sub = 'prueba-'.bin2hex(random_bytes(4));
+        $dir = $publico.'/contenido/'.$sub;
+        $creoContenido = ! is_dir($publico.'/contenido');
+        mkdir($dir, 0755, true);
+        try {
+            $imagenes = [
+                'a.png' => ["\x89PNG\r\n\x1a\n".'xx', 'image/png'],
+                'b.jpg' => ["\xFF\xD8\xFF\xE0".'xx', 'image/jpeg'],
+                'c.gif' => ['GIF89a'.'xx', 'image/gif'],
+                'd.webp' => ['RIFF'."\x1a\0\0\0".'WEBPVP8L', 'image/webp'],
+            ];
+            foreach ($imagenes as $nombre => [$bytes]) {
+                file_put_contents("$dir/$nombre", $bytes);
+            }
+            foreach (['x.html', 'x.svg', 'x.txt', 'x.json', 'x.js', 'x.php', 'x.png.html', '.oculto.png', 'x'] as $nombre) {
+                file_put_contents("$dir/$nombre", '<script>alert(1)</script>');
+            }
+            mkdir("$dir/ab");
+            file_put_contents("$dir/ab/index.html", 'indice');
+
+            foreach ($imagenes as $nombre => [$bytes, $tipo]) {
+                [$codigo, $contentType, $cuerpo] = $this->pedir("/contenido/$sub/$nombre");
+                $this->assertSame(200, $codigo, $nombre);
+                $this->assertSame($tipo, $contentType, $nombre);
+                $this->assertSame($bytes, $cuerpo, $nombre);
+            }
+            foreach (['x.html', 'x.svg', 'x.txt', 'x.json', 'x.js', 'x.php', 'x.png.html', '.oculto.png', 'x', 'ab/', 'ab', 'ab/index.html', '', 'no-existe.png'] as $nombre) {
+                $this->assertSame(404, $this->pedir("/contenido/$sub/$nombre")[0], "/contenido/$sub/$nombre");
+            }
+            // La carpeta raíz y las mayúsculas tampoco sirven nada que no sea imagen (un FS sin distinción de mayúsculas, como macOS).
+            foreach (['/contenido/', '/contenido', "/contenido/$sub/", '/CONTENIDO/'.$sub.'/x.html', '/contenido/fichas/'] as $ruta) {
+                $this->assertSame(404, $this->pedir($ruta)[0], $ruta);
+            }
+        } finally {
+            $this->borrarRecursivo($dir);
+            if ($creoContenido) {
+                @rmdir($publico.'/contenido');
+            }
+        }
+    }
+
+    /**
+     * `public/.htaccess` (Apache) y el router de desarrollo aplican la MISMA regla para `/contenido/`: solo png/jpg/gif/webp, y
+     * esas imágenes con caché inmutable. Si se cambia la lista en un sitio, esta prueba obliga a cambiarla en el otro.
+     */
+    public function test_el_htaccess_de_contenido_coincide_con_el_router(): void
+    {
+        $ht = (string) file_get_contents(dirname(__DIR__, 2).'/public/.htaccess');
+        $router = (string) file_get_contents(dirname(__DIR__, 2).'/servidor-desarrollo.php');
+
+        $this->assertSame(1, preg_match('/RewriteRule \^contenido\/\(\?!\.\*\\\.\(([a-z|]+)\)\$\) - \[NC,R=404,L\]/', $ht, $a));
+        $this->assertSame(1, preg_match("/=== 'contenido' && preg_match\('\/\\\\\.\(([a-z|]+)\)\\$\//", $router, $b));
+        $this->assertSame($a[1], $b[1]);
+        $this->assertSame('png|jpg|gif|webp', $a[1]);
+        $this->assertStringContainsString('Header set Cache-Control "public, max-age=31536000, immutable" env=EXPLORA_CONTENIDO_INMUTABLE', $ht);
+        $this->assertStringContainsString('SetEnvIfNoCase Request_URI "^/contenido/.+\\.(png|jpg|gif|webp)$"', $ht);
+    }
+
+    /**
+     * La guarda `EXPLORA_SOLO_BD_PRUEBA` admite las bases `*_test` y las de sandbox `*_migtest` (Fase 16A), y sigue rechazando
+     * cualquier otro nombre (también los que solo se parecen: `_migtestx`, `migtest`, `explora`).
+     */
+    public function test_la_guarda_admite_migtest_y_rechaza_lo_demas(): void
+    {
+        $this->detener();
+        $this->arrancar(['DB_DATABASE' => 'explora_migtest']);
+        $this->assertSame(200, $this->pedir('/climatico')[0], 'explora_migtest es una base de prueba válida');
+
+        foreach (['explora_migtestx', 'explora_mig_test_x', 'migtest', 'explora', 'explora_test_prod'] as $base) {
+            $this->detener();
+            $this->arrancar(['DB_DATABASE' => $base]);
+            $this->assertSame(500, $this->pedir('/climatico')[0], $base);
+        }
+    }
+
+    /**
+     * Borra un directorio de prueba y su contenido (solo se usa con carpetas creadas por la propia prueba).
+     */
+    private function borrarRecursivo(string $dir): void
+    {
+        if (! is_dir($dir)) {
+            return;
+        }
+        foreach (array_diff(scandir($dir) ?: [], ['.', '..']) as $e) {
+            is_dir("$dir/$e") ? $this->borrarRecursivo("$dir/$e") : unlink("$dir/$e");
+        }
+        rmdir($dir);
+    }
 }

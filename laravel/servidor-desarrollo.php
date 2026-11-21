@@ -45,8 +45,10 @@
  *     final que no es carpeta se redirige (301) sin esa barra, como la regla «Trailing Slashes» de Apache.
  *
  * Protección de bases de datos: con `EXPLORA_SOLO_BD_PRUEBA=1` el router se niega (500) a atender CUALQUIER ruta que
- * llegue a Laravel (`/api` y las páginas) si `DB_DATABASE` o `PEDIGITAL_DB_DATABASE` no acaban en `_test`: las páginas
+ * llegue a Laravel (`/api` y las páginas) si `DB_DATABASE` o `PEDIGITAL_DB_DATABASE` no acaban en `_test` (o `_migtest`, el sandbox de la Fase 16A): las páginas
  * Blade arrancan la sesión y podrían tocar la base. Así las pruebas automáticas nunca tocan datos reales.
+ *
+ * Bajo `/contenido/` (imágenes externalizadas de las fichas, Fase 16A) solo se sirven png/jpg/gif/webp; lo demás da 404.
  *
  * Las respuestas de error no revelan rutas del sistema.
  */
@@ -125,7 +127,8 @@ function explora_delegar_en_laravel(bool $esApi): bool
 {
     if (getenv('EXPLORA_SOLO_BD_PRUEBA') === '1') {
         foreach (['DB_DATABASE', 'PEDIGITAL_DB_DATABASE'] as $clave) {
-            if (! str_ends_with((string) explora_leer_variable($clave), '_test')) {
+            // `_test` (copias de prueba) o `_migtest` (sandbox de la Fase 16A para probar el comando de imágenes).
+            if (preg_match('/_(mig)?test$/', (string) explora_leer_variable($clave)) !== 1) {
                 if (! $esApi) {
                     return explora_responder_texto(500, 'Servidor configurado solo para bases de prueba');
                 }
@@ -189,6 +192,14 @@ foreach ($minusculas as $s) {
 
 // 5) Archivos que nunca deben descargarse (`map`: source maps de Bootstrap, igual que en public/.htaccess).
 if ($minusculas !== [] && preg_match('/\.(sql|gz|zip|md|sh|lock|log|bak|map)$/', end($minusculas))) {
+    return explora_responder_texto(404, 'No encontrado');
+}
+
+// 5b) `/contenido/` (Fase 16A: imágenes de las fichas generadas por `explora:externalizar-imagenes`): SOLO se sirven archivos
+//     de imagen png/jpg/gif/webp. Cualquier otra cosa bajo esa carpeta (html, svg, txt, json, carpetas…) da 404 aunque exista
+//     en disco: el contenido sale de la base de datos y nunca debe poder servirse como página o script. Equivale a la regla
+//     de `public/.htaccess`. Se compara en minúsculas por si el sistema de archivos no distingue mayúsculas (macOS).
+if (($minusculas[0] ?? '') === 'contenido' && preg_match('/\.(png|jpg|gif|webp)$/', (string) end($minusculas)) !== 1) {
     return explora_responder_texto(404, 'No encontrado');
 }
 

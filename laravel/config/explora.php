@@ -54,4 +54,26 @@ return [
      * `php artisan config:cache`.
      */
     'hosts_confiables' => array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_HOSTS', ''))))),
+
+    /*
+     * Imágenes de las fichas fuera de la base (Fase 16A; comando `php artisan explora:externalizar-imagenes`).
+     * `contenido_dir`: carpeta donde el comando guarda los archivos (debe quedar DENTRO de `public/`, para que Apache los
+     * sirva; se valida al ejecutar). `contenido_url`: prefijo público que queda en el HTML de la base (raíz del sitio, sin
+     * barra final). El nombre de cada archivo es el sha256 de su contenido: `<dir>/<2 primeros hex>/<sha256>.<ext>`.
+     * Los archivos NO se versionan (`/public/contenido/` está en .gitignore): se generan a partir de los datos reales.
+     */
+    'contenido_dir' => public_path('contenido/fichas'),
+    'contenido_url' => '/contenido/fichas',
+
+    /*
+     * Columnas que el comando NUNCA recorre, como `tabla.columna` o `tabla.*`. Por defecto, tablas técnicas de Laravel cuyo
+     * contenido es PHP serializado: cambiar la longitud de una cadena dentro de un valor serializado lo corrompería.
+     */
+    'externalizar_excluir' => ['sessions.*', 'cache.*', 'cache_locks.*', 'jobs.*', 'failed_jobs.*', 'migrations.*'],
+
+    /*
+     * Límite de memoria de PHP para la ruta de la ficha (ver App\Http\Middleware\MemoriaParaFichas). 512M mientras las fichas
+     * lleven imágenes en base64 (DAT-07); tras aplicar `explora:externalizar-imagenes` en producción puede bajarse a 128M.
+     */
+    'memoria_fichas' => env('FICHAS_MEMORIA', '512M'),
 ];

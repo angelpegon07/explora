@@ -3,6 +3,10 @@
 /public/build
 /public/hot
 /public/storage
+# Imágenes de las fichas generadas por `php artisan explora:externalizar-imagenes` (Fase 16A): nunca se versionan.
+/public/contenido/
+# Carpetas de prueba del comando (dentro de public/, con otro nombre) y su sandbox.
+/public/contenido-*/
 /storage/*.key
 /vendor
 .env
