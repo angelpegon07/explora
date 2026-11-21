@@ -1,6 +1,6 @@
 # Inventario de los juegos (Fase 13)
 
-Solo documentación: **no se borró ni se movió ningún archivo** en esta fase. Medido sobre `laravel/public/juegos/` tras migrar a Blade las 7 páginas (los `index.html` ya no existen; cada juego añade `estilo-pagina.css` y `sopa_letras` además `juego.js`). Los tamaños son bytes reales de los archivos (MB = 1.048.576 B).
+Solo documentación: **no se borró ni se movió ningún archivo** en esta fase. Medido sobre `public/juegos/` tras migrar a Blade las 7 páginas (los `index.html` ya no existen; cada juego añade `estilo-pagina.css` y `sopa_letras` además `juego.js`). Los tamaños son bytes reales de los archivos (MB = 1.048.576 B).
 
 ## 1. Por juego
 

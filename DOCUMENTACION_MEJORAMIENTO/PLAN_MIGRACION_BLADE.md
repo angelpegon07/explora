@@ -1,7 +1,9 @@
 # PLAN: MIGRACIÓN COMPLETA A LARAVEL 10 (FRONTEND EN BLADE, IA Y RETIRO DEL LEGADO)
 
+> Nota (reestructuración): este plan se escribió con la aplicación en la subcarpeta `laravel/`; desde la reestructuración (etiqueta `pre-reestructura-raiz`) vive en la raíz del repositorio, de modo que `laravel/public/` se lee ahora como `public/`.
+
 Estado: **PROPUESTO** (2026-11-19), pendiente de aprobación del responsable.
-Continúa el trabajo de las Fases 0–8 (ver `INFORME_FINAL.md` y `laravel/README.md`).
+Continúa el trabajo de las Fases 0–8 (ver `INFORME_FINAL.md` y el `README.md` de la raíz).
 
 ## 1. Punto de partida
 
@@ -9,8 +11,8 @@ Continúa el trabajo de las Fases 0–8 (ver `INFORME_FINAL.md` y `laravel/READM
 |---|---|---|
 | Backend / API | Laravel 10 (sesión, fichas, quiz, juegos, perfil) | Igual + chat y corrector con IA |
 | Páginas | 6 mapas + `miPerfil` + `corrector` + portal de juegos + 7 juegos + línea de tiempo: HTML estático en la raíz, servido junto a Laravel | Vistas Blade con layouts y parciales, rutas web de Laravel |
-| Documento raíz del servidor | Raíz del repo (mezcla sitio, PHP legado y `laravel/`) | **Solo `laravel/public/`** |
-| Assets | CSS/JS sueltos en la raíz, copias duplicadas, `build-sitio.mjs` *(histórico: el script y `dist/` ya se retiraron en la Fase 9)* | `laravel/public/` + Vite para lo propio |
+| Documento raíz del servidor | Raíz del repo (mezcla sitio, PHP legado y la subcarpeta `laravel/`) | **Solo `public/`** |
+| Assets | CSS/JS sueltos en la raíz, copias duplicadas, `build-sitio.mjs` *(histórico: el script y `dist/` ya se retiraron en la Fase 9)* | `public/` + Vite para lo propio |
 | PHP legado | `mapplic/php/*`, `juegos/php/*` (7 bloqueados con 410; chat activo) | Eliminado |
 
 Del grafo de código (`graphify-out/`): el núcleo del backend ya está desacoplado (controladores finos → modelos
@@ -35,10 +37,10 @@ Eloquent; `Usuario` es el único puente entre autenticación, perfil y modelos d
 ## 4. Fases
 
 ### Fase 9 — Cimientos (sin cambiar páginas visibles)
-- Mover assets a `laravel/public/` conservando rutas (`css/`, `js/`, `mapplic/`, `bootstrap/`, `fontawesome/`, `images/`, `img/`, `maps*/`, `jsons/`, `sounds/`, `sweetalert/`, `driver/`, `multimedia/`). Se mueven con `git mv` para conservar historial; se elimina `build-sitio.mjs`/`dist/` al final de la fase.
+- Mover assets a `public/` conservando rutas (`css/`, `js/`, `mapplic/`, `bootstrap/`, `fontawesome/`, `images/`, `img/`, `maps*/`, `jsons/`, `sounds/`, `sweetalert/`, `driver/`, `multimedia/`). Se mueven con `git mv` para conservar historial; se elimina `build-sitio.mjs`/`dist/` al final de la fase.
 - ~~Layouts Blade, parciales compartidos, rutas `web.php`/`PaginaController` y redirecciones 301~~: **se pospone a la Fase 10** (los layouts y parciales solo se crean cuando una página los consume).
 - Servidor de desarrollo y `.htaccess` actualizados al nuevo documento raíz; `PROPUESTA_DESPLIEGUE.md` corregida.
-- **Salida:** la raíz del sitio abre desde `laravel/public/` con el HTML antiguo intacto (solo movido). Playwright en verde.
+- **Salida:** la raíz del sitio abre desde `public/` con el HTML antiguo intacto (solo movido). Playwright en verde.
 
 ### Fase 10 — Mapas temáticos (5 páginas, una plantilla) — ✔ HECHA
 `climatico`, `coordilleras`, `etnias`, `parques_naturales`, `vertientes` comparten estructura: **una vista `mapa` parametrizada**
@@ -121,7 +123,7 @@ Cada fase = una o más sesiones con commits propios, pruebas Playwright/PHPUnit 
 
 ## 7. Definición de «terminado»
 
-Sin HTML ni PHP plano de aplicación fuera de `laravel/`; el servidor sirve solo `laravel/public/`; PHPUnit y Playwright en
+Sin HTML ni PHP plano de aplicación fuera de la aplicación Laravel; el servidor sirve solo `public/`; PHPUnit y Playwright en
 verde; credenciales rotadas; documentación y `README` al día.
 
 ## 8. Decisiones del líder tras la Fase 10 (2026-11-19)

@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------------------------------------------
-# Explora: configuración de Apache del ÚNICO documento raíz del sitio (DocumentRoot = laravel/public).
+# Explora: configuración de Apache del ÚNICO documento raíz del sitio (DocumentRoot = <raíz>/public).
 # Requiere AllowOverride All y mod_rewrite. Guía completa: DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md
 #
-# Como laravel/.env, vendor/, storage/ y la documentación quedan FUERA del docroot, ya no hace falta un .htaccess
+# Como .env, vendor/, storage/ y la documentación quedan FUERA del docroot, ya no hace falta un .htaccess
 # en la raíz del repositorio para ocultarlos (Fase 9). Aquí solo quedan las reglas de seguridad del propio sitio.
 # ---------------------------------------------------------------------------------------------------------------
 

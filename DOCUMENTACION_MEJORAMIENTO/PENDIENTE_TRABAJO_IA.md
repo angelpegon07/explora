@@ -1,7 +1,7 @@
 # TRABAJO PENDIENTE: IA (chat y corrector)
 
 Estado: **aplazado** por decisión del responsable (2026-11-18) para un trabajo posterior enfocado solo en IA. Este documento
-reúne lo que ya se sabe para no repetir el análisis. Nada de esto se ha implementado en `laravel/`.
+reúne lo que ya se sabe para no repetir el análisis. Nada de esto se ha implementado en este repositorio.
 
 ## Qué existe hoy (legado, sin modificar)
 | Pieza | Archivo | Cómo funciona |
@@ -24,7 +24,7 @@ reúne lo que ya se sabe para no repetir el análisis. Nada de esto se ha implem
 5. **Si el corrector debe seguir existiendo** y dónde se usa (hoy es una página suelta).
 
 ## Diseño sugerido (ya validado en las fases anteriores)
-- Servicio `ConsultaIAService` en `laravel/` con **timeout corto, lista blanca de salida** (departamento y categoría contra listas cerradas) y registro de errores sin exponer mensajes internos; endpoints bajo `/api` con el mismo estilo (Form Request, Resource de lista blanca, `throttle`).
+- Servicio `ConsultaIAService` en la aplicación Laravel con **timeout corto, lista blanca de salida** (departamento y categoría contra listas cerradas) y registro de errores sin exponer mensajes internos; endpoints bajo `/api` con el mismo estilo (Form Request, Resource de lista blanca, `throttle`).
 - El chat debe leer los datos con los **modelos Eloquent que ya existen** (`DepartamentoDescripcion` y sus secciones), sin SQL propio.
 - El corrector pasa a un endpoint de servidor con límite de uso; el navegador no habla con el modelo.
 - Pruebas: **doble de la IA** en las pruebas (sin depender de Ollama) más pruebas de la lista blanca, el límite de uso y los mensajes de error; mantener el estándar de documentación del proyecto.

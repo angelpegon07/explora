@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pruebas del router del servidor de desarrollo (`laravel/servidor-desarrollo.php`).
+ * Pruebas del router del servidor de desarrollo (`servidor-desarrollo.php`).
  *
- * Arrancan un `php -S` REAL en un puerto libre de 127.0.0.1 con `laravel/public` (documento raíz desde la Fase 9) como DocumentRoot y hacen
+ * Arrancan un `php -S` REAL en un puerto libre de 127.0.0.1 con `public` (documento raíz desde la Fase 9) como DocumentRoot y hacen
  * peticiones HTTP de verdad: es la única forma de comprobar lo que importa (que el servidor integrado nunca
  * ejecute PHP legado ni sirva archivos sensibles). El proceso se arranca con las bases de PRUEBA y con
  * `EXPLORA_SOLO_BD_PRUEBA=1`, por lo que el router se negaría a atender `/api` contra bases reales.
@@ -39,7 +39,7 @@ class ServidorDesarrolloTest extends TestCase
      */
     private function arrancar(array $entornoExtra): void
     {
-        // Proyecto Laravel (laravel/) y documento raíz del sitio (laravel/public).
+        // Proyecto Laravel (raíz del repositorio) y documento raíz del sitio (public/).
         $laravel = dirname(__DIR__, 2);
         $raiz = $laravel.'/public';
         $puerto = $this->puertoLibre();
@@ -497,8 +497,8 @@ class ServidorDesarrolloTest extends TestCase
             '/mapplic/php/conexion_pedigital.php',
             '/juegos/php/conexion.php',
             // Ya no existen bajo el docroot (Fase 9): dan 404 por inexistentes, no por un bloqueo por nombre.
-            '/laravel/.env',
-            '/laravel/composer.json',
+            '/composer.json',
+            '/artisan',
             '/vendor/autoload.php',
             '/vendor/composer/installed.json',
             '/storage/logs/laravel.log',

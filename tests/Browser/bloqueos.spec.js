@@ -17,8 +17,8 @@ const SUSTITUIDOS = [
 ];
 
 const PRIVADOS = [
-    '/laravel/.env',
-    '/laravel/composer.json',
+    '/composer.json',
+    '/artisan',
     '/.git/HEAD',
     '/DOCUMENTACION_MEJORAMIENTO/REGISTRO_CAMBIOS.md',
     // Fase 15: `conexion*.php` ya no existen (404 por inexistentes).

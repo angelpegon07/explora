@@ -5,7 +5,7 @@ import { defineConfig } from '@playwright/test';
  * Configuración de las pruebas de navegador (Playwright) de Explora.
  *
  * Las pruebas recorren el sitio estático conectado a la API Laravel a través del router de desarrollo
- * (`servidor-desarrollo.php`, docroot `laravel/public`), que sirve sitio y API desde el MISMO origen (la sesión es una cookie SameSite=Lax con CSRF).
+ * (`servidor-desarrollo.php`, docroot `public`), que sirve sitio y API desde el MISMO origen (la sesión es una cookie SameSite=Lax con CSRF).
  *
  * Navegador: el Chromium que descarga Playwright (`npx playwright install chromium`, queda en
  * ~/Library/Caches/ms-playwright, FUERA del repositorio). Antes se usó el Google Chrome del sistema
@@ -13,7 +13,7 @@ import { defineConfig } from '@playwright/test';
  * desapareció del equipo. VERSIÓN FIJADA en 1.60.0: Playwright 1.65 ya no soporta macOS 13 con ningún navegador
  * («does not support chromium on mac13»); al actualizar, comprobar antes que el sistema operativo sea compatible.
  *
- * Ejecución: `npm run test:e2e` (o `npx playwright test`) desde `laravel/`.
+ * Ejecución: `npm run test:e2e` (o `npx playwright test`) desde la raíz del repositorio.
  */
 export default defineConfig({
     testDir: 'tests/Browser',
@@ -38,7 +38,7 @@ export default defineConfig({
 
     webServer: {
         command: `php -S 127.0.0.1:8090 -t ${process.env.EXPLORA_RAIZ_SITIO || 'public'} servidor-desarrollo.php`,
-        // Directorio del proyecto Laravel (laravel/); desde la Fase 9 el documento raíz del sitio es su carpeta public/.
+        // Directorio del proyecto Laravel (raíz del repositorio); desde la Fase 9 el documento raíz del sitio es su carpeta public/.
         cwd: import.meta.dirname,
         url: 'http://127.0.0.1:8090/',
 

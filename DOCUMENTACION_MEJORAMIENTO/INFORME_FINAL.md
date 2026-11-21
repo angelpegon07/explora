@@ -3,7 +3,7 @@
 Fecha: 2026-11-19 · Rama `migracion-laravel` (etiqueta de recuperación `pre-migracion-laravel`) · Sin push a ningún remoto.
 
 ## 1. Qué se entrega
-- **Laravel 10.50.4 en `laravel/`**: API de lectura (fichas, quiz), sesión por cookie + CSRF, perfil/avatar (`perfiles_explora`), resultados, ranking e historial. `pedigital` se usa solo en lectura.
+- **Laravel 10.50.4 en la raíz del repositorio**: API de lectura (fichas, quiz), sesión por cookie + CSRF, perfil/avatar (`perfiles_explora`), resultados, ranking e historial. `pedigital` se usa solo en lectura.
 - **Frontend conmutado** a esa API (`js/explora-api.js`); los 7 PHP legados sustituidos responden 410.
 - **Fase 7B**: Font Awesome 83 MB → 3 MB, GIF 169 MB → 47 MB (WebP), MP4 30,8 → 19,0 MB, jQuery 3.5.1, Mapplic 3 → 2 variantes, build ligero `dist/`.
 - **Pruebas**: PHPUnit 118 (1.136 aserciones) · Playwright 53 (Chromium) · `.htaccess` verificados con Apache 2.4.56 real.
@@ -16,7 +16,7 @@ Fecha: 2026-11-19 · Rama `migracion-laravel` (etiqueta de recuperación `pre-mi
 | **Abiertos por decisión** | SEC-02, SEC-08, SEC-11, FUN-03/04/05 (chat y corrector con IA: ver PENDIENTE_TRABAJO_IA.md) |
 | **Aceptados** | SEC-06 (el puntaje lo calcula el navegador; no se puede garantizar su honestidad con la arquitectura actual) |
 | **Requieren autorización sobre datos** | DAT-02, DAT-04, DAT-05, DAT-07 (imágenes base64: la ficha del depto 10 pesa ~46 MB), REN-02/REN-03 |
-| **Cerrados en el afinado final** | FUN-10 (la opción «Volcanes» muestra «Próximamente» en vez de llevar a una página inexistente), CAL-04 parcial (`.DS_Store` fuera del repo y en `.gitignore`), Pint sin avisos en todo `laravel/` |
+| **Cerrados en el afinado final** | FUN-10 (la opción «Volcanes» muestra «Próximamente» en vez de llevar a una página inexistente), CAL-04 parcial (`.DS_Store` fuera del repo y en `.gitignore`), Pint sin avisos en todo el proyecto |
 | **Sin tocar (bajo impacto o requieren decisión)** | FUN-07 (enlaces `#` en el menú de juegos), TEC-04 y DAT-06 (esquema), CAL-03, CAL-04 resto (`jsons/unir.html` público con jQuery por CDN, `ViajaPED/package.json` sin uso) |
 
 ## 3. Riesgos residuales (lo que el responsable debe saber)

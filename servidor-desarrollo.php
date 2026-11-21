@@ -3,14 +3,14 @@
 /**
  * Router del servidor de DESARROLLO de Explora (sitio estático + API Laravel en el mismo origen).
  *
- * SOLO PARA DESARROLLO. En producción se usa Apache con DocumentRoot en `laravel/public` (ver
+ * SOLO PARA DESARROLLO. En producción se usa Apache con DocumentRoot en `public` (ver
  * DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md). Este archivo reproduce en lo posible las reglas de
- * `laravel/public/.htaccess` para que el sitio y la API compartan origen (la sesión es una cookie SameSite=Lax con CSRF).
+ * `public/.htaccess` para que el sitio y la API compartan origen (la sesión es una cookie SameSite=Lax con CSRF).
  *
- * Desde la Fase 9 el DOCUMENTO RAÍZ es `laravel/public/` y contiene todo el sitio estático. `laravel/.env`, `vendor/`,
+ * Desde la Fase 9 el DOCUMENTO RAÍZ es `public/` y contiene todo el sitio estático. `.env`, `vendor/`,
  * `storage/` y la documentación quedan fuera del docroot, así que ya no hace falta un bloqueo por nombre de carpeta.
  *
- * Cómo arrancarlo (desde `laravel/`; el 8000 puede estar ocupado, se sugiere el 8080):
+ * Cómo arrancarlo (desde la raíz del repositorio; el 8000 puede estar ocupado, se sugiere el 8080):
  *
  *     PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t public servidor-desarrollo.php
  *
@@ -19,7 +19,7 @@
  *
  * Orden de decisiones (el primero que aplica responde):
  *  1. Ruta inválida (byte nulo, `..`, `\` o `%2F` codificado) -> 400.
- *  2. `/api` o `/api/...`                                -> Laravel (laravel/public/index.php).
+ *  2. `/api` o `/api/...`                                -> Laravel (public/index.php).
  *     (Las demás rutas que no existen en disco también llegan a Laravel; ver el punto 6.)
  *  3. Segmentos ocultos (`.git`, `.env`, `.htaccess`…)   -> 404 (defensa en profundidad: no deberían existir).
  *  4. Cualquier segmento acabado en .php/.phtml/.phar/.phpN -> el router responde él mismo, NUNCA `false`: si
@@ -84,7 +84,7 @@ function explora_responder_retirado(): bool
 }
 
 /**
- * Lee el valor de una variable desde el entorno del proceso o, si no está, desde laravel/.env.
+ * Lee el valor de una variable desde el entorno del proceso o, si no está, desde .env.
  *
  * Solo se consultan las claves que se piden (nunca se vuelca ni se registra el contenido del archivo) y el valor
  * se usa únicamente para comprobar su sufijo.
@@ -149,7 +149,7 @@ function explora_delegar_en_laravel(bool $esApi): bool
     return true;
 }
 
-// EXPLORA_RAIZ_SITIO permite apuntar a otra raíz con el mismo router; por defecto, el documento raíz laravel/public.
+// EXPLORA_RAIZ_SITIO permite apuntar a otra raíz con el mismo router; por defecto, el documento raíz public.
 $raiz = realpath(getenv('EXPLORA_RAIZ_SITIO') ?: __DIR__.'/public');
 $rutaCruda = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $ruta = rawurldecode($rutaCruda);
@@ -169,7 +169,7 @@ if (preg_match('#^/api(/|$)#', $ruta)) {
 $segmentos = array_values(array_filter(explode('/', $ruta), static fn (string $s): bool => $s !== ''));
 $minusculas = array_map('strtolower', $segmentos);
 
-// 3) Segmentos ocultos (`.git`, `.env`, `.htaccess`…). Las carpetas privadas (laravel/, documentación, node_modules)
+// 3) Segmentos ocultos (`.git`, `.env`, `.htaccess`…). Las carpetas privadas (.env, vendor, documentación, node_modules)
 //    ya no están bajo el docroot, de modo que dan 404 por inexistentes (lo confirma ServidorDesarrolloTest).
 foreach ($minusculas as $s) {
     if (str_starts_with($s, '.')) {

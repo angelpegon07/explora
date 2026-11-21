@@ -31,7 +31,7 @@ Fuente: dumps `explora.sql` (MySQL 8.0.41, SQLyog; ~360 MB) y `pedigial.sql` (~3
 3. `avatar_explora` es una columna de `pedigital.users`; con `pedigital` en solo lectura se necesita la tabla propuesta `perfiles_explora` (decisión pendiente).
 4. El peso de ~360 MB sugiere contenido grande (HTML/imágenes en `longtext`/`longblob`); por confirmar qué tabla lo concentra.
 
-## 4. Capa Eloquent (Fase 2, `laravel/app/Models`)
+## 4. Capa Eloquent (Fase 2, `app/Models`)
 
 | Modelo | Tabla | Notas |
 |---|---|---|

@@ -65,7 +65,7 @@ class AutenticacionTest extends TestCase
     {
         // Falla (no se omite): sin esta credencial DAT-01 quedaría sin verificar sin que nadie lo notara.
         if (! env('LEGACY_DB_USER')) {
-            $this->fail('Faltan LEGACY_DB_USER/LEGACY_DB_PASS en laravel/.env: son necesarios para preparar escenarios en pedigital_test.');
+            $this->fail('Faltan LEGACY_DB_USER/LEGACY_DB_PASS en .env: son necesarios para preparar escenarios en pedigital_test.');
         }
         $cfg = config('database.connections.pedigital');
         $this->assertStringEndsWith('_test', $cfg['database']);

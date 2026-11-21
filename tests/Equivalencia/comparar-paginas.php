@@ -12,7 +12,12 @@
  *     `public/juegos/juegos/<slug>/index.html`). Ver «JUEGOS (Fase 13)» más abajo.
  *   - `lineaTiempo` y `ViajaPED` (rutas `/lineaTiempo/` y `/ViajaPED/`, slugs de config/paginas_estaticas.php) -> 25acea1 (Fase 14
  *     de la migración: el último commit con sus `public/<slug>/index.html`). Ver «PÁGINAS ESTÁTICAS (Fase 15)» más abajo.
- * Cada original se lee con `git show <referencia>:laravel/public/<archivo>` (`index.html`, `<slug>.html`, `juegos/index.html`).
+ * Cada original se lee con `git show <referencia>:public/<archivo>` (`index.html`, `<slug>.html`, `juegos/index.html`).
+ *
+ * RUTAS EN COMMITS ANTERIORES A LA REESTRUCTURACIÓN: hasta el commit 53eee80 (etiqueta de recuperación `pre-reestructura-raiz`) la
+ * aplicación vivía en la subcarpeta `laravel/`; todas las referencias por defecto (0c60734, 0c7c594, bb4b68b, b97b191, 25acea1…)
+ * son anteriores, de modo que en ellas el archivo está en `laravel/public/<archivo>`. `leerOriginalGit()` prueba primero
+ * `public/<archivo>` (commits posteriores a la reestructuración) y, si no existe en ese commit, `laravel/public/<archivo>`.
  *
  * El PERFIL (`/perfil`) NO se compara por texto: el original era un formulario vacío que rellenaba el JS y la vista
  * actual pinta el formulario (con sesión) o solo un aviso (sin ella), así que no hay HTML equivalente. En su lugar hay
@@ -20,7 +25,7 @@
  * sesión, las funciones de los `onclick` siguen definidas en los JS, y el aviso sin sesión usa el mismo texto que el JS.
  * Esa parte necesita las bases de prueba (el perfil lee `pedigital_test`): el script las fuerza antes de arrancar Laravel.
  *
- * Uso (desde `laravel/`):
+ * Uso (desde la raíz del repositorio):
  *
  *     php tests/Equivalencia/comparar-paginas.php [--ver-diferencias] [--ref=<pagina>:<commit>]...
  *
@@ -126,7 +131,30 @@ const REFERENCIA_JUEGOS = 'bb4b68b';
 const REFERENCIA_PAGINAS_JUEGO = 'b97b191';
 const REFERENCIA_PAGINAS_ESTATICAS = '25acea1';
 
-// Páginas a comparar: nombre => [ruta que se pide a Laravel, archivo original en laravel/public/, referencia git,
+/**
+ * Lee un archivo de `public/` tal como estaba en un commit, sea cual sea la estructura del repositorio en ese momento.
+ *
+ * Antes de la reestructuración (hasta 53eee80) la aplicación estaba en `laravel/`, así que el archivo vivía en
+ * `laravel/public/<archivo>`; después vive en `public/<archivo>`. Se prueba primero la ruta actual y, si git no la
+ * encuentra en ese commit, la antigua.
+ *
+ * @param  string  $referencia  Commit (o etiqueta) donde buscar.
+ * @param  string  $archivo  Ruta relativa a `public/` (p. ej. `index.html` o `juegos/index.html`).
+ * @return string|null Contenido del archivo, o null si no existe en ninguna de las dos ubicaciones.
+ */
+function leerOriginalGit(string $referencia, string $archivo): ?string
+{
+    foreach (['public/', 'laravel/public/'] as $prefijo) {
+        $contenido = shell_exec('git show '.escapeshellarg($referencia.':'.$prefijo.$archivo).' 2>/dev/null');
+        if (is_string($contenido) && $contenido !== '') {
+            return $contenido;
+        }
+    }
+
+    return null;
+}
+
+// Páginas a comparar: nombre => [ruta que se pide a Laravel, archivo original en public/ (o laravel/public/ en commits antiguos), referencia git,
 // carpeta contra la que se resuelven las URL relativas del original (null = ninguna: el original ya colgaba de la raíz)].
 $paginas = ['index' => ['/', 'index.html', REFERENCIA_INDEX, null]];
 foreach (array_keys(config('mapas')) as $slug) {
@@ -331,7 +359,7 @@ function quitarBloqueFinal(array $tokens): array
 function comprobarPerfil($app, $http): int
 {
     $fallos = 0;
-    $original = (string) shell_exec('git show '.escapeshellarg(REFERENCIA_JUEGOS.':laravel/public/miPerfil.html').' 2>&1');
+    $original = (string) leerOriginalGit(REFERENCIA_JUEGOS, 'miPerfil.html');
     if (! str_contains($original, '<html')) {
         fwrite(STDERR, 'No se pudo leer el original del perfil (miPerfil.html) en '.REFERENCIA_JUEGOS."\n");
         exit(2);
@@ -406,7 +434,7 @@ function comprobarPerfil($app, $http): int
 $fallos = 0;
 
 foreach ($paginas as $slug => [$rutaPagina, $archivoOriginal, $referencia, $baseOriginal]) {
-    $original = shell_exec('git show '.escapeshellarg($referencia.':laravel/public/'.$archivoOriginal).' 2>&1');
+    $original = leerOriginalGit($referencia, $archivoOriginal);
     if ($original === null || ! str_contains($original, '<html')) {
         fwrite(STDERR, "No se pudo leer el original de $slug ($archivoOriginal) en $referencia\n");
         exit(2);

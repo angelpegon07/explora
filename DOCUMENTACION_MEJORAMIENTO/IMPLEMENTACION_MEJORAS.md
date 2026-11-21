@@ -1,6 +1,6 @@
 # IMPLEMENTACIÓN DE MEJORAS
 
-Resumen por fase de lo implementado en `laravel/` (detalle fila a fila en [REGISTRO_CAMBIOS.md](REGISTRO_CAMBIOS.md), pruebas en [INFORME_PRUEBAS.md](INFORME_PRUEBAS.md)). Rama `migracion-laravel`, commits por fase hasta la 6; la Fase 7 se confirma al cerrarla; el sistema legado sigue funcionando sin cambios.
+Resumen por fase de lo implementado en la raíz del repositorio (detalle fila a fila en [REGISTRO_CAMBIOS.md](REGISTRO_CAMBIOS.md), pruebas en [INFORME_PRUEBAS.md](INFORME_PRUEBAS.md)). Rama `migracion-laravel`, commits por fase hasta la 6; la Fase 7 se confirma al cerrarla; el sistema legado sigue funcionando sin cambios.
 
 | Fase | Estado | Qué se implementó | Hallazgos relacionados |
 |---|---|---|---|
@@ -16,4 +16,4 @@ Resumen por fase de lo implementado en `laravel/` (detalle fila a fila en [REGIS
 
 **Pruebas actuales:** PHPUnit 118 (1.136 aserciones) + Playwright 36 en navegador, todas correctas.
 
-**Documentación del código:** todo el código nuevo está documentado en español: cada clase, método público (con `@return`/`@param` descriptivos, porque Pint elimina los que solo repiten el tipo) y método de prueba (qué comprueba y por qué); `laravel/README.md` describe estructura, API, variables de entorno, pruebas y convenciones. Verificado por un escáner propio y por un agente auditor; es un requisito permanente del proyecto.
+**Documentación del código:** todo el código nuevo está documentado en español: cada clase, método público (con `@return`/`@param` descriptivos, porque Pint elimina los que solo repiten el tipo) y método de prueba (qué comprueba y por qué); `README.md` (raíz del repositorio) describe estructura, API, variables de entorno, pruebas y convenciones. Verificado por un escáner propio y por un agente auditor; es un requisito permanente del proyecto.

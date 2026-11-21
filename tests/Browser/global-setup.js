@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
 /**
- * Ejecuta una acción de `tests/Browser/fixtures.php` desde la carpeta `laravel/`.
+ * Ejecuta una acción de `tests/Browser/fixtures.php` desde la raíz del repositorio.
  * Lanza una excepción (y por tanto aborta toda la suite) si el proceso termina con un código distinto de 0.
  *
  * @param {'sembrar'|'limpiar'} accion Acción de los fixtures.

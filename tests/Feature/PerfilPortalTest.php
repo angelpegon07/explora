@@ -84,7 +84,7 @@ class PerfilPortalTest extends TestCase
     private function conEscrituraEnPedigitalTest(callable $fn): void
     {
         if (! env('LEGACY_DB_USER')) {
-            $this->fail('Faltan LEGACY_DB_USER/LEGACY_DB_PASS en laravel/.env: son necesarios para preparar escenarios en pedigital_test.');
+            $this->fail('Faltan LEGACY_DB_USER/LEGACY_DB_PASS en .env: son necesarios para preparar escenarios en pedigital_test.');
         }
         $cfg = config('database.connections.pedigital');
         $this->assertStringEndsWith('_test', $cfg['database']);

@@ -1,12 +1,12 @@
 # ARQUITECTURA ACTUAL
 
 > **Actualización de la Fase 15 (2026-11-20).** Lo que sigue describe el sistema ORIGINAL auditado (histórico). Hoy: el sitio es **Laravel 10 + Blade**
-> con `laravel/public/` como único documento raíz; los endpoints PHP planos fueron sustituidos por la API `/api/*` (sesión con CSRF, fichas, quiz,
+> con `public/` como único documento raíz; los endpoints PHP planos fueron sustituidos por la API `/api/*` (sesión con CSRF, fichas, quiz,
 > resultados, ranking, historial, avatar) y **sus 7 scripts, los `conexion*.php` y los `.htaccess` de `php/` se eliminaron** (siguen en la etiqueta git
 > `pre-retiro-legado`; sus URL responden 410 desde Laravel). Todas las páginas propias (portada, 5 mapas, perfil, portal, 7 juegos, `lineaTiempo` y
 > `ViajaPED`) son vistas Blade. **Lo único que queda del PHP legado es `public/mapplic/php/chat.php` y `chat copy.php`** (más `mapplic/js/chat.js` y
 > `public/corrector.html`): el chat con IA se aplaza y el corrector se desarrolla en otro proyecto (decisión del responsable); sus credenciales siguen
-> escritas en el código y en el historial de git. Detalle: `laravel/README.md`, `PLAN_MIGRACION_BLADE.md` y `REGISTRO_CAMBIOS.md`.
+> escritas en el código y en el historial de git. Detalle: `README.md` (raíz del repositorio), `PLAN_MIGRACION_BLADE.md` y `REGISTRO_CAMBIOS.md`.
 
 ## 1. Visión general
 
@@ -25,7 +25,7 @@ Archivos estáticos: JSON/GeoJSON, SVG/WebP, imágenes, sonidos
 
 | Directorio | Función |
 |---|---|
-| `laravel/public/` (`*.html`, `*.json`; antes en la raíz del repositorio, movido en la Fase 9) | Páginas de mapas temáticos y su data |
+| `public/` (`*.html`, `*.json`; antes en la raíz del repositorio, movido en la Fase 9) | Páginas de mapas temáticos y su data |
 | `mapplic/` | Motor de mapas (3 variantes de `mapplic*.js`), quiz, chat, login, "ver más", `php/` con API |
 | `mapplic/js/` | `general.js`, `quiz.js`, `chat.js`, `iniciarSesion.js` |
 | `juegos/` | Portal de juegos, `php/` con API de resultados, `juegos/<juego>/` cada juego autocontenido |

@@ -3,7 +3,7 @@
 /**
  * Fixtures de las pruebas de navegador (Playwright) de Explora.
  *
- * Uso (desde `laravel/`):
+ * Uso (desde la raíz del repositorio):
  *
  *     php tests/Browser/fixtures.php sembrar   # respalda el perfil del usuario 1 e inserta filas E2E
  *     php tests/Browser/fixtures.php limpiar   # borra las filas E2E y restaura el perfil del usuario 1

@@ -5,8 +5,13 @@ Colombia). Reemplazó **de forma incremental** los 12 scripts PHP planos del sit
 sustituidos por la API se eliminaron (siguen en la etiqueta git `pre-retiro-legado`; ver «Retiro del PHP legado»); solo quedan
 `public/mapplic/php/chat.php` y `chat copy.php` (el chat con IA queda fuera de este repositorio).
 
-> Contexto, auditorías, decisiones y registro de cambios: [`../DOCUMENTACION_MEJORAMIENTO/`](../DOCUMENTACION_MEJORAMIENTO/)
+> Contexto, auditorías, decisiones y registro de cambios: [`DOCUMENTACION_MEJORAMIENTO/`](DOCUMENTACION_MEJORAMIENTO/)
 > (empezar por `REGISTRO_CAMBIOS.md` e `IMPLEMENTACION_MEJORAS.md`).
+
+> **Estructura del repositorio.** Desde la reestructuración (etiqueta de recuperación `pre-reestructura-raiz`) el proyecto Laravel
+> vive en la RAÍZ del repositorio (`app/`, `public/`, `artisan`, `composer.json`…) y `DOCUMENTACION_MEJORAMIENTO/` es la carpeta
+> de documentación. Hasta el commit 53eee80 la aplicación estaba en la subcarpeta `laravel/`. Todos los comandos de este README
+> se ejecutan desde la raíz del repositorio.
 
 ## Estado
 
@@ -21,7 +26,7 @@ sustituidos por la API se eliminaron (siguen en la etiqueta git `pre-retiro-lega
 | 6 | Chat con IA y corrector | aplazada (trabajo aparte enfocado en IA) |
 | 7 | Conmutación segura del frontend (sesión, fichas, quiz, perfil, juegos), bloqueo de los PHP sustituidos y pruebas en navegador | ✔ |
 | 7B | Modernizar el frontend (Vite, unificar librerías, Mapplic, optimizar medios) | parcial |
-| 9 | Cimientos Blade: `laravel/public/` es el único documento raíz y contiene todo el sitio (HTML intacto, solo movido) | ✔ |
+| 9 | Cimientos Blade: `public/` es el único documento raíz y contiene todo el sitio (HTML intacto, solo movido) | ✔ |
 | 10 | Mapas temáticos (`/climatico`, `/coordilleras`, `/etnias`, `/parques_naturales`, `/vertientes`): una vista Blade parametrizada + layout y parciales reutilizables | ✔ |
 | 11 | Portada (`/`): mapa general + ficha de departamento + quiz en Blade, con los mismos layout y parciales; `/index.html` redirige a `/` | ✔ |
 | 12 | Perfil (`/perfil`) y portal de juegos (`/juegos`) en Blade con la sesión pintada en servidor | ✔ |
@@ -171,25 +176,25 @@ aceptado). `fecha` se guarda como texto `d-m-Y H:i:s` en UTC, como el legado (DA
 que existen en los datos reales, se aceptan como `$2y$`) y la contraseña **no se recorta** (se conservan los espacios).
 `localStorage` ya no es la fuente de verdad: el frontend lo mantiene solo como caché de compatibilidad, sincronizada con `GET /api/sesion` (el historial y el guardado de resultados usan la sesión del servidor).
 Las peticiones que escriben deben enviar la cookie `XSRF-TOKEN` (decodificada) en la cabecera `X-XSRF-TOKEN`.
-En HTTPS, definir `SESSION_SECURE_COOKIE=true`. Pasos para conectar el frontend: [`GUIA_CONMUTACION_FRONTEND.md`](../DOCUMENTACION_MEJORAMIENTO/GUIA_CONMUTACION_FRONTEND.md).
+En HTTPS, definir `SESSION_SECURE_COOKIE=true`. Pasos para conectar el frontend: [`GUIA_CONMUTACION_FRONTEND.md`](DOCUMENTACION_MEJORAMIENTO/GUIA_CONMUTACION_FRONTEND.md).
 
 ## Servir el sitio y la API (mismo origen)
 
 La sesión es una cookie `SameSite=Lax` con CSRF, así que el sitio estático y la API deben servirse desde el **mismo origen**.
 
 ```bash
-# Desarrollo: router que sirve el sitio (laravel/public) y envía /api/* a Laravel, y bloquea lo que no debe servirse
-cd laravel && PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t public servidor-desarrollo.php
+# Desarrollo: router que sirve el sitio (public/) y envía /api/* a Laravel, y bloquea lo que no debe servirse
+PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t public servidor-desarrollo.php
 ```
 
-También sirve `php artisan serve` (puerto 8000): el archivo `server.php` de la raíz de `laravel/` delega en el mismo router. Sin él, el router
+También sirve `php artisan serve` (puerto 8000): el archivo `server.php` de la raíz del repositorio delega en el mismo router. Sin él, el router
 por defecto de `artisan serve` dejaba un «Not Found» en `/juegos` y en `/juegos/juegos/<slug>/` (carpetas reales de `public/`). **Si ya
 tenías `artisan serve` en marcha, reinícialo** para que lo use.
 
 El router entrega `/` a Laravel (la portada es una vista Blade desde la Fase 11) y responde **410**
 a las 7 URL de los PHP legados retirados (`config/servicios_retirados.php`) y **404** a `.git`, `.env`, `conexion*.php` (ya no existen), cualquier otro `.php` (incluido el chat, que en desarrollo queda desactivado porque usaría credenciales reales)
-y a extensiones sensibles. `laravel/.env`, `vendor/`, `storage/` y la documentación ya no están bajo el docroot. **Producción
-con Apache:** DocumentRoot = `laravel/public` (ver `../DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md`; solo `public/.htaccess`: las
+y a extensiones sensibles. `.env`, `vendor/`, `storage/` y la documentación ya no están bajo el docroot. **Producción
+con Apache:** DocumentRoot = `<raíz del repositorio>/public` (ver `DOCUMENTACION_MEJORAMIENTO/DESPLIEGUE_APACHE.md`; solo `public/.htaccess`: las
 carpetas `php/` ya no tienen `.htaccess`, el 410 lo da Laravel).
 
 **Rutas de Laravel fuera de `/api`.** Igual que Apache (`public/.htaccess` envía a `index.php` lo que no es archivo ni carpeta), el
@@ -311,7 +316,7 @@ php tests/Equivalencia/comparar-paginas.php   # compuerta de equivalencia de las
 
 `phpunit.xml` fuerza `APP_DEBUG=false` y las bases `explora_test` / `pedigital_test`; `tests/TestCase.php` aborta si la
 conexión no es local o no termina en `_test`. **Nombre histórico de variables:** `AutenticacionTest` y `PerfilPortalTest` leen
-`LEGACY_DB_USER` / `LEGACY_DB_PASS` de `laravel/.env` (usuario MySQL con escritura solo sobre `*_test`, para preparar escenarios en
+`LEGACY_DB_USER` / `LEGACY_DB_PASS` de `.env` (usuario MySQL con escritura solo sobre `*_test`, para preparar escenarios en
 `pedigital_test`). Se llaman «LEGACY» porque antes también las usaba el arnés del PHP legado, que ya no existe; **no se renombraron**
 para no obligar a editar el `.env` de nadie.
 
@@ -320,7 +325,7 @@ para no obligar a editar el `.env` de nadie.
 Las fichas guardan imágenes como `<img src="data:image/...;base64,...">` dentro del HTML de la base `explora` (DAT-07: la ficha del
 depto 10 pesaba 48,6 MB). El comando saca esas imágenes a archivos que sirve Apache y deja en la base solo la URL.
 **El comando NO se ha ejecutado contra la base real**; se desarrolló y verificó solo en `explora_test`/`explora_migtest`.
-El procedimiento para producción está en `../DOCUMENTACION_MEJORAMIENTO/PROPUESTA_DESPLIEGUE.md` («Externalizar imágenes»).
+El procedimiento para producción está en `DOCUMENTACION_MEJORAMIENTO/PROPUESTA_DESPLIEGUE.md` («Externalizar imágenes»).
 
 ```bash
 php artisan explora:externalizar-imagenes                       # DRY-RUN (por defecto): no escribe nada; cifras por tabla/columna
@@ -378,7 +383,7 @@ acepta bases `*_test` y `*_migtest`.
 
 Dos migraciones ADITIVAS (no borran ni cambian el tipo de ninguna columna) y un comando de auditoría de solo lectura.
 **No se han aplicado a la base real `explora`**: solo a `explora_test` y al sandbox `explora_migtest`. Procedimiento en
-`../DOCUMENTACION_MEJORAMIENTO/PROPUESTA_DESPLIEGUE.md` («Fase 16B»).
+`DOCUMENTACION_MEJORAMIENTO/PROPUESTA_DESPLIEGUE.md` («Fase 16B»).
 
 | Migración | Qué hace |
 |---|---|
@@ -424,7 +429,7 @@ Se eliminaron del repositorio (`git rm`), porque la API Laravel ya los sustituye
   referencias que cargaba jQuery desde un CDN).
 
 **Para recuperarlo todo:** la historia completa está en la etiqueta git `pre-retiro-legado`
-(p. ej. `git show pre-retiro-legado:laravel/public/mapplic/php/consultarInfo.php`, o `git checkout pre-retiro-legado -- <ruta>`).
+(p. ej. `git show pre-retiro-legado:laravel/public/mapplic/php/consultarInfo.php` (la etiqueta es anterior a la reestructuración: allí la aplicación estaba en `laravel/`), o `git checkout pre-retiro-legado -- <ruta>`).
 
 **Compatibilidad:** las 7 URL antiguas siguen respondiendo **410 Gone** con `{"status":"error","mensaje":"Servicio retirado"}` (cualquier
 método HTTP, sin distinguir mayúsculas, sin cookies ni trazas): en Apache, mediante la ruta `servicio-retirado` de `routes/web.php`
@@ -498,6 +503,6 @@ comprobar antes que el sistema operativo sea compatible. Las carpetas `test-resu
 
 ## Problemas conocidos
 
-Resumidos de `../DOCUMENTACION_MEJORAMIENTO/MATRIZ_HALLAZGOS.md`: imágenes base64 en el contenido (DAT-07; solución implementada en la Fase 16A, pendiente de aplicar en producción), el legado
+Resumidos de `DOCUMENTACION_MEJORAMIENTO/MATRIZ_HALLAZGOS.md`: imágenes base64 en el contenido (DAT-07; solución implementada en la Fase 16A, pendiente de aplicar en producción), el legado
 falla con la ficha del departamento 10 (FUN-11), FK ausentes o rotas en la base (DAT-02, DAT-04), fecha de resultados
 como texto (DAT-03). Ninguno se corrige en la base sin autorización.
