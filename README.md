@@ -35,6 +35,7 @@ sustituidos por la API se eliminaron (siguen en la etiqueta git `pre-retiro-lega
 | 15 | `lineaTiempo` y `ViajaPED` en Blade; retiro del PHP legado sustituido (7 scripts) y de las pruebas que dependían de él | ✔ |
 | 16A | Imágenes base64 de las fichas a archivos: comando `explora:externalizar-imagenes` (dry-run por defecto, `--aplicar`, `--revertir`, `--verificar`). **Implementado y verificado en el sandbox; NO ejecutado contra la base real** (pendiente de autorización) | ✔ (código) / pendiente de aplicar |
 | 16B | Esquema, fechas, índices y FK: migraciones `…000003` (`resultado_juegos.creado_en` + índices) y `…000004` (índices y FK de `departamento_descripcion`), doble escritura de `creado_en` y comando de solo lectura `explora:auditar-integridad`. **Aplicadas solo a `explora_test`/`explora_migtest`; NO a la base real** (pendiente de autorización) | ✔ (código) / pendiente de aplicar |
+| 16C | Guía de despliegue definitiva (`DOCUMENTACION_MEJORAMIENTO/GUIA_DESPLIEGUE.md`), plantillas y scripts en `deploy/`, y **ensayo completo sobre Apache + PHP-FPM reales** (cierra el hueco «Apache con PHP real nunca se probó»). **Nada se desplegó en un servidor real** | ✔ |
 
 ## Requisitos
 
@@ -325,7 +326,7 @@ para no obligar a editar el `.env` de nadie.
 Las fichas guardan imágenes como `<img src="data:image/...;base64,...">` dentro del HTML de la base `explora` (DAT-07: la ficha del
 depto 10 pesaba 48,6 MB). El comando saca esas imágenes a archivos que sirve Apache y deja en la base solo la URL.
 **El comando NO se ha ejecutado contra la base real**; se desarrolló y verificó solo en `explora_test`/`explora_migtest`.
-El procedimiento para producción está en `DOCUMENTACION_MEJORAMIENTO/PROPUESTA_DESPLIEGUE.md` («Externalizar imágenes»).
+El procedimiento para producción está en `DOCUMENTACION_MEJORAMIENTO/GUIA_DESPLIEGUE.md` (§5.8 y §7.3).
 
 ```bash
 php artisan explora:externalizar-imagenes                       # DRY-RUN (por defecto): no escribe nada; cifras por tabla/columna
@@ -383,14 +384,14 @@ acepta bases `*_test` y `*_migtest`.
 
 Dos migraciones ADITIVAS (no borran ni cambian el tipo de ninguna columna) y un comando de auditoría de solo lectura.
 **No se han aplicado a la base real `explora`**: solo a `explora_test` y al sandbox `explora_migtest`. Procedimiento en
-`DOCUMENTACION_MEJORAMIENTO/PROPUESTA_DESPLIEGUE.md` («Fase 16B»).
+`DOCUMENTACION_MEJORAMIENTO/GUIA_DESPLIEGUE.md` (§5.5 y §7.1).
 
 | Migración | Qué hace |
 |---|---|
 | `2026_11_21_000003_ampliar_resultado_juegos_creado_en_e_indices` | DAT-03, fase «expandir»: añade `resultado_juegos.creado_en DATETIME NULL` y la rellena desde `fecha` (texto `d-m-Y H:i:s`) donde el formato es válido; lo no interpretable (vacío, basura, `31-02-2026`…) queda en NULL y se cuenta en el aviso. Crea `idx_resultado_ranking (nombre_juego(32), nivel(16), categoria(100), puntaje DESC, tiempo ASC)` e `idx_resultado_historial (id_usuario, id)`. Idempotente; `down()` elimina solo eso |
 | `2026_11_21_000004_agregar_indices_y_fk_de_integridad` | DAT-04: índices `preguntas(departamento)` y `opciones_verfal(pregunta)`; FK `departamento_descripcion.departamento → list_departamentos.id` (ON UPDATE CASCADE, ON DELETE RESTRICT) **solo si no hay huérfanas** (si las hay: no falla, avisa con los ids). Idempotente; `down()` elimina solo lo añadido |
 
-**Orden de despliegue obligatorio: respaldo → `explora:auditar-integridad` → `php artisan migrate` → código nuevo → `explora:externalizar-imagenes`.**
+**Orden de despliegue obligatorio: respaldo → `explora:auditar-integridad` → mantenimiento → `php artisan migrate --force --path=<migración>` (una a una) → código y cachés → `php artisan up` → `explora:externalizar-imagenes`.**
 El código nuevo (`ResultadoJuegoController`/`ResultadoJuego`) escribe TAMBIÉN `creado_en`: sin la migración 000003 aplicada, guardar un resultado falla.
 (Con el código viejo y la migración aplicada no pasa nada: la columna admite NULL; esas filas quedan con `creado_en` NULL y la auditoría las cuenta.)
 La API no cambia: ranking e historial siguen leyendo y devolviendo `fecha` como texto `d-m-Y H:i:s`; leer `creado_en` y retirar `fecha` es la fase «contraer», pendiente y con autorización.
@@ -462,6 +463,28 @@ Las specs cubren bloqueos del servidor, sesión, ficha, quiz (por teclado, doble
 ranking e historial. Siembran y limpian sus propios datos (`tests/Browser/fixtures.php`) y **abortan si las bases no son `*_test`**.
 **Versión fijada:** `@playwright/test` 1.60.0, porque Playwright 1.65 ya no soporta macOS 13 con ningún navegador. Al actualizar,
 comprobar antes que el sistema operativo sea compatible. Las carpetas `test-results/` y `playwright-report/` están ignoradas.
+
+**Contra un servidor ya levantado (opt-in, Fase 16C).** Con `EXPLORA_BASE_URL=http://127.0.0.1:<puerto>` Playwright no arranca `php -S` ni siembra fixtures:
+apunta a ese servidor (p. ej. la pila Apache + PHP-FPM del ensayo de despliegue). Solo se acepta `127.0.0.1`/`localhost` (las pruebas escriben datos) y solo valen las specs que no
+dependen de filas sembradas (`bloqueos`, `recursos`, `mapas`, `sesion-ficha-quiz`); el servidor debe usar bases `*_test`/`*_migtest` y límites altos (`API_POR_MINUTO`, `RESULTADOS_POR_MINUTO`).
+Contra Apache real fallan 4 pruebas de `bloqueos.spec.js` que describen el router de desarrollo (chat 200 en vez de 404; `conexion*.php` 403 en vez de 404): ver `GUIA_DESPLIEGUE.md`, anexo B.
+Sin la variable, el comportamiento es el de siempre.
+
+## Despliegue en producción (Fase 16C)
+
+La guía definitiva es **`DOCUMENTACION_MEJORAMIENTO/GUIA_DESPLIEGUE.md`** (requisitos, arquitectura, usuarios MySQL de mínimo privilegio, `.env`, vhost Apache + PHP-FPM, procedimiento
+con la salida esperada de cada comando, verificación, marcha atrás por escenarios, operación y lista de comprobación imprimible). Marca qué se verificó en el ensayo del 2026-11-23
+(macOS, httpd 2.4.68 + PHP-FPM 8.2.31, MySQL 8.0.41, HTTPS autofirmado) y qué NO (Linux, nginx, `mod_php`, certificado real, producción real). Los archivos de apoyo están en `deploy/`:
+
+| Archivo | Uso |
+|---|---|
+| `deploy/env.produccion.ejemplo`, `apache-vhost.conf.ejemplo`, `php-fpm-pool.conf.ejemplo`, `php.ini.ejemplo` | Plantillas sin secretos |
+| `deploy/respaldar.sh --base explora [--con-contenido]` | `mysqldump --single-transaction` con comprobaciones (credenciales por archivo, nunca por argumento) |
+| `deploy/desplegar.sh` | Guiado e idempotente; **simula por defecto**; `--aplicar`, `--migrar` y `--externalizar` exigen `--respaldo` y confirmación |
+| `deploy/verificar.sh https://dominio` | Solo lectura: tabla OK/FALLO con lo esperado; código de salida 1 si algo falla |
+
+Resumen del orden crítico: **respaldo → auditoría → mantenimiento → migrar (una a una con `--path`; nunca `migrate` a secas, aplicaría también la tabla de Sanctum) → código y cachés → quitar
+mantenimiento → externalizar imágenes → `FICHAS_MEMORIA=128M`**. `desplegar.sh` y `verificar.sh` se ejercitaron en el ensayo; `PROPUESTA_DESPLIEGUE.md` solo apunta a la guía.
 
 ## Variables de entorno propias
 

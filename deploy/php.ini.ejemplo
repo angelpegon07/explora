@@ -1,0 +1,41 @@
+; =====================================================================================================================
+; Explora · directivas de PHP relevantes para producción (NO es un php.ini completo: añádalas al de PHP-FPM, p. ej.
+; /etc/php/8.2/fpm/conf.d/90-explora.ini). Guía: DOCUMENTACION_MEJORAMIENTO/GUIA_DESPLIEGUE.md. Probado con PHP 8.2.31 (php-fpm).
+; =====================================================================================================================
+
+; No revelar la versión de PHP (la cabecera X-Powered-By).
+expose_php = Off
+
+; Los errores van al registro, nunca al navegador.
+display_errors = Off
+display_startup_errors = Off
+log_errors = On
+error_reporting = E_ALL & ~E_DEPRECATED
+html_errors = Off
+
+; Límite general. La ruta de la ficha sube su propio límite con FICHAS_MEMORIA (ini_set), por eso NO se fija con php_admin_value.
+memory_limit = 128M
+max_execution_time = 60
+
+; La aplicación solo recibe JSON pequeño y formularios: nada de subidas de archivos.
+post_max_size = 2M
+upload_max_filesize = 2M
+file_uploads = Off
+
+date.timezone = America/Bogota
+default_charset = "UTF-8"
+
+; Imprescindible con PHP-FPM: PHP no debe «adivinar» el script en /index.php/x.
+cgi.fix_pathinfo = 0
+
+; El código no abre URL remotas (el chat legado usa curl, que no depende de estas directivas).
+allow_url_fopen = Off
+allow_url_include = Off
+
+; Cookies de sesión propias de PHP (Laravel gestiona la suya; defensa en profundidad).
+session.cookie_httponly = 1
+session.use_strict_mode = 1
+
+; OPcache (recomendado donde esté instalado: en el ensayo de macOS/Homebrew no venía incluido, así que NO se verificó).
+; opcache.enable = 1
+; opcache.validate_timestamps = 0   ; con 0, tras cada despliegue hay que recargar php-fpm (systemctl reload php8.2-fpm)

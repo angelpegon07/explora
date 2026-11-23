@@ -25,6 +25,13 @@ RedirectMatch 404 /\.(git|env)
     Require all denied
 </FilesMatch>
 
+# Los propios `.htaccess` y `.htpasswd` (reglas internas y, eventualmente, hashes) tampoco se descargan. Las instalaciones de Apache de
+# las distribuciones ya traen esta regla en su configuración global, pero una mínima (o la del ensayo de despliegue de la Fase 16C, donde
+# `GET /.htaccess` devolvía el archivo con 200) no: aquí queda como defensa en profundidad, igual que el 404 de `.git`/`.env` de arriba.
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>
+
 # Volcados, copias y archivos de proyecto que nunca deben descargarse.
 # `map` = source maps de Bootstrap (juegos/librerias/bootstrap-5.3/**/*.map): solo los pide la consola del navegador (ninguna
 # página los necesita para funcionar) y exponen el código fuente original de la librería.

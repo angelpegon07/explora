@@ -1,0 +1,43 @@
+; =====================================================================================================================
+; Explora · pool de PHP-FPM (p. ej. /etc/php/8.2/fpm/pool.d/explora.conf). Guía: DOCUMENTACION_MEJORAMIENTO/GUIA_DESPLIEGUE.md.
+; Verificado en el ensayo de la Fase 16C (macOS, PHP 8.2.31): escucha TCP 127.0.0.1 y socket UNIX, con open_basedir y disable_functions
+; de abajo (sin errores en el registro tras recorrer todo el sitio y las 33 fichas). `user`/`group` solo los aplica FPM si arranca como
+; root (en el ensayo corrió con un usuario normal y se ignoraron): NO se verificaron en Linux.
+; =====================================================================================================================
+[explora]
+; Usuario que ejecuta PHP = usuario del servidor web (www-data en Debian/Ubuntu, apache en RHEL). Debe poder escribir en
+; storage/, bootstrap/cache/ y public/contenido/ y NADA más.
+user = www-data
+group = www-data
+
+; Solo escucha en la máquina local (nunca 0.0.0.0: FPM no autentica a quien le habla).
+listen = 127.0.0.1:9000
+listen.allowed_clients = 127.0.0.1
+; Variante con socket UNIX (en Apache: SetHandler "proxy:unix:/run/php/explora.sock|fcgi://localhost"):
+; listen = /run/php/explora.sock
+; listen.owner = www-data
+; listen.group = www-data
+; listen.mode = 0660
+
+pm = dynamic
+pm.max_children = 10
+pm.start_servers = 3
+pm.min_spare_servers = 2
+pm.max_spare_servers = 5
+; Recicla los procesos para acotar fugas de memoria (las fichas antiguas llegan a 200 MB de pico).
+pm.max_requests = 500
+
+; El chat legado puede tardar hasta 120 s esperando a Ollama.
+request_terminate_timeout = 130s
+
+; PHP no hereda variables de entorno del sistema: toda la configuración sale de .env / bootstrap/cache/config.php.
+clear_env = yes
+catch_workers_output = yes
+
+php_admin_value[error_log] = /var/log/php-fpm/explora-error.log
+php_admin_flag[log_errors] = on
+php_admin_flag[display_errors] = off
+; Limita los archivos que PHP puede abrir (ajuste la ruta de la raíz). /tmp para sesiones/temporales del sistema.
+php_admin_value[open_basedir] = /var/www/explora:/tmp
+php_admin_value[disable_functions] = exec,passthru,shell_exec,system,proc_open,popen
+; NO añada php_admin_value[memory_limit]: bloquearía el ini_set de FICHAS_MEMORIA.

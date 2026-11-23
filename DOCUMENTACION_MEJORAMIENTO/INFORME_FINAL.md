@@ -22,13 +22,13 @@ Fecha: 2026-11-19 · Rama `migracion-laravel` (etiqueta de recuperación `pre-mi
 ## 3. Riesgos residuales (lo que el responsable debe saber)
 1. **El chat legado sigue activo** con credenciales de MySQL (usuario con privilegios altos) escritas en `chat.php` y `chat copy.php`. Rotarlas es obligatorio antes de publicar.
 2. ~~Los 3 `conexion*.php` tienen cambios locales ajenos sin confirmar.~~ (Fase 15: los 3 `conexion*.php` se eliminaron del repositorio; siguen en la etiqueta `pre-retiro-legado`.)
-3. Probado solo en Chromium y con Apache por CGI; faltan Firefox, Safari y mod_php/php-fpm.
+3. Probado solo en Chromium. Desde la Fase 16C Apache + PHP-FPM sí se probó de punta a punta (macOS; ver `GUIA_DESPLIEGUE.md`, §0); faltan Firefox, Safari, Linux, nginx, `mod_php` y un certificado HTTPS real.
 4. El contenido editorial de las fichas se inserta como HTML por diseño: si esa fuente se comprometiera habría XSS.
 5. Los datos antiguos con HTML siguen en la base (ahora se muestran como texto, pero no se limpiaron).
 6. Servir el sitio en un subdirectorio no está soportado por el servidor.
 
 ## 4. Siguientes decisiones
-- Autorizar el despliegue (ver PROPUESTA_DESPLIEGUE.md).
+- Autorizar el despliegue (ver `GUIA_DESPLIEGUE.md`; la **Fase 16C** dejó la guía definitiva, las plantillas/scripts de `deploy/` y un ensayo completo sobre Apache + PHP-FPM; nada se desplegó en un servidor real).
 - Abrir el trabajo de IA (chat y corrector) como proyecto aparte.
 - Decidir la migración de datos (fecha a `datetime`, FK, imágenes base64 a archivos).
 

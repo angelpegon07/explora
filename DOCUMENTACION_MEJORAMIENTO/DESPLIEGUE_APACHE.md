@@ -1,5 +1,9 @@
 # DESPLIEGUE CON APACHE / XAMPP
 
+> **Fase 16C:** el procedimiento de despliegue completo y verificado (Apache + PHP-FPM reales, plantillas y scripts) está en
+> [`GUIA_DESPLIEGUE.md`](GUIA_DESPLIEGUE.md) y en `deploy/`. Este documento conserva lo que explica **qué bloquea cada `.htaccess`** y la
+> comprobación con `curl`; no se duplica aquí lo que ya está en la guía.
+
 Cómo publicar el sitio estático y la API Laravel (la aplicación vive en la raíz del repositorio) **en el mismo origen**. Es obligatorio porque la sesión
 es una cookie `SameSite=Lax` con token CSRF y CORS no admite otros orígenes por defecto
 (ver `GUIA_CONMUTACION_FRONTEND.md`, punto 1).
@@ -21,6 +25,9 @@ es una cookie `SameSite=Lax` con token CSRF y CORS no admite otros orígenes por
 4. Habilitar HTTPS (certificado válido) y redirigir HTTP a HTTPS.
 
 ## Ejemplo de VirtualHost
+
+> La plantilla completa y verificada (vhost por defecto, redirección a HTTPS, PHP-FPM, compresión) es `deploy/apache-vhost.conf.ejemplo`. **Con PHP-FPM hace falta además
+> un `SetHandler "proxy:fcgi://…"` para los `.php`**: el ejemplo de abajo solo muestra el `DocumentRoot` y el `AllowOverride`.
 
 ```apache
 <VirtualHost *:443>
@@ -48,7 +55,7 @@ repositorio **`public`** y poner `AllowOverride All` solo ahí (y `AllowOverride
 
 | Archivo | Efecto |
 |---|---|
-| `public/.htaccess` | Sin listado de directorios ni MultiViews; `DirectoryIndex index.php index.html` (`/` la atiende Laravel: la portada es la vista `inicio`); 404 para `.git` y `.env`; deniega `conexion*.php` y los archivos `sql, gz, zip, md, sh, lock, log, bak, map` (los `.map` son source maps de Bootstrap, que ninguna página necesita); con `mod_headers` añade `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy` y quita `X-Powered-By` (también en los archivos estáticos); front controller de Laravel (todo lo que no sea archivo ni carpeta, como `/api/...`, va a `index.php` con la ruta completa) |
+| `public/.htaccess` | Sin listado de directorios ni MultiViews; `DirectoryIndex index.php index.html` (`/` la atiende Laravel: la portada es la vista `inicio`); 404 para `.git` y `.env`; deniega `.htaccess`/`.htpasswd` (Fase 16C: con una configuración mínima de Apache `GET /.htaccess` devolvía el archivo), `conexion*.php` y los archivos `sql, gz, zip, md, sh, lock, log, bak, map` (los `.map` son source maps de Bootstrap, que ninguna página necesita); con `mod_headers` añade `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy` y quita `X-Powered-By` (también en los archivos estáticos); front controller de Laravel (todo lo que no sea archivo ni carpeta, como `/api/...`, va a `index.php` con la ruta completa) |
 | `.htaccess` de la antigua carpeta `laravel/` (hoy raíz del repositorio) y `DOCUMENTACION_MEJORAMIENTO/.htaccess` | **Eliminados** (revisión de la Fase 9): quedan fuera del docroot y un `Require all denied` en una carpeta padre rompía el sitio si se concedía `AllowOverride All` allí |
 | (`.htaccess` de la raíz del repositorio) | **Eliminado en la Fase 9**: sus reglas se fusionaron en `public/.htaccess` |
 | `mapplic/php/.htaccess` y `juegos/php/.htaccess` | **Eliminados en la Fase 15**: los 7 scripts PHP que bloqueaban se borraron del repositorio (etiqueta `pre-retiro-legado`) y la carpeta `juegos/php/` ya no existe. Su 410 pasó a **Laravel** (ver abajo) |
@@ -60,7 +67,7 @@ responde `410 Gone` con `{"status":"error","mensaje":"Servicio retirado"}` (cual
 sale de `config/servicios_retirados.php`. **Esto exige que PHP/Laravel funcione**: si el front controller falla, esas URL darían 500
 y no 410. `public/.htaccess` mantiene denegado `^conexion.*\.php$` como defensa en profundidad (ya no existe ningún `conexion*.php`).
 
-**Chat legado SIN protección (riesgo aceptado por el responsable).** `mapplic/php/chat.php` y `chat copy.php` se dejan como están: ya no hay
+**Chat legado SIN protección (riesgo aceptado por el responsable; comprobado con Apache + PHP-FPM en la Fase 16C: `GET /mapplic/php/chat.php` y `chat%20copy.php` dan 200 y se ejecutan; la mitigación `<FilesMatch "^chat.*\.php$">` da 403 y deja el resto del sitio intacto).** `mapplic/php/chat.php` y `chat copy.php` se dejan como están: ya no hay
 `.htaccess` en esa carpeta (nunca bloqueó el chat) y **bajo Apache se ejecutan como cualquier `.php`**, con sus credenciales de MySQL escritas
 en el código y sin sesión ni límite de uso. Solo el router de desarrollo los bloquea (404). Si se despliega a un servidor accesible desde
 Internet, conviene retirar esos dos archivos o bloquearlos a nivel de servidor mientras el chat siga aplazado (decisión del responsable). Ver el
@@ -91,7 +98,8 @@ curl -I https://explora.example.org/DOCUMENTACION_MEJORAMIENTO/REGISTRO_CAMBIOS.
 y `/index.html` da 301). Apache local sin PHP (Fase 9, Apache 2.4.68, sin mod_php): `/` y `/index.html` 200 (HTML), `/mapplic/php/consultarInfo.php`
 y `CONSULTARINFO.php` 410, `/juegos/php/guardar_resultado.php` 410, `conexion.php` 403, `/.git/HEAD` y `/.env` 404, `x.sql` y
 `composer.lock` 403, `/css/` 403 (sin listado), `/juegos` 301 a `/juegos/`, y `/api/sesion` reescrito a `index.php`. La ejecución
-de PHP (401 JSON de la API) no se pudo probar ahí por falta de módulo PHP; sí con `php -S`.
+de PHP (401 JSON de la API) no se pudo probar ahí por falta de módulo PHP; sí con `php -S`. **Cerrado en la Fase 16C:** se probó con Apache + PHP-FPM reales
+(ver `GUIA_DESPLIEGUE.md`, §0 y anexo B).
 
 Prueba de la Fase 15 con Apache local sin PHP (2.4.68): solo se puede comprobar la REESCRITURA (sin PHP, `index.php` se devuelve como texto). `/lineaTiempo/`,
 `/lineaTiempo`, `/ViajaPED/`, `/ViajaPED` y `/lineaTiempo/index.html` llegan a `index.php`; `/lineaTiempo/eventos.json` y `/ViajaPED/data.json` se sirven
@@ -129,7 +137,7 @@ PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t public servidor-desarrollo.php
 200 (front controller), `/juegos` → 301 a `/juegos/` (la redirección de `mod_dir` por carpeta sin barra llega antes; es un salto
 extra inofensivo) y `/juegos/css/styles.css` → 200 estático; `/juegos/juegos/puzzle/index.html` → 301 a `/juegos/juegos/puzzle/` (desde la Fase 13 ese archivo ya no
 existe y lo redirige Laravel; entonces, con el archivo, daba 200); `/juegos/js/` y `/miPerfil/` no se listan: **403 en Apache** (`-Indexes`; el router de
-desarrollo da 404). Comprobado por el líder; la respuesta JSON de la API bajo Apache sigue sin probarse (sin `mod_php`).
+desarrollo da 404). Comprobado por el líder; la respuesta JSON de la API bajo Apache se probó después, con PHP-FPM, en la Fase 16C.
 
 ## Lista de comprobación de despliegue seguro
 
@@ -140,7 +148,7 @@ Revisión posterior a la Fase 15 (verificación independiente de seguridad y cal
 - [ ] `APP_URL` con el dominio REAL y `https://`. Es el único `Host` que acepta el middleware `TrustHosts` (cualquier otro da 400; si `APP_URL` no tiene un host válido y no hay `TRUSTED_HOSTS`, NO se restringe nada). Sin esto, la cabecera `Host` controlaba las URL absolutas (redirecciones y `asset()`).
 - [ ] `TRUSTED_HOSTS` solo si hay alias (`www.explora.example.org`), nombres exactos separados por comas.
 - [ ] `SESSION_SECURE_COOKIE=true` con HTTPS (en `config/session.php` el valor por defecto es `null`, es decir, la cookie NO se marca `Secure`). Mantener `HttpOnly` y `SameSite=Lax`.
-- [ ] `APP_KEY` nueva, credenciales de MySQL nuevas y de mínimo privilegio (ver `PROPUESTA_DESPLIEGUE.md`).
+- [ ] `APP_KEY` nueva, credenciales de MySQL nuevas y de mínimo privilegio (ver `GUIA_DESPLIEGUE.md`).
 
 **Apache / PHP**
 - [ ] Un VirtualHost POR DEFECTO (el primero cargado, o `<VirtualHost _default_:80 _default_:443>`) que rechace Hosts ajenos (`Require all denied` o redirección fija al dominio): así una petición con `Host: otro.example` ni llega a la aplicación.
@@ -152,7 +160,7 @@ Revisión posterior a la Fase 15 (verificación independiente de seguridad y cal
 - [ ] Vigilar el crecimiento de `storage/framework/sessions` solo en `/perfil`, `/juegos` y la API: el resto de páginas ya no crean sesión (verificado). Aun así, con `SESSION_DRIVER=file` conviene una limpieza periódica (`session:gc` no existe en Laravel 10; basta con el sorteo de `config/session.php`).
 
 **Código desplegado**
-- [ ] Desplegar desde un CHECKOUT LIMPIO (`git clone`/`git archive` de la rama `migracion-blade` ya revisada), NUNCA copiando el árbol de trabajo: en algunos equipos hay `public/ViajaPED/node_modules` (22 MB, no versionado, ignorado por `.gitignore`) que Apache serviría tal cual desde el docroot. Si existe, borrarlo antes de publicar.
+- [ ] Desplegar desde un CHECKOUT LIMPIO (`git clone`/`git archive` de la rama `main` ya revisada), NUNCA copiando el árbol de trabajo: en algunos equipos hay `public/ViajaPED/node_modules` (22 MB, no versionado, ignorado por `.gitignore`) que Apache serviría tal cual desde el docroot. Si existe, borrarlo antes de publicar.
 - [ ] Comprobar tras desplegar: `curl -I` a `/` (sin `Set-Cookie`, con `X-Frame-Options` y compañía), `/perfil` (con `Set-Cookie`), `/api/sesion` (401 JSON) y una petición con `-H 'Host: otro.example'` (400).
 
 **Riesgo conocido: `chat.php` y `chat copy.php` (decisión del responsable, NO aplicada)**

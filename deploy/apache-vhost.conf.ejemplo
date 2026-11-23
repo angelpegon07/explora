@@ -1,0 +1,117 @@
+# =====================================================================================================================
+# Explora · Apache 2.4 + PHP-FPM (plantilla). Guía: DOCUMENTACION_MEJORAMIENTO/GUIA_DESPLIEGUE.md
+#
+# Verificado en el ensayo de la Fase 16C (macOS, httpd 2.4.68 + php-fpm 8.2.31, PHP-FPM por TCP y por socket UNIX; HTTPS con un
+# certificado AUTOFIRMADO de 127.0.0.1; ver GUIA_DESPLIEGUE.md, «Qué se verificó»). NO se probó en Linux ni con un certificado real.
+# Sustituya explora.example.org y las rutas /var/www/explora.
+#
+# Módulos necesarios: rewrite, headers, setenvif, deflate, filter, mime, dir, alias, authz_core, proxy, proxy_fcgi, ssl (HTTPS),
+# unixd, log_config. Opcional: expires. En Debian/Ubuntu: a2enmod rewrite headers deflate proxy proxy_fcgi ssl setenvif
+# =====================================================================================================================
+
+# --- Global (apache2.conf / conf-enabled/explora-seguridad.conf) ------------------------------------------------------
+# No revelar la versión de Apache ni aceptar TRACE.
+ServerTokens Prod
+ServerSignature Off
+TraceEnable off
+
+# Nada del sistema de archivos se sirve salvo lo que se conceda explícitamente más abajo.
+<Directory />
+    AllowOverride None
+    Require all denied
+</Directory>
+
+# Nunca servir .htaccess/.htpasswd. Las configuraciones de las distribuciones ya lo traen; una mínima NO (en el ensayo `GET /.htaccess`
+# devolvía el archivo con 200). public/.htaccess repite la regla como defensa en profundidad.
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>
+
+# --- 1. Vhosts POR DEFECTO (deben cargarse los PRIMEROS: el primero de cada puerto atiende lo que no coincide con ningún ServerName) --------
+# Reciben cualquier petición cuyo Host no sea el del sitio (acceso por IP, dominios ajenos apuntados a este servidor): 403 también
+# para los archivos estáticos, que Laravel nunca ve. Comprobado: `Host: otro.example` -> 403 en /, /js/... y /api/sesion. SIN este vhost,
+# Laravel da 400 a las páginas y a la API (TrustHosts), pero los archivos estáticos se sirven con cualquier Host (comprobado).
+# Son DOS vhosts, no uno con `*:80 *:443`: `SSLEngine on` dentro de un vhost de dos puertos activaría TLS también en el 80 (comprobado
+# en el ensayo: una petición HTTP al 80 daba 400 «plain HTTP request sent to HTTPS port»).
+<VirtualHost *:80>
+    ServerName defecto.invalid
+    <Location "/">
+        Require all denied
+    </Location>
+</VirtualHost>
+<VirtualHost *:443>
+    ServerName defecto.invalid
+    # Necesita un certificado cualquiera (p. ej. autofirmado) o los navegadores verán un error de TLS al entrar por la IP.
+    SSLEngine on
+    SSLCertificateFile    /etc/ssl/certs/defecto.pem
+    SSLCertificateKeyFile /etc/ssl/private/defecto.key
+    <Location "/">
+        Require all denied
+    </Location>
+</VirtualHost>
+
+# --- 2. HTTP: solo redirige a HTTPS -------------------------------------------------------------------------------------------
+<VirtualHost *:80>
+    ServerName explora.example.org
+    ServerAlias www.explora.example.org
+    Redirect permanent / https://explora.example.org/
+</VirtualHost>
+
+# --- 3. HTTPS: el sitio --------------------------------------------------------------------------------------------------------
+<VirtualHost *:443>
+    ServerName explora.example.org
+    ServerAlias www.explora.example.org
+
+    SSLEngine on
+    SSLCertificateFile    /etc/ssl/certs/explora.pem
+    SSLCertificateKeyFile /etc/ssl/private/explora.key
+
+    # ÚNICO documento raíz: public/. .env, vendor/, storage/, app/ y la documentación quedan FUERA y no son alcanzables.
+    DocumentRoot "/var/www/explora/public"
+
+    <Directory "/var/www/explora/public">
+        # AllowOverride All SOLO aquí: public/.htaccess aporta las reglas de seguridad, las cabeceras y el front controller.
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Los .php se entregan a PHP-FPM por TCP local (debe coincidir con `listen` del pool). Variante con socket UNIX (también verificada):
+    #   SetHandler "proxy:unix:/run/php/explora.sock|fcgi://localhost"
+    # (el nombre del socket UNIX no puede pasar de ~100 caracteres.)
+    #
+    # `<If "-f %{REQUEST_FILENAME}">`: el manejador solo se aplica a archivos .php que EXISTEN. Así `/index.php/x` o
+    # `/mapplic/php/chat.php/x` (ruta tras el script) NUNCA llegan a PHP-FPM: responde Apache con 404/403. Sin la guarda también eran inofensivos
+    # (PHP-FPM contestaba «No input file specified» por `cgi.fix_pathinfo=0`/`security.limit_extensions`), pero con ruido en los registros
+    # y exponiendo PHP a rutas que no son de la aplicación.
+    AcceptPathInfo Off
+    <FilesMatch "\.php$">
+        <If "-f %{REQUEST_FILENAME}">
+            SetHandler "proxy:fcgi://127.0.0.1:9000"
+        </If>
+    </FilesMatch>
+
+    # Compresión del texto. Los JSON de fichas pesan hasta ~10 MB sin imágenes embebidas (0,26 MB con ellas ya externalizadas): con gzip
+    # la ficha del depto 10 baja de 264 KB a 49 KB. Las imágenes ya están comprimidas: no se incluyen.
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml text/javascript application/javascript application/json image/svg+xml
+    </IfModule>
+
+    # HSTS: SOLO cuando HTTPS funcione de forma estable (empezar con max-age corto). No se pone en la aplicación a propósito.
+    # Header always set Strict-Transport-Security "max-age=31536000"
+
+    # CSP: NO aplicada (el sitio usa scripts y eventos en línea). Ver GUIA_DESPLIEGUE.md, «Decisiones pendientes».
+
+    # Si se conserva el chat legado (llama a Ollama hasta 120 s): Apache corta a los 60 s por defecto (Timeout). Suba también
+    #   ProxyTimeout 130        y, en el pool, request_terminate_timeout (ya está en 130s).
+    #
+    # MITIGACIÓN OPCIONAL DEL CHAT LEGADO (decisión del responsable, ROMPE el chat): descomente para bloquear chat.php y `chat copy.php`.
+    # Con PHP-FPM bajo Apache el chat SE EJECUTA sin protección (comprobado en el ensayo).
+    # <Directory "/var/www/explora/public/mapplic/php">
+    #     <FilesMatch "^chat.*\.php$">
+    #         Require all denied
+    #     </FilesMatch>
+    # </Directory>
+
+    ErrorLog  ${APACHE_LOG_DIR}/explora-error.log
+    CustomLog ${APACHE_LOG_DIR}/explora-access.log combined
+</VirtualHost>

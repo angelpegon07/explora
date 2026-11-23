@@ -14,7 +14,7 @@ use Throwable;
  * Saca de la base de datos las imágenes embebidas en base64 en el HTML de las fichas (DAT-07 / REN-03 / FUN-11) y las
  * deja como archivos servidos por Apache; en la base queda solo la URL.
  *
- * Funcionamiento (ver también README y PROPUESTA_DESPLIEGUE.md):
+ * Funcionamiento (ver también README y GUIA_DESPLIEGUE.md):
  *  - Descubre SOLO las columnas de texto/blob de la base conectada que contienen `data:image/` (INFORMATION_SCHEMA),
  *    sin listas escritas a mano: así no se escapa ninguna tabla, y las técnicas se excluyen por configuración.
  *  - Por cada `<img src="data:image/<mime>;base64,<datos>">` decodifica de forma estricta, detecta el tipo REAL por
