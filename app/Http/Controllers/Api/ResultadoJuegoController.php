@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\GuardarResultadoRequest;
 use App\Models\Explora\PerfilExplora;
 use App\Models\Explora\ResultadoJuego;
+use App\Support\CacheRanking;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -57,6 +58,9 @@ class ResultadoJuegoController extends Controller
             'fecha' => $ahora->format('d-m-Y H:i:s'),
             'creado_en' => $ahora,
         ]);
+
+        // El juego pide el ranking justo después de guardar: la caché del ranking no puede quedar vieja.
+        CacheRanking::olvidar();
 
         return response()->json(
             ['status' => 'success', 'mensaje' => 'Resultado guardado correctamente'],

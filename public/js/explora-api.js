@@ -1,7 +1,7 @@
 /**
  * explora-api.js
  * =============================================================================
- * Cliente mínimo de la API Laravel (/api) para el sitio estático de Explora.
+ * Cliente mínimo de la API Laravel (/api/v1) para el sitio estático de Explora.
  *
  * PROPÓSITO
  *   Centraliza lo que todas las páginas necesitan para hablar con la API:
@@ -21,7 +21,7 @@
  *   dinámico), porque la base del sitio se calcula con document.currentScript.
  *
  * CONFIGURACIÓN OPCIONAL
- *   window.EXPLORA_API = '/api';   // base alternativa de la API (antes de este script)
+ *   window.EXPLORA_API = '/api/v1'; // base alternativa de la API (antes de este script)
  *
  * EJEMPLO
  *   ExploraApi.peticion('POST', 'sesion', { usuario: u, contrasena: c })
@@ -106,14 +106,14 @@
 
   /**
    * Devuelve la URL completa de un endpoint de la API.
-   * Usa window.EXPLORA_API (string) como base si existe; si no, raiz('api/').
+   * Usa window.EXPLORA_API (string) como base si existe; si no, raiz('api/v1/').
    * @param {string} [ruta] Ruta del endpoint, p. ej. 'sesion' o '/sesion'.
    * @returns {string} URL lista para $.ajax.
    */
   function url(ruta) {
     var base = typeof window.EXPLORA_API === 'string' && window.EXPLORA_API !== ''
       ? window.EXPLORA_API
-      : raiz('api/');
+      : raiz('api/v1/');
     // Una sola barra entre base y ruta, sin importar cómo vengan escritas.
     return base.replace(/\/+$/, '') + '/' + String(ruta == null ? '' : ruta).replace(/^\/+/, '');
   }

@@ -62,7 +62,7 @@ test('cambiar avatar con teclado hace PATCH 200 y persiste al recargar', async (
     await opcion.focus();
     await page.keyboard.press('Enter');
 
-    const patch = page.waitForResponse((r) => r.url().endsWith('/api/perfil/avatar') && r.request().method() === 'PATCH');
+    const patch = page.waitForResponse((r) => r.url().endsWith('/api/v1/perfil/avatar') && r.request().method() === 'PATCH');
     await page.locator('#btn-guardar').click();
     expect((await patch).status()).toBe(200);
 

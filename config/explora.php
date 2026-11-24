@@ -86,4 +86,11 @@ return [
     'cache_lectura_ttl' => (int) env('EXPLORA_CACHE_TTL', 3600),
     'cache_lectura_navegador' => (int) env('EXPLORA_CACHE_NAVEGADOR', 300),
     'cache_lectura_max_bytes' => (int) env('EXPLORA_CACHE_MAX_BYTES', 2 * 1024 * 1024),
+
+    /*
+     * Caché del servidor del ranking (ver App\Http\Controllers\Api\RankingController y App\Support\CacheRanking): segundos que
+     * se conserva la respuesta (0 = desactivada). Guardar una partida la invalida al instante, así que el TTL solo acota el
+     * espacio ocupado; se mantiene corto porque la categoría es texto libre.
+     */
+    'ranking_cache_ttl' => (int) env('EXPLORA_RANKING_CACHE_TTL', 30),
 ];

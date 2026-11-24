@@ -2,11 +2,18 @@
 
 namespace App\Exceptions;
 
+use App\Support\ProblemaApi;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -15,6 +22,10 @@ use Throwable;
  *
  * Única personalización: toda la ruta `api/*` responde JSON (404, 401, 422, errores) aunque el cliente no envíe
  * `Accept: application/json`, porque el frontend usa jQuery y no siempre lo envía.
+ *
+ * Fase 17E: `api/v1/*` responde SIEMPRE en RFC 9457 (`application/problem+json`, ver {@see ProblemaApi}) y sin datos
+ * internos aunque APP_DEBUG=true; `api/*` (legado) conserva sus cuerpos. Aquí se cubre lo que el middleware de ruta
+ * `ErroresProblemJson` no ve: 404/405 previos a elegir ruta, el límite `throttle:api` y los 500.
  */
 class Handler extends ExceptionHandler
 {
@@ -51,11 +62,71 @@ class Handler extends ExceptionHandler
                 return $this->respuestaApi('Recurso no encontrado.', 404);
             }
         });
+        // 405 del legado: antes salía el texto en inglés de Laravel; ahora JSON en español con `Allow`.
+        $this->renderable(function (MethodNotAllowedHttpException $e, Request $request) {
+            if ($request->is('api/*') && ! ProblemaApi::esV1($request)) {
+                return $this->respuestaApi('Método no permitido.', 405, $e->getHeaders());
+            }
+        });
         $this->renderable(function (TokenMismatchException $e, Request $request) {
             if ($request->is('api/*')) {
                 return $this->respuestaApi('Su sesión caducó. Vuelva a iniciar sesión.', 419);
             }
         });
+    }
+
+    /**
+     * Render de excepciones: la v1 se responde en problem+json sin detalles internos; el resto, como siempre.
+     *
+     * @param  Request  $request  Petición que originó la excepción.
+     * @param  Throwable  $e  Excepción.
+     * @return Response Respuesta de error.
+     */
+    public function render($request, Throwable $e)
+    {
+        if (ProblemaApi::esV1($request)) {
+            return $this->respuestaProblema($request, $this->mapException($e));
+        }
+
+        return parent::render($request, $e);
+    }
+
+    /**
+     * Traduce una excepción a problem+json. Nunca expone el mensaje de la excepción salvo en validación (donde son
+     * textos de reglas pensados para el usuario) y en los textos fijos de este método.
+     *
+     * @param  Request  $request  Petición en curso.
+     * @param  Throwable  $e  Excepción ya mapeada.
+     */
+    private function respuestaProblema(Request $request, Throwable $e): Response
+    {
+        // Limitadores con respuesta propia (`throttle:login`...) y FormRequests: ya traen su respuesta; se reescribe.
+        if ($e instanceof HttpResponseException) {
+            return ProblemaApi::convertir($request, $e->getResponse());
+        }
+        if ($e instanceof AuthenticationException) {
+            return ProblemaApi::respuesta($request, 401);
+        }
+        if ($e instanceof ValidationException) {
+            $errores = $e->errors();
+
+            return ProblemaApi::respuesta($request, 422, null, [
+                'errors' => $errores,
+                'campos' => array_keys($errores),
+            ]);
+        }
+
+        $e = $this->prepareException($e);
+        if ($e instanceof ValidationException) { // por si prepareException convierte a validación
+            return ProblemaApi::respuesta($request, 422, null, ['errors' => $e->errors()]);
+        }
+        if ($e instanceof HttpExceptionInterface) {
+            $cabeceras = array_intersect_key($e->getHeaders(), array_flip(['Allow', 'Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining']));
+
+            return ProblemaApi::respuesta($request, $e->getStatusCode(), null, [], $cabeceras);
+        }
+
+        return ProblemaApi::respuesta($request, 500);
     }
 
     /**

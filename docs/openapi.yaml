@@ -1,0 +1,886 @@
+openapi: 3.1.0
+info:
+  title: API de Explora
+  version: 1.0.0
+  summary: API JSON de Explora (mapa de Colombia, quiz y juegos educativos).
+  description: |
+    API HTTP de Explora, versión **v1** (Fase 17E). Todas las rutas viven bajo `/api/v1`.
+
+    ## Versionado y legado deprecado
+    Las rutas sin versión (`/api/*`) siguen existiendo con los mismos controladores, pero están **deprecadas**: responden
+    con las cabeceras `Deprecation` y `Link` y conservan sus cuerpos de error antiguos (`{error}`, `{message}`,
+    `{success,mensaje}`...). Los clientes nuevos deben usar `/api/v1/*`. Este documento NO duplica los paths del legado.
+
+    ## Errores (RFC 9457)
+    Todo error de `/api/v1/*` (estado 4xx o 5xx) se sirve como `application/problem+json` con el esquema `Problema`:
+    miembros estándar (`type`, `title`, `status` entero, `detail`, `instance`) más las extensiones que lee el
+    frontend (`mensaje` y `message`, siempre presentes y con el mismo texto que `detail`; y, según el caso, `campos`,
+    `success`, `error` y `errors`). Los errores 500 nunca incluyen datos internos (excepción, traza, archivo, línea).
+    Un 405 (método no permitido para la URL) también usa este formato y trae la cabecera `Allow`; una URL v1 que no
+    existe devuelve un 404 con el mismo formato.
+
+    ## Autenticación y CSRF
+    La sesión es una **cookie HttpOnly cifrada** (`laravel_session`) más protección CSRF: las peticiones que
+    modifican estado (`POST`, `PATCH`, `DELETE`) deben enviar en la cabecera `X-XSRF-TOKEN` el valor de la cookie
+    `XSRF-TOKEN`. Esa cookie se obtiene con `GET /sesion` (aunque responda 401). Sin el token válido la respuesta
+    es 419. No hay tokens de acceso personales ni OAuth.
+
+    ## Límites de peticiones
+    Todas las rutas comparten el límite general `api` (por usuario o por IP; por defecto 300 por minuto). Además:
+    el inicio de sesión (5 intentos por minuto por usuario e IP, 30 por IP, y 20 fallos por cuenta cada 15 minutos) y
+    el guardado de resultados (10 por minuto por usuario o IP). Al excederlos la respuesta es 429 con la cabecera
+    `Retry-After` (segundos).
+
+    ## Caché de lectura
+    La ficha y las preguntas de un departamento incluyen `ETag` (débil), `Cache-Control` y `X-Cache` (`HIT` o `MISS`)
+    cuando la caché del servidor está activa, y admiten `If-None-Match` para recibir un 304 sin cuerpo. El ranking
+    también devuelve `ETag` y `Cache-Control: public, max-age=0, must-revalidate` y admite `If-None-Match` con 304.
+  license:
+    name: Uso interno del proyecto Explora
+    identifier: LicenseRef-Explora
+servers:
+  - url: /api/v1
+    description: API versionada (relativa al host que sirve la aplicación).
+tags:
+  - name: Departamentos
+    description: Lectura pública de la ficha y del quiz de cada departamento.
+  - name: Juegos
+    description: Ranking, guardado de resultados e historial de partidas.
+  - name: Sesión
+    description: Inicio, consulta y cierre de sesión (cookie + CSRF).
+  - name: Perfil
+    description: Datos del perfil del usuario con sesión.
+security: []
+paths:
+  /departamentos/{id}/ficha:
+    get:
+      operationId: obtenerFichaDepartamento
+      tags: [Departamentos]
+      summary: Ficha completa de un departamento
+      description: |
+        Devuelve las 16 secciones de la ficha (descripción, historia, geografía, clima, etc.). Las secciones de fila
+        única valen `null` si no existe la fila; `etnografia` y `faunaFlora` siempre llevan sus listas. Los valores
+        de las columnas son los crudos de la base de datos.
+      parameters:
+        - $ref: '#/components/parameters/IdDepartamento'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Ficha del departamento.
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+            Cache-Control: {$ref: '#/components/headers/CacheControl'}
+            X-Cache: {$ref: '#/components/headers/XCache'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ficha'}
+        '304': {$ref: '#/components/responses/NoModificado304'}
+        '404': {$ref: '#/components/responses/NoEncontrado404'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes429'}
+        '500': {$ref: '#/components/responses/ErrorInterno500'}
+  /departamentos/{id}/preguntas:
+    get:
+      operationId: obtenerPreguntasDepartamento
+      tags: [Departamentos]
+      summary: Quiz de un departamento
+      description: |
+        Preguntas del departamento con sus opciones, ordenadas por id. Si la configuración
+        `explora.quiz_incluir_respuestas` está en `false`, las opciones no incluyen `correcta` ni `respuesta`.
+      parameters:
+        - $ref: '#/components/parameters/IdDepartamento'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Preguntas y datos básicos del departamento.
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+            Cache-Control: {$ref: '#/components/headers/CacheControl'}
+            X-Cache: {$ref: '#/components/headers/XCache'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Preguntas'}
+        '304': {$ref: '#/components/responses/NoModificado304'}
+        '404': {$ref: '#/components/responses/NoEncontrado404Preguntas'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes429'}
+        '500': {$ref: '#/components/responses/ErrorInterno500'}
+  /ranking:
+    get:
+      operationId: obtenerRanking
+      tags: [Juegos]
+      summary: Mejores cinco resultados de un juego
+      description: |
+        Las cinco mejores partidas de la combinación juego + nivel + categoría, por puntaje descendente, luego
+        tiempo ascendente y luego id. Nunca revela ids de usuario. Admite `If-None-Match` (304).
+      parameters:
+        - $ref: '#/components/parameters/Juego'
+        - $ref: '#/components/parameters/Nivel'
+        - $ref: '#/components/parameters/Categoria'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Lista de hasta cinco filas (vacía si no hay partidas).
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+            Cache-Control:
+              description: Siempre `public, max-age=0, must-revalidate` en el ranking (el navegador revalida con `ETag`).
+              schema: {type: string, const: 'public, max-age=0, must-revalidate'}
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 5
+                items: {$ref: '#/components/schemas/FilaRanking'}
+              examples:
+                top:
+                  summary: Dos jugadores
+                  value:
+                    - {jugador: María José Pérez, avatar: 3.png, grado: '5', puntaje: 9, tiempo: 200}
+                    - {jugador: Juan Gómez, avatar: 1.png, grado: '6', puntaje: 7, tiempo: 90}
+        '304': {$ref: '#/components/responses/NoModificado304'}
+        '422': {$ref: '#/components/responses/ValidacionConCampos422'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes429'}
+        '500': {$ref: '#/components/responses/ErrorInterno500'}
+  /sesion:
+    post:
+      operationId: iniciarSesion
+      tags: [Sesión]
+      summary: Inicia sesión
+      description: |
+        Valida las credenciales y abre la sesión (regenera el identificador de sesión). Cualquier fallo de credenciales
+        o cuenta inactiva devuelve el mismo 401, sin revelar si el usuario existe. Requiere el token CSRF (primero
+        llame a `GET /sesion` para recibir la cookie `XSRF-TOKEN`). Límites: ver la descripción general; el 429 aplica
+        al límite por usuario+IP, por IP, por cuenta y al general.
+      security:
+        - csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PeticionLogin'}
+            example: {usuario: usuario1, contrasena: miClave}
+      responses:
+        '200':
+          description: Sesión iniciada. Se envía la cookie de sesión.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaLogin'}
+              example:
+                success: true
+                mensaje: Inicio de sesión exitoso
+                usuario_objeto: {id: 1, nombre_usuario: María Pérez, login_usuario: usuario1, grado_usuario: '5', avatar_explora: 3, tipo_usuario: estudiante}
+        '401': {$ref: '#/components/responses/CredencialesInvalidas401'}
+        '419': {$ref: '#/components/responses/SesionCaducada419'}
+        '422': {$ref: '#/components/responses/ValidacionLogin422'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes429'}
+        '500': {$ref: '#/components/responses/ErrorInterno500'}
+    get:
+      operationId: consultarSesion
+      tags: [Sesión]
+      summary: Usuario de la sesión actual
+      description: |
+        Devuelve el usuario de la sesión. También sirve para que el navegador reciba la cookie `XSRF-TOKEN` antes de
+        enviar peticiones de escritura (la recibe incluso con 401).
+      security:
+        - sesionCookie: []
+      responses:
+        '200':
+          description: Hay una sesión activa.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaSesion'}
+              example:
+                success: true
+                usuario_objeto: {id: 1, nombre_usuario: María Pérez, login_usuario: usuario1, grado_usuario: '5', avatar_explora: 3, tipo_usuario: estudiante}
+        '401': {$ref: '#/components/responses/NoAutenticado401'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes429'}
+        '500': {$ref: '#/components/responses/ErrorInterno500'}
+    delete:
+      operationId: cerrarSesion
+      tags: [Sesión]
+      summary: Cierra la sesión
+      description: Invalida la sesión del servidor y renueva el token CSRF. Es idempotente (200 aunque no hubiera sesión).
+      security:
+        - sesionCookie: []
+          csrfHeader: []
+      responses:
+        '200':
+          description: Sesión cerrada.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaCierre'}
+              example: {success: true, mensaje: Sesión cerrada.}
+        '419': {$ref: '#/components/responses/SesionCaducada419'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes429'}
+        '500': {$ref: '#/components/responses/ErrorInterno500'}
+  /perfil/avatar:
+    patch:
+      operationId: cambiarAvatar
+      tags: [Perfil]
+      summary: Cambia el avatar del usuario con sesión
+      description: |
+        Guarda el avatar en el perfil propio de Explora (lo crea si no existe). Solo actúa sobre el usuario de la sesión.
+        Si la cuenta fue desactivada, responde 401 y cierra la sesión.
+      security:
+        - sesionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PeticionAvatar'}
+            example: {avatar: 7}
+      responses:
+        '200':
+          description: Avatar guardado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaAvatar'}
+              example: {status: success, message: Avatar cambiado correctamente, avatar: 7}
+        '401': {$ref: '#/components/responses/NoAutenticado401'}
+        '419': {$ref: '#/components/responses/SesionCaducada419'}
+        '422': {$ref: '#/components/responses/ValidacionAvatar422'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes429'}
+        '500': {$ref: '#/components/responses/ErrorInterno500'}
+  /resultados:
+    post:
+      operationId: guardarResultado
+      tags: [Juegos]
+      summary: Guarda el resultado de una partida
+      description: |
+        Con sesión, el usuario, el nombre, el grado y el avatar salen de la sesión y del perfil (lo que traiga el cuerpo
+        se ignora). Sin sesión (modo invitado) `nombre`, `grado` y `avatar` son obligatorios y el resultado se guarda con
+        `id_usuario = 0`. Límite propio: 10 por minuto por usuario o IP.
+      security:
+        - {}
+        - sesionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PeticionResultado'}
+            example:
+              juego: laberinto
+              nivel: Principiante
+              categoria: Mapa Político de Colombia
+              puntaje: 7
+              tiempo: 125
+              nombre: María José Pérez
+              grado: '5'
+              avatar: 3.png
+      responses:
+        '201':
+          description: Resultado guardado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespuestaResultado'}
+              example: {status: success, mensaje: Resultado guardado correctamente}
+        '401': {$ref: '#/components/responses/NoAutenticado401'}
+        '419': {$ref: '#/components/responses/SesionCaducada419'}
+        '422': {$ref: '#/components/responses/ValidacionConCampos422'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes429'}
+        '500': {$ref: '#/components/responses/ErrorInterno500'}
+  /historial:
+    get:
+      operationId: obtenerHistorial
+      tags: [Juegos]
+      summary: Historial de partidas del usuario con sesión
+      description: |
+        Hasta 500 partidas del usuario de la sesión (nunca de otro; cualquier `id_usuario` enviado se ignora), de la
+        más reciente a la más antigua.
+      security:
+        - sesionCookie: []
+      responses:
+        '200':
+          description: Lista de partidas (vacía si no hay).
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 500
+                items: {$ref: '#/components/schemas/FilaHistorial'}
+              example:
+                - {id: 12, nombre_juego: laberinto, categoria: Mapa Político de Colombia, nivel: Principiante, puntaje: 7, tiempo: 125, fecha: '01-01-2026 10:00:00'}
+        '401': {$ref: '#/components/responses/NoAutenticado401'}
+        '429': {$ref: '#/components/responses/DemasiadasSolicitudes429'}
+        '500': {$ref: '#/components/responses/ErrorInterno500'}
+components:
+  securitySchemes:
+    sesionCookie:
+      type: apiKey
+      in: cookie
+      name: laravel_session
+      description: Cookie de sesión HttpOnly y cifrada que entrega `POST /sesion` (el nombre real depende de `SESSION_COOKIE`).
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-XSRF-TOKEN
+      description: |
+        Token CSRF. Se copia el valor de la cookie `XSRF-TOKEN` (se obtiene con `GET /sesion`). Lo exigen `POST`,
+        `PATCH` y `DELETE`; sin él, 419. Se documenta junto a `sesionCookie` en las operaciones que lo requieren.
+  parameters:
+    IdDepartamento:
+      name: id
+      in: path
+      required: true
+      description: Id del departamento (`list_departamentos.id`); solo números de hasta 9 dígitos.
+      schema: {type: integer, minimum: 0, maximum: 999999999}
+      example: 2
+    Juego:
+      name: juego
+      in: query
+      required: true
+      description: Nombre exacto del juego (con tildes y mayúsculas).
+      schema: {$ref: '#/components/schemas/Juego'}
+    Nivel:
+      name: nivel
+      in: query
+      required: true
+      schema: {$ref: '#/components/schemas/Nivel'}
+    Categoria:
+      name: categoria
+      in: query
+      required: true
+      description: Categoría de la partida (hasta 100 caracteres; sin HTML).
+      schema: {$ref: '#/components/schemas/Categoria'}
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: '`ETag` recibido antes; si coincide, la respuesta es 304 sin cuerpo.'
+      schema: {type: string}
+  headers:
+    ETag:
+      description: Validador débil del cuerpo (`W/"<md5>"`).
+      schema: {type: string}
+    CacheControl:
+      description: Directiva de caché (`public, max-age=<segundos>, must-revalidate`).
+      schema: {type: string}
+    XCache:
+      description: Indica si la respuesta salió de la caché del servidor.
+      schema: {type: string, enum: [HIT, MISS]}
+    RetryAfter:
+      description: Segundos que debe esperar el cliente antes de reintentar.
+      schema: {type: integer, minimum: 0}
+    Allow:
+      description: Métodos admitidos por la URL.
+      schema: {type: string}
+  schemas:
+    ValorCrudo:
+      description: Valor tal como lo guarda la base de datos (texto, número, booleano o nulo).
+      type: [string, integer, number, boolean, 'null']
+    Juego:
+      type: string
+      enum: [laberinto, Sopa de letras, Completa la oración, Arrastra y suelta, Rompecabezas, Ahorcado, Pinta la bandera, Adivina la bandera]
+    Nivel:
+      type: string
+      enum: [Principiante, Intermedio, Experto, Normal]
+    Categoria:
+      type: string
+      maxLength: 100
+      pattern: '^[\p{L}\p{N}][\p{L}\p{N} .,:;()/¿?¡!_-]{0,99}$'
+      examples: [Mapa Político de Colombia]
+    Problema:
+      description: Error RFC 9457 con las extensiones que conserva el frontend.
+      type: object
+      required: [type, title, status, detail, instance, mensaje, message]
+      properties:
+        type: {type: string, const: 'about:blank'}
+        title: {type: string, description: Frase estándar del estado en español.}
+        status: {type: integer, minimum: 400, maximum: 599}
+        detail: {type: string, description: Texto para el usuario.}
+        instance: {type: string, description: 'Ruta de la petición, p. ej. `/api/v1/ranking`.'}
+        mensaje: {type: string, description: Extensión de compatibilidad; igual a `detail` salvo que el cuerpo original traiga otro texto.}
+        message: {type: string, description: Extensión de compatibilidad; igual a `detail` salvo que el cuerpo original traiga otro texto.}
+        campos:
+          type: array
+          description: Nombres de los campos inválidos (formularios de resultados y ranking).
+          items: {type: string}
+        success: {type: boolean, description: Extensión del inicio de sesión (siempre `false` en un error).}
+        error: {type: string, description: Extensión de la ficha y el quiz (texto del 404).}
+        errors:
+          type: object
+          description: Errores por campo de la validación estándar de Laravel.
+          additionalProperties:
+            type: array
+            items: {type: string}
+      additionalProperties: true
+    Fila:
+      description: Fila de una tabla con sus columnas crudas; las propiedades concretas se listan en cada sección.
+      type: object
+      additionalProperties: {$ref: '#/components/schemas/ValorCrudo'}
+    Ficha:
+      description: Las 16 secciones de la ficha, en este orden (App\Enums\SeccionFicha).
+      type: object
+      required: [descripcion, nombreDepartamento, historia, geografia, hidrografia, clima, demografia, etnografia, faunaFlora, economia, cultura, gastronomia, festividades, sitios, personajes, capital]
+      properties:
+        descripcion:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                poblacion: {$ref: '#/components/schemas/ValorCrudo'}
+                clima: {$ref: '#/components/schemas/ValorCrudo'}
+                temperatura: {$ref: '#/components/schemas/ValorCrudo'}
+                extension: {$ref: '#/components/schemas/ValorCrudo'}
+                contenido: {$ref: '#/components/schemas/ValorCrudo'}
+                geografia: {$ref: '#/components/schemas/ValorCrudo'}
+                actividad_economica: {$ref: '#/components/schemas/ValorCrudo'}
+                bandera: {$ref: '#/components/schemas/ValorCrudo'}
+                escudo: {$ref: '#/components/schemas/ValorCrudo'}
+                estado: {$ref: '#/components/schemas/ValorCrudo'}
+                estado_registro: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        nombreDepartamento:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                nombre: {$ref: '#/components/schemas/ValorCrudo'}
+                capital: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        historia:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                historia: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        geografia:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                ubicacion: {$ref: '#/components/schemas/ValorCrudo'}
+                coordenadas: {$ref: '#/components/schemas/ValorCrudo'}
+                limites: {$ref: '#/components/schemas/ValorCrudo'}
+                relieve: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        hidrografia:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                hidrografia: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        clima:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                clima: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        demografia:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                poblacion: {$ref: '#/components/schemas/ValorCrudo'}
+                densidad: {$ref: '#/components/schemas/ValorCrudo'}
+                subregiones: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        etnografia:
+          description: Fila de etnografía (si existe) más la lista de etnias; la lista siempre está.
+          type: object
+          required: [lista]
+          properties:
+            id: {$ref: '#/components/schemas/ValorCrudo'}
+            departamento: {$ref: '#/components/schemas/ValorCrudo'}
+            contenido: {$ref: '#/components/schemas/ValorCrudo'}
+            lista:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: {$ref: '#/components/schemas/ValorCrudo'}
+                  departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                  nombre: {$ref: '#/components/schemas/ValorCrudo'}
+                  nombre_alterno: {$ref: '#/components/schemas/ValorCrudo'}
+                  lengua: {$ref: '#/components/schemas/ValorCrudo'}
+                  contenido: {$ref: '#/components/schemas/ValorCrudo'}
+        faunaFlora:
+          description: Fila de fauna y flora (si existe) más las listas de flora y fauna; las listas siempre están.
+          type: object
+          required: [lista_flora, lista_fauna]
+          properties:
+            id: {$ref: '#/components/schemas/ValorCrudo'}
+            departamento: {$ref: '#/components/schemas/ValorCrudo'}
+            fauna: {$ref: '#/components/schemas/ValorCrudo'}
+            flora: {$ref: '#/components/schemas/ValorCrudo'}
+            lista_flora: {type: array, items: {$ref: '#/components/schemas/ElementoLista'}}
+            lista_fauna: {type: array, items: {$ref: '#/components/schemas/ElementoLista'}}
+        economia:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                economia: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        cultura:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                descripcion: {$ref: '#/components/schemas/ValorCrudo'}
+                arte: {$ref: '#/components/schemas/ValorCrudo'}
+                danza: {$ref: '#/components/schemas/ValorCrudo'}
+                musica: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        gastronomia:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                gastronomia: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+        festividades: {type: array, items: {$ref: '#/components/schemas/ElementoLista'}}
+        sitios: {type: array, items: {$ref: '#/components/schemas/ElementoLista'}}
+        personajes: {type: array, items: {$ref: '#/components/schemas/ElementoLista'}}
+        capital:
+          oneOf:
+            - type: object
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                departamento: {$ref: '#/components/schemas/ValorCrudo'}
+                capital: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+    ElementoLista:
+      description: Elemento de las listas de flora, fauna, festividades, sitios y personajes.
+      type: object
+      properties:
+        id: {$ref: '#/components/schemas/ValorCrudo'}
+        departamento: {$ref: '#/components/schemas/ValorCrudo'}
+        nombre: {$ref: '#/components/schemas/ValorCrudo'}
+        destacada: {$ref: '#/components/schemas/ValorCrudo'}
+        contenido: {$ref: '#/components/schemas/ValorCrudo'}
+    Preguntas:
+      type: object
+      required: [preguntas, departamento]
+      properties:
+        preguntas:
+          type: array
+          items: {$ref: '#/components/schemas/Pregunta'}
+        departamento:
+          oneOf:
+            - type: object
+              required: [id, nombre, capital]
+              properties:
+                id: {$ref: '#/components/schemas/ValorCrudo'}
+                nombre: {$ref: '#/components/schemas/ValorCrudo'}
+                capital: {$ref: '#/components/schemas/ValorCrudo'}
+            - {type: 'null'}
+    Pregunta:
+      type: object
+      required: [id, tipo_pregunta, pregunta, opciones]
+      properties:
+        id: {$ref: '#/components/schemas/ValorCrudo'}
+        tipo_pregunta: {type: string, enum: [multiple, verfal], description: '`multiple` = opción múltiple; `verfal` = verdadero o falso.'}
+        pregunta: {$ref: '#/components/schemas/ValorCrudo'}
+        origen_pregunta: {$ref: '#/components/schemas/ValorCrudo'}
+        opciones:
+          type: array
+          items: {$ref: '#/components/schemas/OpcionPregunta'}
+    OpcionPregunta:
+      description: |
+        En `multiple` lleva `id`, `opcion` y `correcta`; en `verfal`, `id` y `respuesta`. `correcta` y `respuesta` se
+        omiten si `explora.quiz_incluir_respuestas` es `false`.
+      type: object
+      properties:
+        id: {$ref: '#/components/schemas/ValorCrudo'}
+        opcion: {$ref: '#/components/schemas/ValorCrudo'}
+        correcta: {$ref: '#/components/schemas/ValorCrudo'}
+        respuesta: {$ref: '#/components/schemas/ValorCrudo'}
+    FilaRanking:
+      type: object
+      required: [jugador, avatar, grado, puntaje, tiempo]
+      properties:
+        jugador: {type: string}
+        avatar: {type: string, description: 'Archivo del avatar, p. ej. `3.png`.'}
+        grado: {type: string, description: Vacío si la persona no tiene grado.}
+        puntaje: {type: integer}
+        tiempo: {type: integer, description: Segundos.}
+    FilaHistorial:
+      type: object
+      required: [id, nombre_juego, categoria, nivel, puntaje, tiempo, fecha]
+      properties:
+        id: {type: integer}
+        nombre_juego: {type: string}
+        categoria: {type: string}
+        nivel: {type: string}
+        puntaje: {type: integer}
+        tiempo: {type: integer, description: Segundos.}
+        fecha: {type: string, description: 'Texto «d-m-Y H:i:s» (UTC).', examples: ['01-01-2026 10:00:00']}
+    PeticionLogin:
+      type: object
+      required: [usuario, contrasena]
+      properties:
+        usuario: {type: string, maxLength: 45, description: Sin caracteres de 4 bytes (emoji).}
+        contrasena: {type: string, maxLength: 200, format: password}
+    UsuarioSesion:
+      type: object
+      required: [id, nombre_usuario, login_usuario, grado_usuario, avatar_explora, tipo_usuario]
+      properties:
+        id: {$ref: '#/components/schemas/ValorCrudo'}
+        nombre_usuario: {type: string}
+        login_usuario: {type: string}
+        grado_usuario: {$ref: '#/components/schemas/ValorCrudo'}
+        avatar_explora: {$ref: '#/components/schemas/ValorCrudo'}
+        tipo_usuario: {$ref: '#/components/schemas/ValorCrudo'}
+    RespuestaLogin:
+      type: object
+      required: [success, mensaje, usuario_objeto]
+      properties:
+        success: {type: boolean, const: true}
+        mensaje: {type: string}
+        usuario_objeto: {$ref: '#/components/schemas/UsuarioSesion'}
+    RespuestaSesion:
+      type: object
+      required: [success, usuario_objeto]
+      properties:
+        success: {type: boolean, const: true}
+        usuario_objeto: {$ref: '#/components/schemas/UsuarioSesion'}
+    RespuestaCierre:
+      type: object
+      required: [success, mensaje]
+      properties:
+        success: {type: boolean, const: true}
+        mensaje: {type: string}
+    PeticionAvatar:
+      type: object
+      required: [avatar]
+      properties:
+        avatar: {type: integer, minimum: 1, maximum: 35, description: Entre 1 y `AVATARES_MAX` (35 por defecto).}
+    RespuestaAvatar:
+      type: object
+      required: [status, message, avatar]
+      properties:
+        status: {type: string, const: success}
+        message: {type: string}
+        avatar: {type: integer}
+    PeticionResultado:
+      type: object
+      required: [juego, nivel, categoria, puntaje, tiempo]
+      properties:
+        juego: {$ref: '#/components/schemas/Juego'}
+        nivel: {$ref: '#/components/schemas/Nivel'}
+        categoria: {$ref: '#/components/schemas/Categoria'}
+        puntaje: {type: integer, minimum: 0, maximum: 1000}
+        tiempo: {type: integer, minimum: 0, maximum: 14400, description: Segundos.}
+        nombre:
+          type: [string, 'null']
+          maxLength: 60
+          pattern: '^[\p{L}\p{N}][\p{L}\p{N} .''’_-]{0,59}$'
+          description: Obligatorio solo para invitados; con sesión se ignora.
+        grado:
+          type: [string, 'null']
+          pattern: '^(?:[1-9]|10|11)$'
+          description: Obligatorio solo para invitados; con sesión se ignora.
+        avatar:
+          type: [string, 'null']
+          pattern: '^\d{1,2}\.png$'
+          description: Obligatorio solo para invitados, «N.png» con N entre 1 y `AVATARES_MAX`; con sesión se ignora.
+    RespuestaResultado:
+      type: object
+      required: [status, mensaje]
+      properties:
+        status: {type: string, const: success}
+        mensaje: {type: string}
+  responses:
+    NoModificado304:
+      description: El cliente ya tiene esta versión (el `If-None-Match` coincide con el `ETag`). Sin cuerpo.
+      headers:
+        ETag: {$ref: '#/components/headers/ETag'}
+        Cache-Control: {$ref: '#/components/headers/CacheControl'}
+    NoEncontrado404:
+      description: El departamento no existe (o la URL no existe).
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          example:
+            type: 'about:blank'
+            title: No encontrado
+            status: 404
+            detail: 'No se encontraron registros para el departamento con ID: 999999'
+            instance: /api/v1/departamentos/999999/ficha
+            error: 'No se encontraron registros para el departamento con ID: 999999'
+            mensaje: 'No se encontraron registros para el departamento con ID: 999999'
+            message: 'No se encontraron registros para el departamento con ID: 999999'
+    NoEncontrado404Preguntas:
+      description: El departamento no existe (o la URL no existe).
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          example:
+            type: 'about:blank'
+            title: No encontrado
+            status: 404
+            detail: 'No se encontraron preguntas para el departamento con ID: 999999'
+            instance: /api/v1/departamentos/999999/preguntas
+            error: 'No se encontraron preguntas para el departamento con ID: 999999'
+            mensaje: 'No se encontraron preguntas para el departamento con ID: 999999'
+            message: 'No se encontraron preguntas para el departamento con ID: 999999'
+    MetodoNoPermitido405:
+      description: El método no está permitido para la URL (aplica a cualquier path; no se repite en cada operación).
+      headers:
+        Allow: {$ref: '#/components/headers/Allow'}
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          example:
+            type: 'about:blank'
+            title: Método no permitido
+            status: 405
+            detail: Método no permitido para este recurso.
+            instance: /api/v1/ranking
+            mensaje: Método no permitido para este recurso.
+            message: Método no permitido para este recurso.
+    NoAutenticado401:
+      description: |
+        No hay sesión (`GET /sesion`, `/historial`, `/perfil/avatar`) o la cuenta de la sesión está desactivada
+        (también en `/resultados`, cuya sesión es opcional); en este último caso se cierra la sesión.
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          examples:
+            sinSesion:
+              summary: Sin sesión iniciada
+              value:
+                type: 'about:blank'
+                title: No autenticado
+                status: 401
+                detail: No hay una sesión iniciada.
+                instance: /api/v1/sesion
+                success: false
+                mensaje: No hay una sesión iniciada.
+                message: No hay una sesión iniciada.
+            cuentaInactiva:
+              summary: Cuenta desactivada
+              value:
+                type: 'about:blank'
+                title: No autenticado
+                status: 401
+                detail: La cuenta no está activa.
+                instance: /api/v1/historial
+                success: false
+                mensaje: La cuenta no está activa.
+                message: La cuenta no está activa.
+    CredencialesInvalidas401:
+      description: Usuario o contraseña incorrectos, o cuenta inactiva (mismo cuerpo en todos los casos).
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          example:
+            type: 'about:blank'
+            title: No autenticado
+            status: 401
+            detail: Usuario o contraseña incorrectos.
+            instance: /api/v1/sesion
+            success: false
+            mensaje: Usuario o contraseña incorrectos.
+            message: Usuario o contraseña incorrectos.
+    SesionCaducada419:
+      description: Falta el token CSRF (`X-XSRF-TOKEN`), no coincide o la sesión caducó.
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          example:
+            type: 'about:blank'
+            title: Sesión caducada
+            status: 419
+            detail: Su sesión caducó. Vuelva a iniciar sesión.
+            instance: /api/v1/sesion
+            mensaje: Su sesión caducó. Vuelva a iniciar sesión.
+            message: Su sesión caducó. Vuelva a iniciar sesión.
+    ValidacionLogin422:
+      description: Falta el usuario o la contraseña, o no cumplen el formato.
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          example:
+            type: 'about:blank'
+            title: Entidad no procesable
+            status: 422
+            detail: Por favor, ingrese su usuario y contraseña.
+            instance: /api/v1/sesion
+            success: false
+            mensaje: Por favor, ingrese su usuario y contraseña.
+            message: Por favor, ingrese su usuario y contraseña.
+    ValidacionConCampos422:
+      description: Datos no válidos; `campos` lista los nombres de los campos inválidos.
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          examples:
+            ranking:
+              summary: Parámetros del ranking
+              value:
+                type: 'about:blank'
+                title: Entidad no procesable
+                status: 422
+                detail: Los parámetros del ranking no son válidos.
+                instance: /api/v1/ranking
+                campos: [juego, nivel, categoria]
+                mensaje: Los parámetros del ranking no son válidos.
+                message: Los parámetros del ranking no son válidos.
+            resultado:
+              summary: Cuerpo de un resultado
+              value:
+                type: 'about:blank'
+                title: Entidad no procesable
+                status: 422
+                detail: Los datos del resultado no son válidos.
+                instance: /api/v1/resultados
+                campos: [puntaje]
+                mensaje: Los datos del resultado no son válidos.
+                message: Los datos del resultado no son válidos.
+    ValidacionAvatar422:
+      description: El avatar falta o no es un entero entre 1 y `AVATARES_MAX`.
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          example:
+            type: 'about:blank'
+            title: Entidad no procesable
+            status: 422
+            detail: Avatar no válido.
+            instance: /api/v1/perfil/avatar
+            mensaje: Avatar no válido.
+            message: Avatar no válido.
+    DemasiadasSolicitudes429:
+      description: Se superó algún límite de peticiones (general, de inicio de sesión o de resultados).
+      headers:
+        Retry-After: {$ref: '#/components/headers/RetryAfter'}
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          example:
+            type: 'about:blank'
+            title: Demasiadas solicitudes
+            status: 429
+            detail: Demasiados intentos. Espere un momento e inténtelo de nuevo.
+            instance: /api/v1/sesion
+            success: false
+            mensaje: Demasiados intentos. Espere un momento e inténtelo de nuevo.
+            message: Demasiados intentos. Espere un momento e inténtelo de nuevo.
+    ErrorInterno500:
+      description: Error interno. Siempre genérico, nunca incluye excepción, traza, archivo ni línea.
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problema'}
+          example:
+            type: 'about:blank'
+            title: Error interno del servidor
+            status: 500
+            detail: Error interno del servidor.
+            instance: /api/v1/ranking
+            mensaje: Error interno del servidor.
+            message: Error interno del servidor.

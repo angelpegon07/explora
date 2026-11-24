@@ -21,7 +21,7 @@ test('invitado guarda un resultado (201) y aparece en el ranking', async ({ page
     await page.locator('#grado_jugador').selectOption('5');
     await page.locator('#avatar_1').click();
 
-    const post = page.waitForResponse((r) => r.url().endsWith('/api/resultados') && r.request().method() === 'POST');
+    const post = page.waitForResponse((r) => r.url().endsWith('/api/v1/resultados') && r.request().method() === 'POST');
     await page.locator('#btnGuardar').click();
     expect((await post).status()).toBe(201);
     await expect(page.locator('#ranking_container')).toContainText('E2E-Jugador');
@@ -29,7 +29,7 @@ test('invitado guarda un resultado (201) y aparece en el ranking', async ({ page
 
 // Comprueba que ante un error del servidor el botón no queda bloqueado en «Guardando…» y el jugador puede reintentar.
 test('si /api/resultados falla (500) el botón se vuelve a habilitar', async ({ page }) => {
-    await page.route('**/api/resultados', (route) =>
+    await page.route('**/api/v1/resultados', (route) =>
         route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"Error"}' }));
     await page.goto(COMPLETA);
     await page.evaluate(() => {
@@ -41,7 +41,7 @@ test('si /api/resultados falla (500) el botón se vuelve a habilitar', async ({ 
     await page.locator('#grado_jugador').selectOption('5');
     await page.locator('#avatar_1').click();
 
-    const post = page.waitForResponse((r) => r.url().endsWith('/api/resultados'));
+    const post = page.waitForResponse((r) => r.url().endsWith('/api/v1/resultados'));
     await page.locator('#btnGuardar').click();
     await post;
     await expect(page.locator('#btnGuardar')).toBeEnabled();

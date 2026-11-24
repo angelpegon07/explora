@@ -342,6 +342,22 @@ El dominio no conoce `pedigital.users`: depende de `App\Contracts\IdentidadUsuar
 `Pedigital\Usuario` implementa el contrato. Para cambiar de proveedor (otra base, SSO) hay que escribir un adaptador, enlazarlo y apuntar `config/auth.php` a un modelo que
 cumpla `IdentidadUsuario`. `tests/Feature/IdentidadContratoTest.php` impide que otro archivo de `app/` lea las columnas del legado. El comportamiento del login no cambió.
 
+## API (Fase 17E)
+
+- **Versionado.** La API vive en `/api/v1/*` (rutas con nombre `v1.*`). Las rutas sin versión, `/api/*`, son el legado
+  **deprecado**: mismos controladores, con las cabeceras `Deprecation` y `Link`, y cuerpos de error antiguos. Los clientes
+  nuevos deben usar `/api/v1`.
+- **Errores.** En la v1 todo error 4xx/5xx es `application/problem+json` (RFC 9457): `type` (`about:blank`), `title`,
+  `status` (entero), `detail` e `instance`. Se conservan como extensiones las claves que lee el frontend: `mensaje` y
+  `message` (siempre, igual a `detail`), `campos` (formularios de resultados y ranking), `success` (inicio de sesión),
+  `error` (404 de ficha y quiz) y `errors` (validación estándar de Laravel). Los 500 nunca filtran datos internos.
+- **Contrato.** [`docs/openapi.yaml`](docs/openapi.yaml) (OpenAPI 3.1, en español) describe rutas, esquemas, cabeceras de
+  caché, seguridad (cookie de sesión + CSRF) y todas las respuestas de error. `tests/Feature/OpenApiTest.php` lo mantiene
+  alineado con las rutas reales y con respuestas reales; si cambia la API, hay que cambiar también el documento.
+- **Decisión: Sanctum NO se adopta.** La sesión por cookie con CSRF ya cubre el modo SPA de Sanctum, no hay consumidores
+  con tokens y añadir `personal_access_tokens` ampliaría la superficie de ataque sin beneficio; se reevaluará si aparece
+  una app móvil o un tercero.
+
 ## Pruebas
 
 ```bash

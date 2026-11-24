@@ -60,7 +60,7 @@ for (const [nombre, fallo] of /** @type {const} */ ([
     test(`el portal con sesión de servidor conserva la barra si GET /api/sesion falla: ${nombre}`, async ({ page }) => {
         await iniciarSesionPorApi(page);
         // Regex y no glob: explora-api.js pide con `cache: false`, que añade `?_=<marca>` a la URL y un glob `**/api/sesion` no casaría.
-        await page.route(/\/api\/sesion(\?.*)?$/, (ruta) => (ruta.request().method() === 'GET' ? fallo(ruta) : ruta.continue()));
+        await page.route(/\/api\/v1\/sesion(\?.*)?$/, (ruta) => (ruta.request().method() === 'GET' ? fallo(ruta) : ruta.continue()));
 
         await page.goto('/juegos');
         await page.waitForLoadState('networkidle');

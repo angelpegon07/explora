@@ -18,7 +18,7 @@ test('login desde el menú de accesibilidad guarda la sesión sin exponer el has
     await modal.locator('#usuario').fill(USUARIO);
     await modal.locator('#contrasena').fill(CLAVE);
 
-    const respuesta = page.waitForResponse((r) => r.url().endsWith('/api/sesion') && r.request().method() === 'POST');
+    const respuesta = page.waitForResponse((r) => r.url().endsWith('/api/v1/sesion') && r.request().method() === 'POST');
     await modal.getByRole('button', { name: /iniciar sesión/i }).click();
     expect((await respuesta).status()).toBe(200);
 
@@ -28,7 +28,7 @@ test('login desde el menú de accesibilidad guarda la sesión sin exponer el has
 
 // Comprueba que si la API de la ficha falla, el usuario no queda con un spinner eterno sino con un aviso de error.
 test('ficha: un 500 cierra el spinner y muestra un error', async ({ page }) => {
-    await page.route('**/api/departamentos/*/ficha', (route) =>
+    await page.route('**/api/v1/departamentos/*/ficha', (route) =>
         route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"Error"}' }));
     await page.goto('/');
     await page.evaluate(() => {
@@ -110,7 +110,7 @@ async function usarCuestionarioControlado(page) {
             ],
         })),
     };
-    await page.route('**/api/departamentos/2/preguntas', (ruta) => ruta.fulfill({
+    await page.route('**/api/v1/departamentos/2/preguntas', (ruta) => ruta.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(cuestionario),
@@ -170,7 +170,7 @@ test('cerrar sesión dispara DELETE /api/sesion y limpia localStorage', async ({
 
     await page.locator('#btn_menu_accesibilidad').click();
     await page.locator('#btn_cerrar_sesion').click();
-    const borrado = page.waitForResponse((r) => r.url().endsWith('/api/sesion') && r.request().method() === 'DELETE');
+    const borrado = page.waitForResponse((r) => r.url().endsWith('/api/v1/sesion') && r.request().method() === 'DELETE');
     await page.locator('.swal2-confirm').click();
     await borrado;
 
