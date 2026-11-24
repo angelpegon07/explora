@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\TipoPregunta;
 use App\Models\Explora\DepartamentoDescripcion;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -33,7 +34,7 @@ class PreguntasDepartamentoResource extends JsonResource
 
         return [
             'preguntas' => $this->resource->preguntas->map(function ($p) use ($respuestas) {
-                $multiple = $p->tipo_pregunta === 'multiple';
+                $multiple = TipoPregunta::tryFrom((string) $p->tipo_pregunta) === TipoPregunta::Multiple;
                 $opciones = ($multiple ? $p->opcionesMultiple : $p->opcionesVerdaderoFalso)
                     ->map(fn ($o) => Arr::only(
                         $o->getAttributes(),

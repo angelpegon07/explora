@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Models\Pedigital\Usuario;
+use App\Contracts\IdentidadUsuario;
 use Illuminate\Http\Request;
 
 /**
@@ -22,12 +22,12 @@ final class SesionServidor
      * sesión la hará la primera llamada a `/api/sesion` que haga el navegador (ExploraApi.sesionLista).
      *
      * @param  Request  $request  Petición actual (ya pasó por el grupo `web`, que inicia la sesión).
-     * @return Usuario|null El usuario con sesión válida y cuenta activa, o null en cualquier otro caso.
+     * @return IdentidadUsuario|null El usuario con sesión válida y cuenta activa, o null en cualquier otro caso.
      */
-    public static function usuarioActivo(Request $request): ?Usuario
+    public static function usuarioActivo(Request $request): ?IdentidadUsuario
     {
         $usuario = $request->user('web');
 
-        return $usuario instanceof Usuario && $usuario->esActivo() ? $usuario : null;
+        return $usuario instanceof IdentidadUsuario && $usuario->esActivo() ? $usuario : null;
     }
 }

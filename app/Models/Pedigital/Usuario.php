@@ -2,6 +2,7 @@
 
 namespace App\Models\Pedigital;
 
+use App\Contracts\IdentidadUsuario;
 use App\Models\Concerns\SoloLectura;
 use App\Models\Explora\PerfilExplora;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -31,7 +32,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string|null $grado_usuario
  * @property int|null $avatar_explora
  */
-class Usuario extends Authenticatable
+class Usuario extends Authenticatable implements IdentidadUsuario
 {
     use SoloLectura;
 
@@ -101,5 +102,29 @@ class Usuario extends Authenticatable
     public function esActivo(): bool
     {
         return strtoupper((string) $this->estado_usuario) === 'ACTIVO';
+    }
+
+    /** {@inheritDoc} Columna `nombre_usuario`. */
+    public function nombreCompleto(): string
+    {
+        return (string) $this->nombre_usuario;
+    }
+
+    /** {@inheritDoc} Columna `login_usuario`. */
+    public function login(): string
+    {
+        return (string) $this->login_usuario;
+    }
+
+    /** {@inheritDoc} Columna `grado_usuario` (null se entrega como cadena vacía). */
+    public function grado(): string
+    {
+        return (string) $this->grado_usuario;
+    }
+
+    /** {@inheritDoc} Columna `tipo_usuario`. */
+    public function rol(): string
+    {
+        return (string) $this->tipo_usuario;
     }
 }

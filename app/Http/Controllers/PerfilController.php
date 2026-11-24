@@ -42,13 +42,13 @@ class PerfilController extends Controller
 
         if ($usuario !== null) {
             $max = (int) config('explora.avatares_max');
-            $avatar = PerfilExplora::avatarDe($usuario->id);
+            $avatar = PerfilExplora::avatarDe($usuario->getAuthIdentifier());
 
             $datos = [
-                'nombre' => (string) $usuario->nombre_usuario,
-                'usuario' => (string) $usuario->login_usuario,
+                'nombre' => $usuario->nombreCompleto(),
+                'usuario' => $usuario->login(),
                 // Se compara como texto con las opciones 1..11 del <select>; un valor ajeno deja el aviso «Selecciona tu grado».
-                'grado' => (string) $usuario->grado_usuario,
+                'grado' => $usuario->grado(),
                 // Un avatar fuera de 1..max (dato heredado inválido) se sustituye por el 1 en vez de pedir una imagen inexistente.
                 'avatar' => $avatar <= $max ? $avatar : 1,
                 'avatares' => $max,

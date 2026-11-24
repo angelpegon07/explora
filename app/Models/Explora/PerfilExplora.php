@@ -2,7 +2,7 @@
 
 namespace App\Models\Explora;
 
-use App\Models\Pedigital\Usuario;
+use App\Contracts\ProveedorIdentidad;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -27,7 +27,7 @@ class PerfilExplora extends Model
     {
         $propio = static::where('usuario_id', $usuarioId)->value('avatar');
 
-        $avatar = (int) ($propio ?? Usuario::whereKey($usuarioId)->value('avatar_explora') ?? 1);
+        $avatar = (int) ($propio ?? app(ProveedorIdentidad::class)->avatarHeredado($usuarioId) ?? 1);
 
         // Un valor vacío o 0 en pedigital pediría la imagen `0.png`, que no existe: se usa el avatar por defecto.
         return $avatar >= 1 ? $avatar : 1;

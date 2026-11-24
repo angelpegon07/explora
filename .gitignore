@@ -55,3 +55,6 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Caché de PHPStan
+/storage/framework/phpstan/

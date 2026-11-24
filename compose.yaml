@@ -1,0 +1,48 @@
+# Entorno de DESARROLLO reproducible (opcional): `docker compose up -d`.  Ver README, sección «Docker».
+# Mantiene PHP 8.2 y MySQL 8 (la colación utf8mb4_0900_ai_ci del esquema exige MySQL 8). No es la configuración de producción.
+services:
+  app:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    working_dir: /var/www/html
+    # Mismo router que el desarrollo local (sitio estático + API en el mismo origen).
+    command: php -S 0.0.0.0:8080 -t public servidor-desarrollo.php
+    environment:
+      PHP_CLI_SERVER_WORKERS: 4
+      APP_ENV: local
+      APP_URL: http://localhost:8080
+      DB_HOST: mysql
+      DB_DATABASE: explora
+      DB_USERNAME: explora
+      DB_PASSWORD: explora
+      PEDIGITAL_DB_HOST: mysql
+      PEDIGITAL_DB_DATABASE: pedigital
+      PEDIGITAL_DB_USERNAME: explora
+      PEDIGITAL_DB_PASSWORD: explora
+    volumes: [".:/var/www/html"]
+    ports: ["8080:8080"]
+    depends_on:
+      mysql: { condition: service_healthy }
+
+  vite:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    working_dir: /var/www/html
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes: [".:/var/www/html"]
+    ports: ["5173:5173"]
+    profiles: ["frontend"]   # solo con `docker compose --profile frontend up`
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql-init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    ports: ["127.0.0.1:3307:3306"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      interval: 5s
+      retries: 20
+
+volumes:
+  mysql-data:

@@ -1,0 +1,68 @@
+name: CI
+
+# Calidad de código en cada PR y en main. Mantiene Laravel 10 y PHP 8.2 (no se actualizan).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  calidad:
+    name: Estilo, análisis estático y dependencias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, gd, exif, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Caché de Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Estilo (Pint)
+        run: composer lint
+
+      - name: Análisis estático (Larastan)
+        run: composer analyse
+
+      - name: Rector (informativo, no bloquea)
+        run: composer rector
+        continue-on-error: true
+
+      - name: Auditoría de dependencias
+        run: composer audit --locked
+
+  pruebas-unitarias:
+    name: Pruebas unitarias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, gd, exif, intl
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: cp .env.example .env && php artisan key:generate
+      - run: vendor/bin/phpunit --testsuite Unit
+
+  # Las suites Feature y Contract necesitan las bases explora_test y pedigital_test con datos reales (el volcado no se
+  # versiona, ver README «Pruebas»), por eso no corren en CI. Se ejecutan en el entorno local o de preproducción.

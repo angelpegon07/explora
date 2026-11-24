@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Contracts\IdentidadUsuario;
+use App\Contracts\ProveedorIdentidad;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UsuarioSesionResource;
-use App\Models\Pedigital\Usuario;
 use App\Support\NormalizaLogin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,14 +65,14 @@ class SesionController extends Controller
      *                      cualquier fallo de credenciales o cuenta inactiva (mismo cuerpo en todos los casos);
      *                      429 si la cuenta acumuló demasiados fallos.
      */
-    public function store(LoginRequest $request): JsonResponse
+    public function store(LoginRequest $request, ProveedorIdentidad $identidades): JsonResponse
     {
         $login = $request->validated('usuario');
-        $usuario = Usuario::where('login_usuario', $login)->first();
+        $usuario = $identidades->buscarPorLogin($login);
 
         // Límite por cuenta: se consulta ANTES de comparar claves para que, una vez bloqueada, no se pueda seguir
         // probando contraseñas. La clave es el id de la cuenta (o el nombre normalizado si no existe).
-        $claveCuenta = 'login-cuenta:'.($usuario?->id ?? 'x:'.NormalizaLogin::clave($login));
+        $claveCuenta = 'login-cuenta:'.($usuario?->getAuthIdentifier() ?? 'x:'.NormalizaLogin::clave($login));
         if (RateLimiter::tooManyAttempts($claveCuenta, self::MAX_FALLOS_CUENTA)) {
             return response()->json(
                 ['success' => false, 'mensaje' => 'Demasiados intentos. Espere un momento e inténtelo de nuevo.'],
@@ -151,10 +152,10 @@ class SesionController extends Controller
      * tiempos de respuesta. Si el hash almacenado no es bcrypt, Laravel lanza una excepción: se trata como fallo
      * de credenciales en vez de devolver un error 500.
      *
-     * @param  Usuario|null  $usuario  Usuario encontrado por `login_usuario`, o null si no existe.
+     * @param  IdentidadUsuario|null  $usuario  Usuario encontrado por `login_usuario`, o null si no existe.
      * @param  string  $clave  Contraseña escrita por la persona.
      */
-    private function credencialesValidas(?Usuario $usuario, string $clave): bool
+    private function credencialesValidas(?IdentidadUsuario $usuario, string $clave): bool
     {
         $hash = $usuario?->getAuthPassword();
         // Una cuenta sin hash NO es utilizable: nunca se debe aceptar una clave comparándola con el señuelo.

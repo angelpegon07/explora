@@ -39,7 +39,7 @@ Fuente: dumps `explora.sql` (MySQL 8.0.41, SQLyog; ~360 MB) y `pedigial.sql` (~3
 | `Explora\DepartamentoDescripcion` | `departamento_descripcion` | Eje de la ficha: 12 `hasOne` (capital, climaDetalle, cultura, demografia, economia, etnografia, faunaFlora, gastronomia, geografiaDetalle, hidrografia, historia, referencia), 6 `hasMany` (etnias, fauna, flora, festividades, personajes, sitios) y `preguntas` |
 | `Explora\Departamento{Capital,Clima,Cultura,Demografia,Economia,Etnografia,FaunaFlora,Gastronomia,Geografia,Hidrografia,Historia,Referencia}` | `departamento_*` | Base `SeccionDepartamento`; `belongsTo descripcion` |
 | `Explora\{EtnografiaItem,FaunaItem,FloraItem,FestividadItem,PersonajeItem,SitioItem}` | `departamento_*_list` | Base `ItemDepartamento` (`UPDATED_AT = 'update_at'`) solo para fauna, flora, festividad, personaje y sitios; `EtnografiaItem` usa `updated_at` y hereda de `SeccionDepartamento` |
-| `Explora\Pregunta`, `OpcionMultiple`, `OpcionVerfal` | `preguntas`, `opciones_multiple`, `opciones_verfal` | Dos relaciones según el tipo de pregunta |
+| `Explora\Pregunta`, `OpcionMultiple`, `OpcionVerdaderoFalso` (antes `OpcionVerfal`; la tabla conserva su nombre) | `preguntas`, `opciones_multiple`, `opciones_verfal` | Dos relaciones según el tipo de pregunta |
 | `Explora\ResultadoJuego` | `resultado_juegos` | Único modelo de `explora` con escritura (juegos) |
 | `Pedigital\Usuario` | `pedigital.users` | **Solo lectura**; oculta hash, token y correo; `getAuthPassword()` apunta a `pasword_usuario` |
 

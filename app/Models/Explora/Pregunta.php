@@ -44,10 +44,10 @@ class Pregunta extends Model
     /**
      * Respuesta de una pregunta de tipo «verfal» (verdadero/falso): una sola fila con `respuesta`. La tabla se llama `opciones_verfal` (sic).
      *
-     * @return HasMany Relación 1:N hacia {@see OpcionVerfal}.
+     * @return HasMany Relación 1:N hacia {@see OpcionVerdaderoFalso}.
      */
     public function opcionesVerdaderoFalso(): HasMany
     {
-        return $this->hasMany(OpcionVerfal::class, 'pregunta');
+        return $this->hasMany(OpcionVerdaderoFalso::class, 'pregunta');
     }
 }

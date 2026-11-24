@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PreguntasDepartamentoController;
 use App\Http\Controllers\Api\RankingController;
 use App\Http\Controllers\Api\ResultadoJuegoController;
 use App\Http\Controllers\Api\SesionController;
+use App\Http\Middleware\CacheLecturaPublica;
 use App\Http\Middleware\MemoriaParaFichas;
 use Illuminate\Support\Facades\Route;
 
@@ -23,10 +24,11 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware('throttle:api')->prefix('departamentos')->whereNumber('id')->group(function () {
     Route::get('{id}/ficha', FichaDepartamentoController::class)
-        ->middleware(MemoriaParaFichas::class)
+        ->middleware([CacheLecturaPublica::class, MemoriaParaFichas::class])
         ->where('id', '[0-9]{1,9}')
         ->name('departamentos.ficha');
     Route::get('{id}/preguntas', PreguntasDepartamentoController::class)
+        ->middleware(CacheLecturaPublica::class)
         ->where('id', '[0-9]{1,9}')->name('departamentos.preguntas');
 });
 

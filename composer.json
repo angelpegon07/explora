@@ -2,7 +2,10 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.1",
@@ -13,11 +16,13 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
+        "larastan/larastan": "^2.9",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^7.0",
         "phpunit/phpunit": "^10.1",
+        "rector/rector": "^1.2",
         "spatie/laravel-ignition": "^2.0"
     },
     "autoload": {
@@ -45,6 +50,16 @@
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi"
+        ],
+        "lint": "pint --test",
+        "lint:fix": "pint",
+        "analyse": "phpstan analyse --memory-limit=1G --no-progress",
+        "rector": "rector process --dry-run --no-progress-bar",
+        "rector:fix": "rector process --no-progress-bar",
+        "test": "phpunit",
+        "qa": [
+            "@lint",
+            "@analyse"
         ]
     },
     "extra": {
@@ -62,7 +77,13 @@
         },
         "policy": {
             "advisories": {
-                "ignore-id": ["PKSA-yxbx-3c9s-cjt9", "PKSA-d5tc-s1qs-h781", "PKSA-m5cs-t1y6-qpcs", "PKSA-3r5d-mb8f-1qw9", "PKSA-mdq4-51ck-6kdq"]
+                "ignore-id": [
+                    "PKSA-yxbx-3c9s-cjt9",
+                    "PKSA-d5tc-s1qs-h781",
+                    "PKSA-m5cs-t1y6-qpcs",
+                    "PKSA-3r5d-mb8f-1qw9",
+                    "PKSA-mdq4-51ck-6kdq"
+                ]
             }
         }
     },

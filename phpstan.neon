@@ -1,0 +1,15 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+# Análisis estático (Larastan). Nivel 5 de arranque: los niveles superiores se suben poco a poco
+# regenerando/reduciendo phpstan-baseline.neon (ver README, sección «Calidad de código»).
+parameters:
+    level: 5
+    paths:
+        - app
+        - routes
+        - database
+    excludePaths:
+        - database/migrations/*
+    tmpDir: storage/framework/phpstan

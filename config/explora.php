@@ -76,4 +76,14 @@ return [
      * lleven imágenes en base64 (DAT-07); tras aplicar `explora:externalizar-imagenes` en producción puede bajarse a 128M.
      */
     'memoria_fichas' => env('FICHAS_MEMORIA', '512M'),
+
+    /*
+     * Caché de lectura pública (ficha y preguntas; ver App\Http\Middleware\CacheLecturaPublica).
+     * `cache_lectura_ttl`: segundos que el servidor conserva la respuesta (0 = desactivada). `cache_lectura_navegador`: segundos
+     * que el navegador la reutiliza sin preguntar (después revalida con ETag). `cache_lectura_max_bytes`: mayor cuerpo que se
+     * guarda en el servidor (las fichas con base64 pesan hasta 48 MB y no se guardan).
+     */
+    'cache_lectura_ttl' => (int) env('EXPLORA_CACHE_TTL', 3600),
+    'cache_lectura_navegador' => (int) env('EXPLORA_CACHE_NAVEGADOR', 300),
+    'cache_lectura_max_bytes' => (int) env('EXPLORA_CACHE_MAX_BYTES', 2 * 1024 * 1024),
 ];

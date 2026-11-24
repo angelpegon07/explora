@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\SeccionFicha;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\FichaDepartamentoResource;
 use App\Models\Explora\DepartamentoDescripcion;
@@ -32,16 +33,7 @@ class FichaDepartamentoController extends Controller
             );
         }
 
-        $descripcion->load([
-            'listaDepartamento', 'historia', 'geografiaDetalle', 'hidrografia', 'climaDetalle', 'demografia',
-            'etnografia', 'faunaFlora', 'economia', 'cultura', 'gastronomia', 'capital',
-            'etnias' => fn ($q) => $q->orderBy('id'),
-            'flora' => fn ($q) => $q->orderBy('id'),
-            'fauna' => fn ($q) => $q->orderBy('id'),
-            'festividades' => fn ($q) => $q->orderBy('id'),
-            'sitios' => fn ($q) => $q->orderBy('id'),
-            'personajes' => fn ($q) => $q->orderBy('id'),
-        ]);
+        $descripcion->load(SeccionFicha::relacionesACargar());
 
         return (new FichaDepartamentoResource($descripcion))->response()->setEncodingOptions(JSON_UNESCAPED_UNICODE);
     }

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * No tiene clave foránea en la base de datos hacia `preguntas` (DAT-04).
  */
-class OpcionVerfal extends Model
+class OpcionVerdaderoFalso extends Model
 {
     use SoloLectura;
 

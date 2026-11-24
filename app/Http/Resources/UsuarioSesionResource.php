@@ -2,8 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Contracts\IdentidadUsuario;
 use App\Models\Explora\PerfilExplora;
-use App\Models\Pedigital\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,7 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * localStorage más `id` y `tipo_usuario`). El legado devolvía la fila completa de `users`, incluido el hash de la
  * contraseña, el correo y el token (SEC-04); aquí nada de eso sale aunque el modelo cambie.
  *
- * @property Usuario $resource
+ * @property IdentidadUsuario $resource
  */
 class UsuarioSesionResource extends JsonResource
 {
@@ -29,13 +29,13 @@ class UsuarioSesionResource extends JsonResource
         $u = $this->resource;
 
         return [
-            'id' => $u->id,
-            'nombre_usuario' => $u->nombre_usuario,
-            'login_usuario' => $u->login_usuario,
-            'grado_usuario' => $u->grado_usuario,
+            'id' => $u->getAuthIdentifier(),
+            'nombre_usuario' => $u->nombreCompleto(),
+            'login_usuario' => $u->login(),
+            'grado_usuario' => $u->grado(),
             // Avatar vigente: el perfil propio de Explora o, si no existe, el valor heredado de pedigital.
-            'avatar_explora' => PerfilExplora::avatarDe($u->id),
-            'tipo_usuario' => $u->tipo_usuario,
+            'avatar_explora' => PerfilExplora::avatarDe((int) $u->getAuthIdentifier()),
+            'tipo_usuario' => $u->rol(),
         ];
     }
 }

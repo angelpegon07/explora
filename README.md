@@ -305,6 +305,43 @@ Cliente común del sitio: [`public/js/explora-api.js`](public/js/explora-api.js)
 profundidad, cabecera `X-XSRF-TOKEN` leída de la cookie en cada petición, mensajes de error unificados, sincronización de la sesión
 y funciones para escapar HTML y validar avatares. Se incluye **después de jQuery** en todas las páginas que usan la API.
 
+## Calidad de código (Fase 17A: plataforma)
+
+Sin cambiar de versión: se mantienen **Laravel 10 y PHP 8.2** (mínimo 8.1).
+
+```bash
+composer lint        # Pint en modo comprobación (lint:fix lo aplica)
+composer analyse     # Larastan (PHPStan) nivel 5; el defecto conocido está en phpstan-baseline.neon
+composer rector      # Rector en modo informativo (solo muestra); rector:fix aplica, revisar el diff
+composer qa          # lint + analyse
+```
+- **Larastan 2.x** (la 3.x exige Laravel 11+). Para subir de nivel: cambiar `level` en `phpstan.neon`, corregir y, solo si hace falta, regenerar el baseline con `vendor/bin/phpstan analyse --generate-baseline phpstan-baseline.neon`.
+- **Rector** (`rector.php`) solo aplica `UP_TO_PHP_81` y código muerto; no sube PHP ni Laravel.
+- **CI** (`.github/workflows/ci.yml`): Pint, Larastan, `composer audit` y pruebas unitarias en cada PR. Rector es informativo. Las suites Feature y Contract **no corren en CI** porque necesitan `explora_test` y `pedigital_test` con datos reales (el volcado no se versiona).
+
+### Docker (opcional, solo desarrollo)
+```bash
+docker compose up -d                       # app en http://localhost:8080 + MySQL 8 (puerto 3307 del host)
+docker compose --profile frontend up -d    # además Vite
+```
+`docker/mysql-init.sql` crea las bases (`explora`, `pedigital`, `*_test`, `explora_migtest`) y los usuarios; **los datos hay que importarlos del volcado**.
+El compose no es la configuración de producción (ver `GUIA_DESPLIEGUE.md`).
+
+## Caché de lectura (Fase 17B)
+
+`GET /api/departamentos/{id}/ficha` y `/preguntas` pasan por `App\Http\Middleware\CacheLecturaPublica`: guardan el cuerpo en la caché de Laravel
+(`EXPLORA_CACHE_TTL`, 1 h) y responden con `ETag` + `Cache-Control: public, max-age=300, must-revalidate`, con 304 si el navegador ya tiene la versión.
+Las fichas mayores que `EXPLORA_CACHE_MAX_BYTES` (2 MB; las que aún llevan imágenes base64) no se guardan en el servidor, pero sí llevan ETag.
+Tras cambiar el contenido o ejecutar `explora:externalizar-imagenes`: `php artisan explora:limpiar-cache-lectura`. `EXPLORA_CACHE_TTL=0` la desactiva.
+Para que rinda en producción, `CACHE_DRIVER` debe ser `file`, `redis` o `database` (no `array`).
+
+## Identidad (Fase 17D)
+
+El dominio no conoce `pedigital.users`: depende de `App\Contracts\IdentidadUsuario` (nombre, login, grado, rol, `esActivo()`) y `App\Contracts\ProveedorIdentidad`
+(buscar por login, avatar heredado). El único adaptador es `App\Support\Identidad\PedigitalProveedorIdentidad`, enlazado en `AppServiceProvider`; el modelo
+`Pedigital\Usuario` implementa el contrato. Para cambiar de proveedor (otra base, SSO) hay que escribir un adaptador, enlazarlo y apuntar `config/auth.php` a un modelo que
+cumpla `IdentidadUsuario`. `tests/Feature/IdentidadContratoTest.php` impide que otro archivo de `app/` lea las columnas del legado. El comportamiento del login no cambió.
+
 ## Pruebas
 
 ```bash
