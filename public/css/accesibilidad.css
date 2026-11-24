@@ -1,0 +1,77 @@
+/*
+ * Accesibilidad básica (Fase 17F-C). Se carga desde layouts/base.blade.php, ANTES que el CSS de cada página, en TODAS
+ * las páginas con Blade (incluidos portal y juegos, que no cargan general.css).
+ *
+ * Contiene SOLO lo que cambia para quien lo necesita; el aspecto habitual no varía:
+ *   1. Enlace «Saltar al contenido» (.saltar-contenido): invisible hasta que recibe el foco del teclado.
+ *   2. Utilidad .sr-only: texto solo para lectores de pantalla (p. ej. el <h1> de páginas que no lo muestran).
+ *   3. Anillo de foco visible (:focus-visible) para quien navega con teclado; el ratón no lo muestra.
+ *   4. prefers-reduced-motion: quien lo pide en su sistema no recibe animaciones ni transiciones.
+ */
+
+/* 1. Enlace de salto: fuera de pantalla hasta recibir el foco. */
+.saltar-contenido {
+    position: fixed;
+    top: -100px;
+    left: 8px;
+    z-index: 2147483647;
+    padding: 10px 16px;
+    background: #000;
+    color: #fff;
+    font: 700 16px/1.2 Arial, sans-serif;
+    text-decoration: none;
+    border-radius: 6px;
+    border: 2px solid #ffbf47;
+}
+
+.saltar-contenido:focus,
+.saltar-contenido:focus-visible {
+    top: 8px;
+    color: #fff;
+}
+
+/* 2. Texto accesible oculto visualmente (mismo patrón que .sr-only de Bootstrap 4). */
+.sr-only {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* 3. Foco visible. Especificidad baja a propósito: cualquier regla propia de un componente lo puede refinar. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+    outline: 3px solid #ffbf47;
+    outline-offset: 2px;
+}
+
+/* El contenedor principal recibe el foco por programa (al saltar el enlace): no necesita anillo. */
+[tabindex="-1"]:focus {
+    outline: none;
+}
+
+/* 4. Movimiento reducido: animaciones y transiciones prácticamente nulas, sin desplazamiento suave. */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto !important;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}

@@ -15,16 +15,16 @@
 @section('atributos_body')style="display: flex; justify-content: center; width: 100%; height: 100vh; overflow: hidden;"@endsection
 
 @push('cabecera')
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/juego_ahorcado/estilo-ahoracado.css') }}">
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
-        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/juego_ahorcado/estilo-ahoracado.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset_v('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset_v('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
         @include('juegos.partials.explora-api')
-        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
+        <script src="{{ asset_v('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
         @include('juegos.partials.pantalla-css')
         @include('juegos.partials.terminar-css')
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/juego_ahorcado/estilo-pagina.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/juego_ahorcado/estilo-pagina.css') }}">
 @endpush
 
 @section('juego')
@@ -46,7 +46,7 @@
   </div>
 
   <div style="text-align: center; display: none; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.5s ease-in-out;" id="final" class="final">
-    <img src="{{ asset('juegos/juegos/assets/images/victoria.webp') }}" id="imagen_final" style="width: 560px; height: auto;">
+    <img src="{{ asset('juegos/juegos/assets/images/victoria.webp') }}" alt="" id="imagen_final" style="width: 560px; height: auto;">
     <br>
     <h1 style="font-size: 25pt; padding-bottom: 0px;" class="borde2" id="texto_final"></h1>
     <div class="row">
@@ -67,9 +67,9 @@
     </div>
   </div>
 
-  <div id="principal" style="width: 1200px;" class="main-container">
+  <div id="principal" role="main" style="width: 1200px;" class="main-container">
     <br>
-    <div class="row">
+    <div class="row" id="contenido-principal" tabindex="-1">
       <div class="col-9 text-center">
         <h2 class="subtitulo">Adivina la palabra "<span style="color: #00fffa" id="categoria"></span>"</h2>
       </div>
@@ -127,5 +127,5 @@
 @push('pie')
         @include('juegos.partials.terminar-js')
         @include('juegos.partials.pantalla-js')
-        <script src="{{ asset('juegos/juegos/juego_ahorcado/ahorcado.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/juego_ahorcado/ahorcado.js') }}"></script>
 @endpush

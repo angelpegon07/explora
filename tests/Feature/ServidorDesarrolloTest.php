@@ -356,7 +356,6 @@ class ServidorDesarrolloTest extends TestCase
             '/lineaTiempo/eventos.json' => 'json',
             '/lineaTiempo/script.js' => 'javascript',
             '/lineaTiempo/styles.css' => 'text/css',
-            '/lineaTiempo/all.min.css' => 'text/css',
             '/lineaTiempo/gsap.min.js' => 'javascript',
             '/lineaTiempo/ScrollTrigger.min.js' => 'javascript',
             '/lineaTiempo/favicon.png' => 'image/png',
@@ -373,7 +372,7 @@ class ServidorDesarrolloTest extends TestCase
             $this->assertStringContainsString($tipoEsperado, $tipo, $ruta);
         }
         // Las subcarpetas no se listan (el router da 404; Apache, 403 por -Indexes).
-        foreach (['/lineaTiempo/img/', '/lineaTiempo/img', '/lineaTiempo/webfonts/', '/ViajaPED/img/', '/ViajaPED/epocas/', '/ViajaPED/fonts'] as $ruta) {
+        foreach (['/lineaTiempo/img/', '/lineaTiempo/img', '/ViajaPED/img/', '/ViajaPED/epocas/', '/ViajaPED/fonts'] as $ruta) {
             [$codigo, , $cuerpo] = $this->pedir($ruta);
             $this->assertContains($codigo, [403, 404], $ruta);
             $this->assertStringNotContainsString('explora.png', $cuerpo, $ruta);
@@ -664,6 +663,41 @@ class ServidorDesarrolloTest extends TestCase
             $this->arrancar(['DB_DATABASE' => $base]);
             $this->assertSame(500, $this->pedir('/climatico')[0], $base);
         }
+    }
+
+    /**
+     * Fase 17F: cualquier ruta con un segmento `node_modules` da 404 aunque el archivo exista (hay una copia local, sin versionar,
+     * en public/ViajaPED/node_modules) y `public/.htaccess` lleva la regla equivalente. La prueba crea su propia carpeta
+     * temporal bajo public/ (con un archivo control fuera de `node_modules`, que sí debe servirse) y la borra al terminar.
+     */
+    public function test_node_modules_no_se_sirve(): void
+    {
+        $publico = dirname(__DIR__, 2).'/public';
+        $sub = 'prueba-nm-'.bin2hex(random_bytes(4));
+        $dir = $publico.'/'.$sub;
+        mkdir($dir.'/node_modules/paquete', 0755, true);
+        try {
+            file_put_contents("$dir/ok.js", 'var ok = 1;');
+            file_put_contents("$dir/node_modules/paquete/index.js", 'var secreto = 1;');
+            file_put_contents("$dir/node_modules/paquete/LEEME.txt", 'dependencia');
+
+            $this->assertSame(200, $this->pedir("/$sub/ok.js")[0], 'el archivo control fuera de node_modules sí se sirve');
+            foreach (["/$sub/node_modules/paquete/index.js", "/$sub/node_modules/paquete/LEEME.txt", "/$sub/node_modules/", "/$sub/node_modules",
+                "/$sub/NODE_MODULES/paquete/index.js", "/$sub/node_modules/paquete/"] as $ruta) {
+                $this->assertSame(404, $this->pedir($ruta)[0], $ruta);
+            }
+            // Un nombre que solo CONTIENE la palabra no es el segmento prohibido.
+            file_put_contents("$dir/mi_node_modules.js", 'var x = 1;');
+            $this->assertSame(200, $this->pedir("/$sub/mi_node_modules.js")[0]);
+        } finally {
+            $this->borrarRecursivo($dir);
+        }
+
+        $htaccess = (string) file_get_contents($publico.'/.htaccess');
+        $this->assertStringContainsString('RedirectMatch 404 (^|/)node_modules(/|$)', $htaccess);
+        // La copia local de ViajaPED (si existe) nunca se sirve.
+        $this->assertSame(404, $this->pedir('/ViajaPED/node_modules/')[0]);
+        $this->assertSame(404, $this->pedir('/ViajaPED/node_modules/.package-lock.json')[0]);
     }
 
     /**

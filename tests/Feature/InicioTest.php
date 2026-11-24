@@ -52,16 +52,16 @@ class InicioTest extends TestCase
     {
         $html = $this->get('/')->getContent();
 
-        $this->assertStringContainsString(asset('mapplic/mapplic.js'), $html);
+        $this->assertStringContainsString(asset('mapplic/mapplic.js').'?v=', $html);
         $this->assertStringNotContainsString('mapplic_generico.js', $html);
         $this->assertStringNotContainsString('mapa-tematico.js', $html);
 
-        $orden = ['bootstrap/jquery.min.js', 'js/explora-api.js', 'js/hammer.min.js', 'js/jquery.easing.js', 'js/jquery.mousewheel.js',
+        $orden = ['vendor/jquery/jquery-3.7.1.min.js', 'js/explora-api.js', 'js/hammer.min.js', 'js/jquery.easing.js', 'js/jquery.mousewheel.js',
             'mapplic/mapplic.js', 'bootstrap/bootstrap.min.js', 'mapplic/verMas.js', 'mapplic/js/quiz.js', 'mapplic/js/general.js',
             'mapplic/js/chat.js', 'js/mapa-comun.js', 'js/inicio.js', 'driver/tutorial.js', 'mapplic/js/iniciarSesion.js'];
         $posicion = -1;
         foreach ($orden as $script) {
-            $actual = strpos($html, 'src="'.asset($script).'"');
+            $actual = strpos($html, 'src="'.asset($script).'?v=');
             $this->assertNotFalse($actual, "Falta el script $script");
             $this->assertGreaterThan($posicion, $actual, "$script está fuera de orden");
             $posicion = $actual;

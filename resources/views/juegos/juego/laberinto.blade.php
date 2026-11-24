@@ -15,22 +15,22 @@
 @section('atributos_body')style="overflow: hidden;"@endsection
 
 @push('cabecera')
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/laberinto/css/css2.css') }}">
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
-        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/laberinto/css/css2.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset_v('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset_v('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
         @include('juegos.partials.explora-api')
         @include('juegos.partials.pantalla-css')
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}">
         @include('juegos.partials.terminar-css')
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/laberinto/estilo-pagina.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/laberinto/estilo-pagina.css') }}">
 @endpush
 
 @section('juego')
-<div id="contenedor_general" class="contenedor_general">
+<div id="contenedor_general" class="contenedor_general" role="main" tabindex="-1">
     <div class="game-container" id="game-container" style="position: relative;">
         <table id="mapa"></table>
-        <img id="player" class="player" style="transform: rotate(45deg);" src="{{ asset('juegos/juegos/laberinto/css/mario.gif') }}">
+        <img id="player" class="player" alt="Personaje del jugador" style="transform: rotate(45deg);" src="{{ asset('juegos/juegos/laberinto/css/mario.gif') }}">
     </div>
     <div style="display: flex; justify-content: space-around; align-items: center; height: 83vh; flex-direction: column;  width: 240px;">
         <div id="timer">
@@ -43,21 +43,21 @@
         </div>
     <div class="controles">
             <div style="top: -6px; left: -6px;position: relative; transform: rotate(-45deg); width: 178px; height: 178px;">
-                <div class="subir" onclick="mover_nave('ArrowUp')">
+                <div class="subir" role="button" tabindex="0" aria-label="Mover hacia arriba" onclick="mover_nave('ArrowUp')">
                 </div>
-                <div class="bajar" onclick="mover_nave('ArrowDown')">
+                <div class="bajar" role="button" tabindex="0" aria-label="Mover hacia abajo" onclick="mover_nave('ArrowDown')">
                 </div>
-                <div class="izquierda" onclick="mover_nave('ArrowLeft')">
+                <div class="izquierda" role="button" tabindex="0" aria-label="Mover a la izquierda" onclick="mover_nave('ArrowLeft')">
                 </div>
-                <div class="derecha" onclick="mover_nave('ArrowRight')">
+                <div class="derecha" role="button" tabindex="0" aria-label="Mover a la derecha" onclick="mover_nave('ArrowRight')">
                 </div>
             </div>
         </div>  
         <br>
         <div class="controles2">
-            <div onclick="playPause()" id="play_pause" class="play">
+            <div role="button" tabindex="0" aria-label="Pausar o reanudar" onclick="playPause()" id="play_pause" class="play">
             </div>
-            <div class="replay" onclick="replay()">
+            <div class="replay" role="button" tabindex="0" aria-label="Reiniciar" onclick="replay()">
             </div>
         </div>
     </div>    
@@ -84,8 +84,8 @@
             <div class="modal-body" style="background-color: #000000a8 !important; border-radius: 20px;">
                 <h5 class="modal-title" id="miModalLabel" style="color: #ffffff; font-size: 40px; font-family: 'DS-Digital'; font-weight: bold; width: 100%; text-align: center;">Selecciona un nivel</h5>
                 <div style="display: flex; justify-content: space-around; align-items: center; height: 100%; padding: 40px;">
-                    <div class="card_nivel" onclick="seleccionar_nivel(1)" style="background-image: url({{ asset('juegos/juegos/laberinto/css/Recurso_1.png') }});"></div>
-                    <div class="card_nivel" onclick="seleccionar_nivel(2)" style="background-image: url({{ asset('juegos/juegos/laberinto/css/Recurso_3.png') }});"></div>
+                    <div class="card_nivel" role="button" tabindex="0" aria-label="Nivel 1" onclick="seleccionar_nivel(1)" style="background-image: url({{ asset('juegos/juegos/laberinto/css/Recurso_1.png') }});"></div>
+                    <div class="card_nivel" role="button" tabindex="0" aria-label="Nivel 2" onclick="seleccionar_nivel(2)" style="background-image: url({{ asset('juegos/juegos/laberinto/css/Recurso_3.png') }});"></div>
                 </div>
             </div>
         </div>
@@ -110,7 +110,7 @@
 
 @push('pie')
         @include('juegos.partials.terminar-js')
-        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
+        <script src="{{ asset_v('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
         @include('juegos.partials.pantalla-js')
-        <script src="{{ asset('juegos/juegos/laberinto/js/js2.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/laberinto/js/js2.js') }}"></script>
 @endpush

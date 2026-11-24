@@ -278,7 +278,7 @@ JS de los juegos (Fase 13).
   `@section('sin_viewport', 'sí')` suprime el `<meta viewport>` (sopa_letras y juego_ahorcado no lo tenían; `layouts/base` lo admite).
   Parciales `juegos/partials/`: `terminar-css`, `explora-api`, `terminar-js`, `pantalla-css`, `pantalla-js`. Particularidades que se
   conservan: sopa carga `pantalla_completa.js` antes que `terminar_juego.js`; arrastra no carga `pantalla_completa.css`; banderas-color usa su
-  propio Bootstrap 4.6.2/jQuery 3.7.1/SweetAlert 11.17 y no el Bootstrap 5.3 compartido.
+  propio Bootstrap 4.6.2 y no el Bootstrap 5.3 compartido (jQuery, SweetAlert2 y Popper sí salen de `public/vendor`, Fase 17F).
 - **CSS/JS inline extraídos:** el `<style>` de cada juego es `public/juegos/juegos/<slug>/estilo-pagina.css`, enlazado en la misma posición
   del `<head>`; el `<script>` inline de sopa es `sopa_letras/juego.js` (sin tocar el código, incluido el muerto `readText`). Viven en la
   carpeta del juego, así que sus rutas relativas resuelven igual que antes.
@@ -357,6 +357,59 @@ cumpla `IdentidadUsuario`. `tests/Feature/IdentidadContratoTest.php` impide que 
 - **Decisión: Sanctum NO se adopta.** La sesión por cookie con CSRF ya cubre el modo SPA de Sanctum, no hay consumidores
   con tokens y añadir `personal_access_tokens` ampliaría la superficie de ataque sin beneficio; se reevaluará si aparece
   una app móvil o un tercero.
+
+## Frontend: librerías (Fase 17F)
+
+No hay paso de compilación: las vistas Blade cargan JS y CSS estáticos de `public/` con `asset()`. Las librerías de terceros compartidas
+viven en **una sola copia** bajo `public/vendor/` (antes cada juego traía la suya: tres versiones de jQuery y dos de SweetAlert2):
+
+| Librería | Archivo | Versión |
+|---|---|---|
+| jQuery | `public/vendor/jquery/jquery-3.7.1.min.js` | 3.7.1 |
+| SweetAlert2 (JS con el CSS incluido) | `public/vendor/sweetalert2/sweetalert2.all.min.js` (+ `sweetalert2.min.css` en layout `sitio`, perfil) | 11.17.2 |
+| Font Awesome (CSS y `webfonts/`) | `public/vendor/fontawesome/` | 6.7.2 |
+| Popper | `public/vendor/popper/popper.min.js` | 1.x (el de Bootstrap 4/puzzle) |
+
+- **Actualizar una librería:** sustituye el archivo en `public/vendor/<libreria>/` (y, si cambia el nombre por la versión, cambia la ruta en las
+  vistas: `grep -rn "vendor/jquery" resources/views`), y prueba a mano las páginas que la usan (sitio, perfil, portal y los 7 juegos) más
+  `npm run test:e2e`. Font Awesome debe copiarse COMPLETO (`css/` y `webfonts/`): el CSS pide las fuentes con `url(../webfonts/...)`.
+- **No dupliques:** `tests/Feature/RecursosEstaticosTest` falla si aparece otra copia de jQuery, SweetAlert2, Popper o Font Awesome fuera
+  de `public/vendor`, o si una vista apunta con `asset('...')` a un archivo que no existe.
+- **Bootstrap 4.5.2, 4.6.2 y 5.3.5 conviven** (`public/bootstrap/`, `public/juegos/juegos/banderas-color/bootstrap/` y
+  `public/juegos/librerias/bootstrap-5.3/`). NO se han unificado porque el marcado de cada página usa clases y atributos distintos
+  (`data-toggle` / `data-bs-toggle`, `.form-group`, `.ml-*` / `.ms-*`, jQuery frente a JS puro): unificar exige reescribir las vistas y
+  revisar cada página visualmente. Queda como trabajo futuro.
+- **`node_modules` no se sirve:** `public/ViajaPED/node_modules` (dependencias de desarrollo locales, sin versionar) existe dentro del docroot;
+  `public/.htaccess` y `servidor-desarrollo.php` responden 404 a cualquier ruta con un segmento `node_modules`.
+
+### Versionado de assets
+
+Los CSS y JS propios se cargan con `asset_v('ruta')` (`app/Support/Assets.php`, helper en `app/Support/helpers.php`), que añade `?v=<10 hex del md5 del contenido>`; así un despliegue invalida la caché del navegador solo de lo que cambió (usar `asset()` para imágenes y fuentes). La plantilla `deploy/apache-vhost.conf.ejemplo` trae, comentado, el bloque `Cache-Control: immutable` de un año para esas URL versionadas.
+
+## Imágenes (Fase 17F)
+
+`scripts/optimizar-imagenes.sh` optimiza `public/` con `cwebp`: re-codifica los webp de más de 500 KB (`-q 80`, solo si ahorra
+al menos 25 %; omite los animados) y crea el `.webp` hermano de los PNG de más de 500 KB (`-q 82`, o `-lossless` en arte con
+pocos colores; solo si ahorra al menos 30 %). Es idempotente y por defecto solo simula:
+
+```bash
+scripts/optimizar-imagenes.sh             # simulación: tabla antes/después, no escribe nada
+scripts/optimizar-imagenes.sh --aplicar   # escribe los .webp; luego hay que cambiar las referencias y borrar el PNG
+```
+
+El script NO borra PNG: se retiró cada PNG solo cuando todas sus referencias eran literales (CSS y vistas) y ya apuntan al
+`.webp`. Se conservan los PNG citados por `data.json`/`jsons/*.json` o por nombres armados en JS (`ViajaPED/epocas`,
+`puzzle/*`, `ventana_mundo3`). `RecursosEstaticosPesoTest` fija un tope de 1,5 MB por imagen (con una lista explícita de
+excepciones: webp animados y mapas ya comprimidos) y exige que toda `asset('…png|webp|jpg')` de las vistas exista.
+Resultado: `public/` pasó de 312 MB a 297 MB (`du`) con 10 PNG retirados; los 75 PNG restantes de más de 500 KB (puzzle, épocas)
+darían ~40 MB más al migrar sus referencias dinámicas.
+
+## Accesibilidad y PWA (Fase 17F)
+
+- **Accesibilidad básica** (`public/css/accesibilidad.css` y `public/js/teclado.js`, cargados por `layouts/base`): se quitó el bloqueo del zoom del viewport (`user-scalable=no`), hay enlace «Saltar al contenido» (visible solo al enfocarlo) y landmark principal (`role="main"` sobre un contenedor existente, sin envolver el DOM), `<h1 class="sr-only">` en portada, mapas temáticos y perfil, `alt` en todas las imágenes, nombres accesibles en los botones de solo icono, anillo de foco visible (se quitaron los `outline: none`) y `prefers-reduced-motion` (CSS y AOS). Los `div`/`a` clicables llevan `role="button" tabindex="0"` y `teclado.js` los activa con Enter/Espacio. El menú de accesibilidad mantiene `aria-expanded` y se cierra con Escape.
+- **CSP en modo informe**: `CabecerasSeguridad` envía `Content-Security-Policy-Report-Only` (variable `CSP_REPORT_ONLY`, por defecto `true`); NO bloquea nada y no se envía la cabecera enforzante. Para enforzarla falta quitar unos 80 atributos `on*=` y los bloques `<script>`/`<style>` en línea (portada, mapas temáticos y portal de juegos) y entonces retirar `'unsafe-inline'`.
+- **PWA básico**: `public/manifest.webmanifest`, iconos `public/icons/` (192 y 512), `theme-color` y `apple-touch-icon`. **No hay service worker** a propósito: riesgo de servir contenido viejo desde caché; queda como siguiente paso (con estrategia de versionado de caché).
+- **Pendiente en accesibilidad**: el mapa SVG no es operable con teclado, `laberinto` tiene dos `<h1>` y el contraste de colores no se ha auditado.
 
 ## Pruebas
 
@@ -549,6 +602,7 @@ mantenimiento → externalizar imágenes → `FICHAS_MEMORIA=128M`**. `desplegar
 | `QUIZ_INCLUIR_RESPUESTAS` | `true` | Enviar `correcta`/`respuesta` al navegador (ver aviso en la API del quiz) |
 | `AVATARES_MAX` | `35` | Cantidad de avatares (`juegos/images/avatars/N.png`) |
 | `FICHAS_MEMORIA` | `512M` | Memoria de PHP para la ruta de la ficha (`MemoriaParaFichas`). Bajar a `128M` solo tras aplicar `explora:externalizar-imagenes` en producción y verificarlo |
+| `CSP_REPORT_ONLY` | `true` | Envía `Content-Security-Policy-Report-Only` (solo informa, no bloquea). `false` la quita |
 | `API_POR_MINUTO` | `300` | Peticiones de lectura por minuto, por IP (o por usuario con sesión). Subido de 60 porque un aula entera comparte una IP (NAT) y cada página sincroniza la sesión al cargar |
 | `RESULTADOS_POR_MINUTO` | `10` | Partidas que puede guardar cada usuario (o IP, si es invitado) por minuto |
 | `PEDIGITAL_DB_*` | — | Conexión de solo lectura a la base de usuarios |

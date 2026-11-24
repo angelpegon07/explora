@@ -22,18 +22,18 @@
 
 @section('cabecera')
         <!-- Bootstrap CSS -->
-        <link href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}" rel="stylesheet">
+        <link href="{{ asset_v('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}" rel="stylesheet">
         <!-- Font Awesome -->
-        <link href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}" rel="stylesheet">
+        <link href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
         <!-- AOS CSS para animaciones -->
-        <link href="{{ asset('juegos/librerias/aos/aos.css') }}" rel="stylesheet">
+        <link href="{{ asset_v('juegos/librerias/aos/aos.css') }}" rel="stylesheet">
         <!-- Custom CSS -->
-        <link rel="stylesheet" href="{{ asset('juegos/css/styles.css') }}">
-        <link rel="stylesheet" href="{{ asset('juegos/css/clouds.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/css/styles.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/css/clouds.css') }}">
         <link rel="shortcut icon" href="{{ asset('juegos/images/Isotipo.png') }}" type="image/x-icon">
-        <script src="{{ asset('sweetalert/sweetalert2.all.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('bootstrap/jquery.min.js') }}"></script>
-        <script src="{{ asset('js/explora-api.js') }}"></script>
+        <script src="{{ asset_v('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset_v('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
+        <script src="{{ asset_v('js/explora-api.js') }}"></script>
 @endsection
 
 @push('estilos')
@@ -109,8 +109,9 @@
     </nav>
 
     <!-- Hero Section con Parallax -->
-    <section id="inicio" class="parallax-section">
-        <div class="container h-100">
+    {{-- Fase 17F-C: la sección de bienvenida (con el <h1>) es el landmark principal y destino del enlace de salto. --}}
+    <section id="inicio" class="parallax-section" role="main">
+        <div class="container h-100" id="contenido-principal" tabindex="-1">
             <div class="row h-100 align-items-center">
                 <div class="col-12 text-center" data-aos="fade-up">
                     <h1 class="display-4 fw-bold">¡Explora Colombia Jugando!</h1>
@@ -123,7 +124,7 @@
                 </div>
             </div>
         </div>
-        <div class="scroll-indicator" onclick="document.getElementById('juegos').scrollIntoView({behavior: 'smooth'})"></div>
+        <div class="scroll-indicator" role="button" tabindex="0" aria-label="Ir a la sección de juegos" onclick="document.getElementById('juegos').scrollIntoView({behavior: 'smooth'})"></div>
     </section>
 
     <!-- Sección de Juegos -->
@@ -280,12 +281,12 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-6">
-                            <div class="card-juego" onclick="location.href = '{{ asset('juegos/juegos/arrastra') }}/'">
+                            <div class="card-juego" role="button" tabindex="0" aria-label="Jugar Arrastra y suelta" onclick="location.href = '{{ asset('juegos/juegos/arrastra') }}/'">
                                 <img style="width: 110%; height: 110%" src="{{ asset('juegos/images/drag.png') }}" alt="Banderas">
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="card-juego" onclick="location.href = '{{ asset('juegos/juegos/completa') }}/'">
+                            <div class="card-juego" role="button" tabindex="0" aria-label="Jugar Completa la oración" onclick="location.href = '{{ asset('juegos/juegos/completa') }}/'">
                                 <img style="width: 110%; height: 110%" src="{{ asset('juegos/images/completa.png') }}"  alt="Banderas">
                             </div>
                         </div>
@@ -311,12 +312,12 @@
 
 @section('scripts_pie')
     {{-- El año del pie lo escribe un archivo estático (antes era un script inline), en la posición original. --}}
-    <script src="{{ asset('juegos/js/anio-pie.js') }}"></script>
+    <script src="{{ asset_v('juegos/js/anio-pie.js') }}"></script>
     <!-- Scripts -->
-    <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.js') }}"></script>
-    <script src="{{ asset('juegos/librerias/aos/aos.js') }}"></script>
-    <script src="{{ asset('juegos/js/main.js') }}"></script>
-    <script src="{{ asset('juegos/js/clouds.js') }}"></script>
-    <script src="{{ asset('mapplic/js/iniciarSesion.js') }}"></script>
+    <script src="{{ asset_v('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.js') }}"></script>
+    <script src="{{ asset_v('juegos/librerias/aos/aos.js') }}"></script>
+    <script src="{{ asset_v('juegos/js/main.js') }}"></script>
+    <script src="{{ asset_v('juegos/js/clouds.js') }}"></script>
+    <script src="{{ asset_v('mapplic/js/iniciarSesion.js') }}"></script>
     <!-- iniciarSesion.js refresca los botones de sesión al cargar y cuando ExploraApi.sesionLista se resuelve. -->
 @endsection

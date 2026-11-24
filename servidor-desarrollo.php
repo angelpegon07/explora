@@ -21,7 +21,8 @@
  *  1. Ruta inválida (byte nulo, `..`, `\` o `%2F` codificado) -> 400.
  *  2. `/api` o `/api/...`                                -> Laravel (public/index.php).
  *     (Las demás rutas que no existen en disco también llegan a Laravel; ver el punto 6.)
- *  3. Segmentos ocultos (`.git`, `.env`, `.htaccess`…)   -> 404 (defensa en profundidad: no deberían existir).
+ *  3. Segmentos ocultos (`.git`, `.env`, `.htaccess`…) y `node_modules` -> 404 (defensa en profundidad: no deberían existir
+ *     bajo el docroot; `node_modules` puede existir en local, sin versionar, y nunca se sirve).
  *  4. Cualquier segmento acabado en .php/.phtml/.phar/.phpN -> el router responde él mismo, NUNCA `false`: si
  *     devolviera `false`, `php -S` ejecutaría el PHP legado (incluso con PATH_INFO, p. ej. `/x.php/a.css`).
  *     Los 7 scripts sustituidos por la API (config/servicios_retirados.php; sus archivos se eliminaron en la Fase 15)
@@ -169,10 +170,13 @@ if (preg_match('#^/api(/|$)#', $ruta)) {
 $segmentos = array_values(array_filter(explode('/', $ruta), static fn (string $s): bool => $s !== ''));
 $minusculas = array_map('strtolower', $segmentos);
 
-// 3) Segmentos ocultos (`.git`, `.env`, `.htaccess`…). Las carpetas privadas (.env, vendor, documentación, node_modules)
-//    ya no están bajo el docroot, de modo que dan 404 por inexistentes (lo confirma ServidorDesarrolloTest).
+// 3) Segmentos ocultos (`.git`, `.env`, `.htaccess`…) y carpetas de dependencias de desarrollo (`node_modules`, Fase 17F).
+//    Las carpetas privadas (.env, vendor, documentación) ya no están bajo el docroot, de modo que dan 404 por inexistentes
+//    (lo confirma ServidorDesarrolloTest). `node_modules` SÍ puede existir bajo el docroot (hay una copia local, sin versionar,
+//    en public/ViajaPED/node_modules con ~1300 archivos de herramientas de desarrollo): cualquier ruta con ese segmento
+//    da 404, igual que la regla `RedirectMatch 404 (^|/)node_modules(/|$)` de public/.htaccess.
 foreach ($minusculas as $s) {
-    if (str_starts_with($s, '.')) {
+    if (str_starts_with($s, '.') || $s === 'node_modules') {
         return explora_responder_texto(404, 'No encontrado');
     }
 }

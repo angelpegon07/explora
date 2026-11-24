@@ -18,6 +18,9 @@
 @endpush
 
 @section('contenido')
+    {{-- Fase 17F-C: encabezado de nivel 1 solo para lectores de pantalla (la página no muestra un título visible). --}}
+    <h1 class="sr-only">{{ $mapa['titulo'] }}</h1>
+
     @if ($mapa['dato_interes'])
         @include('mapas.dato-interes')
     @endif
@@ -58,6 +61,6 @@
     <script>
         window.EXPLORA_MAPA = @json($configuracionJs, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     </script>
-    <script src="{{ asset('js/mapa-comun.js') }}"></script>
-    <script src="{{ asset('js/mapa-tematico.js') }}"></script>
+    <script src="{{ asset_v('js/mapa-comun.js') }}"></script>
+    <script src="{{ asset_v('js/mapa-tematico.js') }}"></script>
 @endpush

@@ -86,7 +86,7 @@ class JuegosRutasTest extends TestCase
             $html = $this->app->make(Kernel::class)->handle(Request::create("http://localhost/$carpeta", 'GET'))->getContent();
             preg_match_all('/\s(?:src|href)="(http:\/\/localhost\/[^"]*)"/i', $html, $m);
             foreach ($m[1] as $url) {
-                $rutas[ltrim(preg_replace('#^http://localhost#', '', $url), '/')] = 'HTML';
+                $rutas[ltrim(preg_replace('#^http://localhost#', '', preg_replace('/\?v=[0-9a-f]{10}$/', '', $url)), '/')] = 'HTML';
             }
             preg_match_all('/style="[^"]*url\((?:["\']?)http:\/\/localhost\/([^)"\']*)/i', $html, $m);
             foreach ($m[1] as $url) {

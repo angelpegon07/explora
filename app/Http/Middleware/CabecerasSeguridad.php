@@ -18,10 +18,17 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * NO pisa un valor que ya venga puesto (un controlador puede necesitar otro más estricto o más laxo).
  *
- * NO añade `Strict-Transport-Security` ni `Content-Security-Policy` a propósito:
- *  - HSTS solo debe enviarse sobre HTTPS y es difícil de deshacer; se activa en Apache cuando el sitio ya esté en HTTPS.
- *  - La CSP exige inventariar scripts y estilos en línea (el sitio usa `onclick=` y bloques `<script>`): se recomienda
- *    desplegarla en Apache primero como `Content-Security-Policy-Report-Only`. Ver DESPLIEGUE_APACHE.md.
+ * NO añade `Strict-Transport-Security` a propósito: HSTS solo debe enviarse sobre HTTPS y es difícil de deshacer; se
+ * activa en Apache cuando el sitio ya esté en HTTPS.
+ *
+ * CSP EN MODO INFORME (Fase 17F-C): además se envía `Content-Security-Policy-Report-Only` con la política de {@see self::CSP}
+ * (se quita con `CSP_REPORT_ONLY=false`; ver config/explora.php). Es una FASE PREVIA a una CSP estricta: el navegador solo
+ * anota en la consola lo que bloquearía, no bloquea nada, y NO se envía la cabecera enforzante `Content-Security-Policy`.
+ * Para poder enforzarla de verdad falta:
+ *  - quitar los ~80 atributos `on*=` (onclick...) de las vistas y de las cadenas HTML de JS (pasarlos a `addEventListener`);
+ *  - sacar los bloques `<script>` y `<style>` en línea (inicio, mapas/tematico, mapas/estilos, juegos/portal) a archivos;
+ *  - con eso se podrá quitar `'unsafe-inline'` de `script-src` y `style-src` (hoy imprescindible); y revisar en la consola
+ *    del navegador los avisos que genere el modo informe (p. ej. orígenes externos de imágenes o vídeos).
  *
  * Los archivos estáticos que sirve Apache sin pasar por PHP reciben las mismas cabeceras desde `public/.htaccess`
  * (bloque `mod_headers`); los dos juegos de valores deben mantenerse iguales (lo vigila CabecerasSeguridadTest).
@@ -42,6 +49,12 @@ class CabecerasSeguridad
     ];
 
     /**
+     * Política de la cabecera `Content-Security-Policy-Report-Only` (solo informa; no bloquea). Permite recursos del propio
+     * origen y, de momento, scripts y estilos en línea (ver el docblock de la clase).
+     */
+    public const CSP = "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'; media-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'";
+
+    /**
      * Deja pasar la petición y completa las cabeceras de la respuesta.
      *
      * @param  Request  $request  Petición entrante.
@@ -57,6 +70,11 @@ class CabecerasSeguridad
             if (! $respuesta->headers->has($nombre)) {
                 $respuesta->headers->set($nombre, $valor);
             }
+        }
+
+        // CSP en modo informe: nunca la cabecera enforzante. Tampoco se pisa un valor ya puesto.
+        if (config('explora.csp_report_only', true) && ! $respuesta->headers->has('Content-Security-Policy-Report-Only')) {
+            $respuesta->headers->set('Content-Security-Policy-Report-Only', self::CSP);
         }
 
         return $respuesta;

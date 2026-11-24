@@ -187,11 +187,36 @@ function cerrarVideo() {
 // Menú de accesibilidad
 // ---------------------------------------------------------------------------------------------------------------
 
-/** Abre o cierra el menú de accesibilidad. */
-function toggleMenuAccesibilidad() {
+/**
+ * Abre o cierra el menú de accesibilidad y mantiene `aria-expanded` del botón #btn_menu_accesibilidad (Fase 17F-C).
+ *
+ * @param {boolean} [forzarAbierto] true abre y false cierra; sin argumento alterna (comportamiento de siempre).
+ */
+function toggleMenuAccesibilidad(forzarAbierto) {
     const menu = document.getElementById('menuAccesibilidad');
-    menu.classList.toggle('activo');
+    const abierto = typeof forzarAbierto === 'boolean'
+        ? menu.classList.toggle('activo', forzarAbierto)
+        : menu.classList.toggle('activo');
+    const boton = document.getElementById('btn_menu_accesibilidad');
+    if (boton) {
+        boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    }
 }
+
+// Escape cierra el menú de accesibilidad si está abierto y devuelve el foco a su botón (Fase 17F-C).
+document.addEventListener('keydown', function (evento) {
+    if (evento.key !== 'Escape') {
+        return;
+    }
+    const menu = document.getElementById('menuAccesibilidad');
+    if (menu && menu.classList.contains('activo')) {
+        toggleMenuAccesibilidad(false);
+        const boton = document.getElementById('btn_menu_accesibilidad');
+        if (boton) {
+            boton.focus();
+        }
+    }
+});
 
 let tamanoTextoActual = 16; // Tamaño base del texto
 

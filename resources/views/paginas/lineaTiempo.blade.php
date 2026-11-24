@@ -20,13 +20,13 @@
 @endsection
 
 @section('cabecera')
-        <link rel="stylesheet" href="{{ asset('lineaTiempo/all.min.css') }}">
-        <link rel="stylesheet" href="{{ asset('lineaTiempo/styles.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('lineaTiempo/styles.css') }}">
         <link rel="icon" type="image/jpg" href="{{ asset('lineaTiempo/favicon.png') }}" />
 @endsection
 
 @section('contenido')
-    <div class="timeline-container">
+    <div class="timeline-container" role="main" id="contenido-principal" tabindex="-1">
         <div class="pattern-overlay pattern-ancient"></div>
         <div class="timeline-header">
             <div class="header">
@@ -86,7 +86,7 @@
 
 @section('scripts_pie')
         {{-- GSAP primero, luego ScrollTrigger y por último nuestro script (ver el orden en la cabecera de la vista). --}}
-        <script src="{{ asset('lineaTiempo/gsap.min.js') }}"></script>
-        <script src="{{ asset('lineaTiempo/ScrollTrigger.min.js') }}"></script>
-        <script src="{{ asset('lineaTiempo/script.js') }}"></script>
+        <script src="{{ asset_v('lineaTiempo/gsap.min.js') }}"></script>
+        <script src="{{ asset_v('lineaTiempo/ScrollTrigger.min.js') }}"></script>
+        <script src="{{ asset_v('lineaTiempo/script.js') }}"></script>
 @endsection

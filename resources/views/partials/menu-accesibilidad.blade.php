@@ -8,10 +8,12 @@
                           emita dentro del atributo. El valor sale de config/mapas.php, nunca de la petición.
 --}}
 <div id="menuAccesibilidad" style="z-index: 9999999;" class="menu-accesibilidad">
-    <button class="btn-accesibilidad" id="btn_menu_accesibilidad" onclick="toggleMenuAccesibilidad()">
-        <i class="fa fa-universal-access"></i>
+    {{-- Fase 17F-C: nombre accesible del botón de solo icono; aria-expanded lo mantiene toggleMenuAccesibilidad() (mapa-comun.js). --}}
+    <button class="btn-accesibilidad" id="btn_menu_accesibilidad" onclick="toggleMenuAccesibilidad()"
+        aria-label="Menú de accesibilidad" aria-expanded="false" aria-controls="contenido_menu_accesibilidad">
+        <i class="fa fa-universal-access" aria-hidden="true"></i>
     </button>
-    <div class="contenido-accesibilidad">
+    <div class="contenido-accesibilidad" id="contenido_menu_accesibilidad">
         <h4>Accesibilidad</h4>
         <div class="opciones-accesibilidad">
             <div class="row" style="margin: 0px;">

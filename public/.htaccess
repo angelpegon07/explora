@@ -19,6 +19,11 @@ DirectoryIndex index.php index.html
 # profundidad: ninguno debería existir bajo el docroot.
 RedirectMatch 404 /\.(git|env)
 
+# Carpetas `node_modules` (dependencias de desarrollo, Fase 17F): existe una copia local, sin versionar, en public/ViajaPED/node_modules
+# (~1300 archivos de herramientas de desarrollo que no deben publicarse ni exponer su código). Cualquier ruta con ese segmento da 404.
+# Equivale al punto 3 de servidor-desarrollo.php (lo vigila tests/Feature/ServidorDesarrolloTest).
+RedirectMatch 404 (^|/)node_modules(/|$)
+
 # Los archivos `conexion*.php` del PHP legado (credenciales de MySQL escritas en el código) se ELIMINARON del repositorio en
 # la Fase 15. Esta regla se mantiene como defensa en profundidad: si alguien volviera a copiar uno, no se serviría.
 <FilesMatch "^conexion.*\.php$">

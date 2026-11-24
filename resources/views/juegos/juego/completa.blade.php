@@ -14,20 +14,20 @@
 @section('viewport', 'width=device-width, initial-scale=1.0')
 
 @push('cabecera')
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
-        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset_v('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset_v('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
         @include('juegos.partials.explora-api')
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/completa/styles.css') }}">
-        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/completa/styles.css') }}">
+        <script src="{{ asset_v('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
         @include('juegos.partials.pantalla-css')
         @include('juegos.partials.terminar-css')
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/completa/estilo-pagina.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/completa/estilo-pagina.css') }}">
 @endpush
 
 @section('juego')
-    <div class="container">
+    <div class="container" role="main" id="contenido-principal" tabindex="-1">
         <!-- Header del Juego -->
 
 
@@ -93,5 +93,5 @@
 @push('pie')
         @include('juegos.partials.terminar-js')
         @include('juegos.partials.pantalla-js')
-        <script src="{{ asset('juegos/juegos/completa/script.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/completa/script.js') }}"></script>
 @endpush

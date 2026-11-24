@@ -59,12 +59,28 @@ class CabecerasSeguridadTest extends TestCase
     }
 
     /**
-     * Solo estas tres: no se añaden HSTS ni CSP (decisión documentada: se activan en Apache con HTTPS / primero en Report-Only).
+     * No hay HSTS (se activa en Apache con HTTPS) ni CSP ENFORZANTE: la CSP va solo en modo informe (Fase 17F-C), que no bloquea nada.
      */
-    public function test_no_se_anaden_hsts_ni_csp(): void
+    public function test_no_hay_hsts_ni_csp_enforzante_y_si_csp_en_modo_informe(): void
     {
         $r = $this->get('/');
         $this->assertFalse($r->headers->has('Strict-Transport-Security'));
+        $this->assertFalse($r->headers->has('Content-Security-Policy'), 'La CSP enforzante NO debe enviarse');
+        $this->assertTrue($r->headers->has('Content-Security-Policy-Report-Only'));
+        $this->assertSame(CabecerasSeguridad::CSP, $r->headers->get('Content-Security-Policy-Report-Only'));
+        $this->assertStringContainsString("default-src 'self'", $r->headers->get('Content-Security-Policy-Report-Only'));
+        $this->assertStringContainsString("object-src 'none'", $r->headers->get('Content-Security-Policy-Report-Only'));
+    }
+
+    /**
+     * La CSP en modo informe se apaga con `explora.csp_report_only` (env CSP_REPORT_ONLY=false); sigue sin haber la enforzante.
+     */
+    public function test_la_csp_en_modo_informe_se_omite_con_la_variable_en_false(): void
+    {
+        config(['explora.csp_report_only' => false]);
+
+        $r = $this->get('/');
+        $this->assertFalse($r->headers->has('Content-Security-Policy-Report-Only'));
         $this->assertFalse($r->headers->has('Content-Security-Policy'));
     }
 

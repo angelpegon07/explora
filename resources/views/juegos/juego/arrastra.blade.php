@@ -14,16 +14,16 @@
 @section('viewport', 'width=device-width, initial-scale=1.0')
 
 @push('cabecera')
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
-        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset_v('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset_v('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
         @include('juegos.partials.explora-api')
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}">
         @include('juegos.partials.terminar-css')
-        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/arrastra/styles.css') }}">
-        <script src="{{ asset('juegos/juegos/arrastra/panzoom.min.js') }}"></script>
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/arrastra/estilo-pagina.css') }}">
+        <script src="{{ asset_v('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/arrastra/styles.css') }}">
+        <script src="{{ asset_v('juegos/juegos/arrastra/panzoom.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/arrastra/estilo-pagina.css') }}">
 @endpush
 
 @section('juego')
@@ -58,13 +58,13 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-lg-6" style="display: flex; justify-content: center; align-items: center;">
-                            <div class="nivel-container" onclick="selectNivel(4)">
+                            <div class="nivel-container" role="button" tabindex="0" aria-label="Nivel 1" onclick="selectNivel(4)">
                                 <img src="{{ asset('juegos/juegos/arrastra/img/nivel1.png') }}" class="nivel-imagen" alt="">
                                 <p>Principiante</p>
                             </div>
                         </div>
                         <div class="col-lg-6" style="display: flex; justify-content: center; align-items: center;">
-                            <div class="nivel-container" onclick="selectNivel(2)">
+                            <div class="nivel-container" role="button" tabindex="0" aria-label="Nivel 2" onclick="selectNivel(2)">
                                 <img src="{{ asset('juegos/juegos/arrastra/img/nivel2.png') }}" class="nivel-imagen" alt="">
                                 <p>Experto</p>
                             </div>
@@ -75,7 +75,7 @@
         </div>
     </div>
 
-    <div style="display: flex; justify-content: center; align-items: center; width: 100%; position: relative;">
+    <div role="main" id="contenido-principal" tabindex="-1" style="display: flex; justify-content: center; align-items: center; width: 100%; position: relative;">
         <div class="game-container" style="margin-right: 20vw;">
             <div class="game-content">
                 <div style="position: relative; margin-bottom: 8%;">
@@ -86,8 +86,8 @@
 
                         </div>
                     </div>
-                    <img src="{{ asset('juegos/juegos/arrastra/img/title.png') }}" class="title_imagen" alt="">
-                    <img src="{{ asset('juegos/juegos/arrastra/img/flotante2.png') }}" class="flotante2" alt="">
+                    <img src="{{ asset('juegos/juegos/arrastra/img/title.webp') }}" class="title_imagen" alt="">
+                    <img src="{{ asset('juegos/juegos/arrastra/img/flotante2.webp') }}" class="flotante2" alt="">
                 </div>
 
                 <div id="contenedorGameArea"
@@ -133,6 +133,6 @@
 @push('pie')
         @include('juegos.partials.terminar-js')
         @include('juegos.partials.pantalla-js')
-        <script src="{{ asset('juegos/juegos/arrastra/data.js') }}"></script>
-        <script src="{{ asset('juegos/juegos/arrastra/game.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/arrastra/data.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/arrastra/game.js') }}"></script>
 @endpush

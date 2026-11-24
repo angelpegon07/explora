@@ -93,4 +93,11 @@ return [
      * espacio ocupado; se mantiene corto porque la categoría es texto libre.
      */
     'ranking_cache_ttl' => (int) env('EXPLORA_RANKING_CACHE_TTL', 30),
+
+    /*
+     * CSP en MODO INFORME (Fase 17F-C; ver App\Http\Middleware\CabecerasSeguridad): true = se envía la cabecera
+     * `Content-Security-Policy-Report-Only` (el navegador solo registra en consola lo que una CSP bloquearía; NO bloquea
+     * nada). false = no se envía. Variable de entorno CSP_REPORT_ONLY.
+     */
+    'csp_report_only' => filter_var(env('CSP_REPORT_ONLY', true), FILTER_VALIDATE_BOOLEAN),
 ];

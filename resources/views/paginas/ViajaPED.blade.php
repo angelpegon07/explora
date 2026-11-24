@@ -19,7 +19,7 @@
 @endsection
 
 @section('cabecera')
-        <link rel="stylesheet" href="{{ asset('ViajaPED/styles.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('ViajaPED/styles.css') }}">
 @endsection
 
 @section('contenido')
@@ -36,7 +36,7 @@
         <div class="header-button">
         </div>
     </div>
-    <div class="container">
+    <div class="container" role="main" id="contenido-principal" tabindex="-1">
         {{-- Sección de eras --}}
         <div class="eras-section" id="eras-section">
             <div class="eras-circle">
@@ -98,5 +98,5 @@
 @endsection
 
 @section('scripts_pie')
-        <script src="{{ asset('ViajaPED/script.js') }}"></script>
+        <script src="{{ asset_v('ViajaPED/script.js') }}"></script>
 @endsection

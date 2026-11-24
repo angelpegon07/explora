@@ -1,6 +1,6 @@
 {{--
     Juego «banderas-color» (Fase 13): migración de public/juegos/juegos/banderas-color/index.html (se eliminó) a Blade.
-    Pinta la bandera / Adivina la bandera. Usa SU PROPIO Bootstrap 4.6.2 + jQuery 3.7.1 + SweetAlert 11.17 (carpetas bootstrap/, jquery.min.js y assets/sweetalert/), NO el Bootstrap 5.3 compartido. El original declaraba <html lang="en">; el layout usa lang="es" (el contenido está en español).
+    Pinta la bandera / Adivina la bandera. Usa SU PROPIO Bootstrap 4.6.2 + jQuery 3.7.1 + SweetAlert 11.17 (carpeta bootstrap/; jQuery, SweetAlert y Popper salen de public/vendor, compartidos con el resto del sitio), NO el Bootstrap 5.3 compartido. El original declaraba <html lang="en">; el layout usa lang="es" (el contenido está en español).
 
     URL canónica: /juegos/juegos/banderas-color/ (CON barra final). Casi todo lo que carga el juego en ejecución (JSON, sonidos, imágenes
     por JS, url() de CSS) es RELATIVO a la URL de la página, por eso JuegoController redirige la forma sin barra.
@@ -15,21 +15,21 @@
 @section('atributos_body')style="display: flex; justify-content: space-between; align-items: center; height: 100vh !important; margin: 0; flex-direction: column; overflow: hidden;"@endsection
 
 @push('cabecera')
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/banderas-color/style.css') }}">
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/banderas-color/bootstrap/bootstrap.min.css') }}">
-        <script src="{{ asset('juegos/juegos/banderas-color/jquery.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/banderas-color/style.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/banderas-color/bootstrap/bootstrap.min.css') }}">
+        <script src="{{ asset_v('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
         @include('juegos.partials.explora-api')
-        <script src="{{ asset('juegos/juegos/banderas-color/assets/sweetalert/sweetalert.js') }}"></script>
-        <script src="{{ asset('juegos/juegos/banderas-color/bootstrap/bootstrap.bundle.min.js') }}"></script>
-        <script src="{{ asset('juegos/juegos/banderas-color/bootstrap/popper.min.js') }}"></script>
+        <script src="{{ asset_v('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/banderas-color/bootstrap/bootstrap.bundle.min.js') }}"></script>
+        <script src="{{ asset_v('vendor/popper/popper.min.js') }}"></script>
         @include('juegos.partials.pantalla-css')
         @include('juegos.partials.terminar-css')
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/banderas-color/estilo-pagina.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/banderas-color/estilo-pagina.css') }}">
 @endpush
 
 @section('juego')
-    <div id="contenedor_juego1" style="display: none;">
+    <div id="contenedor_juego1" role="main" tabindex="-1" style="display: none;">
         <div class="header" style="background-color: #a2b81b;">
             <h6 style="width: 99%; text-align: right;">Pregunta <span id="pregunta"></span> de 10</h6>
             <h3>Pinta la bandera de <span style="color: #e000ff;" id="departamento"></span></h3>
@@ -48,7 +48,7 @@
             
         </div>
     </div>
-    <div id="contenedor_juego2" style="display: none;">
+    <div id="contenedor_juego2" role="main" tabindex="-1" style="display: none;">
         <div class="header" style="background-color: #ffd600; padding-top: 10px; height: 130px; display: flex; justify-content: center; align-items: center;">
             <h1>ADIVINA LA BANDERA</h1>
             <div class="botones_header">
@@ -110,12 +110,12 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6" style="display: flex; justify-content: center; align-items: center;">
-                            <div class="cajon_juego" onclick="iniciarJuego('adivina')">
+                            <div class="cajon_juego" role="button" tabindex="0" aria-label="Jugar «Adivina la bandera»" onclick="iniciarJuego('adivina')">
                                 <img src="{{ asset('juegos/juegos/banderas-color/assets/juego2.png') }}" style="width: 100%; height: 100%;" alt="bandera correcta">
                             </div>
                         </div>
                         <div class="col-md-6" style="display: flex; justify-content: center; align-items: center;">
-                            <div class="cajon_juego" onclick="iniciarJuego('pinta')">
+                            <div class="cajon_juego" role="button" tabindex="0" aria-label="Jugar «Pinta la bandera»" onclick="iniciarJuego('pinta')">
                                 <img src="{{ asset('juegos/juegos/banderas-color/assets/juego1.png') }}" style="width: 100%; height: 100%;" alt="bandera correcta">
                             </div>
                         </div>
@@ -129,5 +129,5 @@
 @push('pie')
         @include('juegos.partials.terminar-js')
         @include('juegos.partials.pantalla-js')
-        <script src="{{ asset('juegos/juegos/banderas-color/script.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/banderas-color/script.js') }}"></script>
 @endpush

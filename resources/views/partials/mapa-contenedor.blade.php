@@ -1,9 +1,10 @@
 {{--
     Contenedor del mapa (#wrap > #content > #mapplic). Mapplic dibuja el mapa dentro de #mapplic.
+    Fase 17F-C: #wrap es el landmark principal (`role="main"`) y #content el destino del enlace «Saltar al contenido»; no se envuelve en <main> para no alterar el DOM que esperan el CSS y Mapplic.
     La ventana `.editor-window` es un resto del demo de Mapplic: se conserva porque el script la usa (`.usage`).
 --}}
-<div id="wrap">
-    <div id="content">
+<div id="wrap" role="main">
+    <div id="content" id="contenido-principal" tabindex="-1">
         <section id="map-section" class="inner over">
             <div class="editor-window">
                 <div class="window-mockup brown"></div>

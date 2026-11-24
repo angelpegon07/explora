@@ -22,6 +22,11 @@
       @push('estilos')              <style> propios; se imprimen al final del <head>.
       @section('contenido')         el <body> sin los scripts finales.
       @section('scripts_pie')       scripts finales, en su orden.
+
+    Fase 17F-C (accesibilidad y PWA básico): este layout emite el enlace «Saltar al contenido» (destino `#contenido-principal`,
+    que cada vista marca con `role="main" id="contenido-principal" tabindex="-1"` sobre un contenedor YA existente, sin
+    envolver nada para no alterar el DOM que esperan el CSS y el JS), el manifiesto, `theme-color`, el icono de Apple,
+    `css/accesibilidad.css` y `js/teclado.js`.
 --}}
 <!DOCTYPE html>
 <html lang="es"@yield('atributos_html')>
@@ -35,6 +40,12 @@
         @section('favicon')
         <link rel="shortcut icon" href="{{ asset('juegos/images/Isotipo.png') }}">
         @show
+        {{-- Fase 17F-C: PWA básico (manifiesto + color de la barra + icono de pantalla de inicio; SIN service worker). --}}
+        <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+        <meta name="theme-color" content="#007bff">
+        <link rel="apple-touch-icon" href="{{ asset('icons/icono-192.png') }}">
+        {{-- Fase 17F-C: enlace de salto, .sr-only, foco visible y movimiento reducido; va ANTES del CSS de la página. --}}
+        <link rel="stylesheet" href="{{ asset_v('css/accesibilidad.css') }}">
         @yield('cabecera')
 
         @stack('estilos')
@@ -42,8 +53,13 @@
 
     <body @yield('atributos_body')>
 
+        {{-- Fase 17F-C: primer elemento enfocable; lleva al contenedor `#contenido-principal` (landmark main) de cada página. --}}
+        <a class="saltar-contenido" href="#contenido-principal">Saltar al contenido</a>
+
         @yield('contenido')
 
         @yield('scripts_pie')
+        {{-- Fase 17F-C: Enter/Espacio activan los elementos con role="button" que no son <button>. --}}
+        <script src="{{ asset_v('js/teclado.js') }}"></script>
     </body>
 </html>

@@ -399,11 +399,16 @@ section.blue {
 	width: 100%;
 	border: none;
 	text-align: left;
-	outline: none;
 	font-size: 15px;
 	transition: 0.4s;
 	margin-top: 10px;
 	border-radius: 30px 0px 0px 30px;
+}
+
+/* Fase 17F-C: se quitó `outline: none` de .accordion; este anillo reemplaza al foco del navegador solo con teclado. */
+.accordion:focus-visible {
+	outline: 3px solid #ffbf47;
+	outline-offset: 2px;
 }
 
 .active_acordion,

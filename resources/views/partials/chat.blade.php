@@ -15,15 +15,15 @@
             <div class="buttons">
                 @if ($chatCompleto)
                     <div style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0px;  margin-left: 10px;"
-                        class="button close" onclick="cerrarChat()">
+                        class="button close" role="button" tabindex="0" aria-label="Cerrar chat" onclick="cerrarChat()">
                         <i class="fa-solid fa-xmark"></i>
                     </div>
                     <div style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0px; "
-                        class="button minimize" onclick="minimizarChat()">
+                        class="button minimize" role="button" tabindex="0" aria-label="Minimizar chat" onclick="minimizarChat()">
                         <i class="fa-solid fa-minus"></i>
                     </div>
                 @else
-                    <div class="button close" onclick="cerrarChat()"></div>
+                    <div class="button close" role="button" tabindex="0" aria-label="Cerrar chat" onclick="cerrarChat()"></div>
                     <div class="button minimize"></div>
                     <div class="button maximize"></div>
                 @endif

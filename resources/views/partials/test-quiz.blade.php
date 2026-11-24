@@ -28,7 +28,7 @@
                         <div id="loadbar" style="display: none;">
                             <span class="loader"></span>
                         </div>
-                        <button onclick="comenzarTest()" id="boton_comenzar" class="owl-container" style="background: none; border: none; cursor: pointer; outline: none;">
+                        <button onclick="comenzarTest()" id="boton_comenzar" class="owl-container" style="background: none; border: none; cursor: pointer;">
                             <div class="owl">
                                 <div class="wing-left"></div>
                                 <div class="wing-right"></div>

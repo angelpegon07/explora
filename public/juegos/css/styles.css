@@ -41,7 +41,7 @@ body {
 }
 
 #inicio.parallax-section {
-    background-image: url('../images/colombia.png');
+    background-image: url('../images/colombia.webp');
     position: relative;
     background-position: center;
     background-attachment: fixed;

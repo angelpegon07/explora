@@ -16,12 +16,12 @@
 
 {{-- Orden original del <head> de la portada: general.css, icono y, al final, utilidad.css. --}}
 @section('hojas_orden')
-        <link rel="stylesheet" href="{{ asset('css/general.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('css/general.css') }}">
         <link rel="shortcut icon" href="{{ asset('juegos/images/Isotipo.png') }}">
-        <link rel="stylesheet" href="{{ asset('css/utilidad.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('css/utilidad.css') }}">
 @endsection
 
-@section('script_mapplic', asset('mapplic/mapplic.js'))
+@section('script_mapplic', asset_v('mapplic/mapplic.js'))
 
 @push('estilos')
     {{-- Ajustes de los diálogos de SweetAlert2 (ventana oscura, texto centrado y en negrita) propios de la portada. --}}
@@ -63,6 +63,9 @@
 @endpush
 
 @section('contenido')
+    {{-- Fase 17F-C: encabezado de nivel 1 solo para lectores de pantalla (la página no muestra un título visible). --}}
+    <h1 class="sr-only">Explora Colombia: mapa interactivo de los departamentos</h1>
+
     @include('partials.mapa-contenedor')
     @include('partials.panel-contenido')
     @include('partials.chat', ['chatCompleto' => true])
@@ -102,6 +105,6 @@
     <script>
         window.EXPLORA_MAPA = @json($configuracionJs, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     </script>
-    <script src="{{ asset('js/mapa-comun.js') }}"></script>
-    <script src="{{ asset('js/inicio.js') }}"></script>
+    <script src="{{ asset_v('js/mapa-comun.js') }}"></script>
+    <script src="{{ asset_v('js/inicio.js') }}"></script>
 @endpush

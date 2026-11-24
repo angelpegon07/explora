@@ -81,8 +81,16 @@ class PaginasEstaticasTest extends TestCase
     {
         $html = $this->pedir("/$slug/")->getContent();
         preg_match_all('#<script src="([^"]*)"></script>#', $html, $m);
+        // Las URL llevan `?v=<10 hex>` (asset_v): se comprueba el formato y se compara la ruta sin la query.
+        foreach ($m[1] as $u) {
+            $this->assertMatchesRegularExpression('/\?v=[0-9a-f]{10}$/', $u);
+        }
+        $m[1] = array_map(static fn (string $u): string => (string) preg_replace('/\?v=[0-9a-f]{10}$/', '', $u), $m[1]);
 
-        $this->assertSame(array_map(static fn (string $s): string => url("/$slug/$s"), $scripts), $m[1]);
+        // `js/teclado.js` (teclado en elementos role="button", Fase 17F) lo carga el layout base en TODAS las páginas y va el
+        // último: se comprueba aparte para que esta prueba siga fijando solo los scripts propios de cada página.
+        $this->assertSame(url('/js/teclado.js'), end($m[1]), 'teclado.js debe cargarse el último');
+        $this->assertSame(array_map(static fn (string $s): string => url("/$slug/$s"), $scripts), array_slice($m[1], 0, -1));
         // Todos tras el HTML que usan (el último `</div>` del cuerpo precede al primer script).
         $this->assertGreaterThan(strrpos($html, '</div>'), strpos($html, '<script'));
         // Las hojas de estilo van en el <head>, antes del <body>.
@@ -96,7 +104,7 @@ class PaginasEstaticasTest extends TestCase
     public function test_conservan_sus_particularidades(): void
     {
         $linea = $this->pedir('/lineaTiempo/')->getContent();
-        $this->assertStringContainsString('/lineaTiempo/all.min.css', $linea);
+        $this->assertStringContainsString('/vendor/fontawesome/css/all.min.css', $linea);
         $this->assertStringContainsString('<link rel="icon" type="image/jpg" href="'.url('/lineaTiempo/favicon.png').'" />', $linea);
         $this->assertStringNotContainsString('juegos/images/Isotipo.png', $linea);
 
@@ -177,7 +185,7 @@ class PaginasEstaticasTest extends TestCase
      */
     public function test_los_archivos_de_cada_carpeta_existen(): void
     {
-        foreach (['lineaTiempo' => ['eventos.json', 'styles.css', 'all.min.css', 'gsap.min.js', 'ScrollTrigger.min.js', 'script.js', 'favicon.png', 'img/explora.png'],
+        foreach (['lineaTiempo' => ['eventos.json', 'styles.css', 'gsap.min.js', 'ScrollTrigger.min.js', 'script.js', 'favicon.png', 'img/explora.png'],
             'ViajaPED' => ['data.json', 'styles.css', 'script.js', 'img/fondo.png', 'img/maquina.png', 'fonts/LondrinaSolid-Regular.ttf']] as $slug => $archivos) {
             foreach ($archivos as $archivo) {
                 $this->assertFileExists(public_path("$slug/$archivo"), "$slug/$archivo");

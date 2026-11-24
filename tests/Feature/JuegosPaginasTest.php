@@ -42,13 +42,13 @@ class JuegosPaginasTest extends TestCase
     public static function datosJuegos(): array
     {
         return [
-            'laberinto' => ['laberinto', 'Laberinto Espacial', ['mapa', 'player', 'timer_text', 'pregunta_text', 'opciones_container', 'categorias_container', 'miModal', 'miModal2'], 'assets/bootstrap/jquery.min.js', false],
-            'banderas-color' => ['banderas-color', 'La Bandera de Colombia', ['contenedor_juego1', 'contenedor_juego2', 'contenedor_bandera', 'boton_validar', 'pregunta_adivina'], 'banderas-color/jquery.min.js', false],
-            'puzzle' => ['puzzle', 'Rompecabezas Interactivo', ['puzzle-board', 'pieces-container', 'btn_ayuda', 'btn_reiniciar', 'myModal', 'myModal2', 'categorias'], 'assets/bootstrap/jquery.min.js', false],
-            'sopa_letras' => ['sopa_letras', 'Sopa de letras', ['principal', 'pal', 'contador', 'nivelModal', 'final'], 'assets/bootstrap/jquery.min.js', true],
-            'juego_ahorcado' => ['juego_ahorcado', 'Adivina la Palabra', ['principal', 'categoria', 'numero', 'image6', 'imagen_final'], 'assets/bootstrap/jquery.min.js', false],
-            'arrastra' => ['arrastra', 'Arrastra y Suelta', ['categoryModal', 'categoriesGrid', 'gameArea', 'optionsContainer', 'checkAnswers'], 'assets/bootstrap/jquery.min.js', false],
-            'completa' => ['completa', 'Completa la Oración', ['seccion-categorias', 'categorias-container', 'opciones-container', 'btn-siguiente', 'puntuacion'], 'assets/bootstrap/jquery.min.js', false],
+            'laberinto' => ['laberinto', 'Laberinto Espacial', ['mapa', 'player', 'timer_text', 'pregunta_text', 'opciones_container', 'categorias_container', 'miModal', 'miModal2'], 'vendor/jquery/jquery-3.7.1.min.js', false],
+            'banderas-color' => ['banderas-color', 'La Bandera de Colombia', ['contenedor_juego1', 'contenedor_juego2', 'contenedor_bandera', 'boton_validar', 'pregunta_adivina'], 'vendor/jquery/jquery-3.7.1.min.js', false],
+            'puzzle' => ['puzzle', 'Rompecabezas Interactivo', ['puzzle-board', 'pieces-container', 'btn_ayuda', 'btn_reiniciar', 'myModal', 'myModal2', 'categorias'], 'vendor/jquery/jquery-3.7.1.min.js', false],
+            'sopa_letras' => ['sopa_letras', 'Sopa de letras', ['principal', 'pal', 'contador', 'nivelModal', 'final'], 'vendor/jquery/jquery-3.7.1.min.js', true],
+            'juego_ahorcado' => ['juego_ahorcado', 'Adivina la Palabra', ['principal', 'categoria', 'numero', 'image6', 'imagen_final'], 'vendor/jquery/jquery-3.7.1.min.js', false],
+            'arrastra' => ['arrastra', 'Arrastra y Suelta', ['categoryModal', 'categoriesGrid', 'gameArea', 'optionsContainer', 'checkAnswers'], 'vendor/jquery/jquery-3.7.1.min.js', false],
+            'completa' => ['completa', 'Completa la Oración', ['seccion-categorias', 'categorias-container', 'opciones-container', 'btn-siguiente', 'puntuacion'], 'vendor/jquery/jquery-3.7.1.min.js', false],
         ];
     }
 

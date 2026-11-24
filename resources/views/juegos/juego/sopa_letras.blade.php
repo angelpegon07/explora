@@ -15,19 +15,19 @@
 @section('atributos_body')style="display: flex; align-items: center; min-height: 100vh !important; overflow: hidden;"@endsection
 
 @push('cabecera')
-        <link rel="stylesheet" type="text/css" href="{{ asset('juegos/juegos/sopa_letras/style.css') }}" media="all">
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
-        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        <link rel="stylesheet" type="text/css" href="{{ asset_v('juegos/juegos/sopa_letras/style.css') }}" media="all">
+        <link rel="stylesheet" href="{{ asset_v('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset_v('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset_v('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
         @include('juegos.partials.explora-api')
-        <script type="text/javascript" src="{{ asset('juegos/juegos/sopa_letras/wordfind.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('juegos/juegos/sopa_letras/wordfindgame.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('juegos/juegos/sopa_letras/tag-it.js') }}"></script>
-        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
+        <script type="text/javascript" src="{{ asset_v('juegos/juegos/sopa_letras/wordfind.js') }}"></script>
+        <script type="text/javascript" src="{{ asset_v('juegos/juegos/sopa_letras/wordfindgame.js') }}"></script>
+        <script type="text/javascript" src="{{ asset_v('juegos/juegos/sopa_letras/tag-it.js') }}"></script>
+        <script src="{{ asset_v('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}">
         @include('juegos.partials.pantalla-css')
         @include('juegos.partials.terminar-css')
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/sopa_letras/estilo-pagina.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/sopa_letras/estilo-pagina.css') }}">
 @endpush
 
 @section('juego')
@@ -52,7 +52,7 @@
   <div
     style="text-align: center; display: none; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.5s ease-in-out;"
     id="final" class="final">
-    <img src="{{ asset('juegos/juegos/assets/images/victoria.webp') }}" style="width: 600px;">
+    <img src="{{ asset('juegos/juegos/assets/images/victoria.webp') }}" alt="" style="width: 600px;">
     <br>
     <h1 style="font-size: 25pt; padding-bottom: 0px;" class="borde2" id="texto_final">Felicitaciones, has encontrado
       todas las palabras</h1>
@@ -75,8 +75,8 @@
     </div>
   </div>
 
-  <div id="principal" class="container" style="overflow: hidden;">
-    <div class="row text-center">
+  <div id="principal" class="container" role="main" style="overflow: hidden;">
+    <div class="row text-center" id="contenido-principal" tabindex="-1">
       <div style="margin-top: 20px; width: 100%;">
         <div class="row">
           <div class="panel panel-default"
@@ -133,13 +133,13 @@
         <div class="modal-body">
           <div class="row">
             <div class="col-lg-6" style="display: flex; justify-content: center; align-items: center;">
-              <div class="nivel-container" onclick="selectNivel(10)">
+              <div class="nivel-container" role="button" tabindex="0" aria-label="Nivel 1" onclick="selectNivel(10)">
                 <img src="{{ asset('juegos/juegos/sopa_letras/img/nivel1.png') }}" class="nivel-imagen" alt="">
                 <p>Principiante</p>
               </div>
             </div>
             <div class="col-lg-6" style="display: flex; justify-content: center; align-items: center;">
-              <div class="nivel-container" onclick="selectNivel(5)">
+              <div class="nivel-container" role="button" tabindex="0" aria-label="Nivel 2" onclick="selectNivel(5)">
                 <img src="{{ asset('juegos/juegos/sopa_letras/img/nivel2.png') }}" class="nivel-imagen" alt="">
                 <p>Experto</p>
               </div>
@@ -154,5 +154,5 @@
 @push('pie')
         @include('juegos.partials.pantalla-js')
         @include('juegos.partials.terminar-js')
-        <script src="{{ asset('juegos/juegos/sopa_letras/juego.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/sopa_letras/juego.js') }}"></script>
 @endpush

@@ -218,7 +218,7 @@ button::-moz-focus-inner {
 }
 
 body {
-  background: url(images/fondo.png);
+  background: url(images/fondo.webp);
   background-size: 100% 100%;
   background-position: center center;
   background-attachment: fixed;

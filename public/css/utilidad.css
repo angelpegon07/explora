@@ -255,8 +255,10 @@
     z-index: 1000;
 }
 
-#btn_menu_accesibilidad:focus-visible, #btn_menu_accesibilidad:focus {
-    outline: none !important;
+/* Fase 17F-C: antes `outline: none !important` ocultaba el foco del teclado; ahora se ve el anillo (solo con teclado). */
+#btn_menu_accesibilidad:focus-visible {
+    outline: 3px solid #ffbf47;
+    outline-offset: 2px;
 }
 
 .menu-accesibilidad.activo {

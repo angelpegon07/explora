@@ -107,8 +107,8 @@
 				this.disminuirTexto.on('click', function() {
 					s.disminuirTextoF();
 				});
-				this.video = $('<div onclick="verVideo(this);"></div>').addClass('mapplic-tooltip-video').appendTo(this.el2);
-				this.imagenes  =  $('<div onclick="verImagenes(this);"></div>').addClass('mapplic-tooltip-imagenes').appendTo(this.el2);
+				this.video = $('<div role="button" tabindex="0" aria-label="Ver video" onclick="verVideo(this);"></div>').addClass('mapplic-tooltip-video').appendTo(this.el2);
+				this.imagenes  =  $('<div role="button" tabindex="0" aria-label="Ver imágenes" onclick="verImagenes(this);"></div>').addClass('mapplic-tooltip-imagenes').appendTo(this.el2);
 				this.play  =  $('<div></div>').addClass('mapplic-tooltip-play').appendTo(this.el2);
 				this.el2.appendTo(this.el);
 				

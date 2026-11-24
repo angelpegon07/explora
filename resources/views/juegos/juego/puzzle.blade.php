@@ -1,6 +1,6 @@
 {{--
     Juego «puzzle» (Fase 13): migración de public/juegos/juegos/puzzle/index.html (se eliminó) a Blade.
-    Rompecabezas. Usa Bootstrap 5.3 compartido, popper.min.js y jquery-ui.min.js locales (en ese orden, tras jQuery).
+    Rompecabezas. Usa Bootstrap 5.3 compartido, popper.min.js (public/vendor/popper) y jquery-ui.min.js (local) (en ese orden, tras jQuery).
 
     URL canónica: /juegos/juegos/puzzle/ (CON barra final). Casi todo lo que carga el juego en ejecución (JSON, sonidos, imágenes
     por JS, url() de CSS) es RELATIVO a la URL de la página, por eso JuegoController redirige la forma sin barra.
@@ -15,22 +15,22 @@
 @section('atributos_body')style="margin: 0; padding: 0; min-height: 100vh;"@endsection
 
 @push('cabecera')
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/puzzle/styles.css') }}">
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/fontawesome/css/all.min.css') }}">
-        <link rel="stylesheet" href="{{ asset('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
-        <script src="{{ asset('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('juegos/juegos/assets/bootstrap/jquery.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/puzzle/styles.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset_v('juegos/librerias/bootstrap-5.3/css/bootstrap.min.css') }}">
+        <script src="{{ asset_v('juegos/librerias/bootstrap-5.3/js/bootstrap.bundle.min.js') }}"></script>
+        <script type="text/javascript" src="{{ asset_v('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
         @include('juegos.partials.explora-api')
-        <script src="{{ asset('juegos/juegos/assets/bootstrap/sweetalert.js') }}"></script>
+        <script src="{{ asset_v('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
         @include('juegos.partials.pantalla-css')
         @include('juegos.partials.terminar-css')
-        <script src="{{ asset('juegos/juegos/puzzle/popper.min.js') }}"></script>
-        <script src="{{ asset('juegos/juegos/puzzle/jquery-ui.min.js') }}"></script>
-        <link rel="stylesheet" href="{{ asset('juegos/juegos/puzzle/estilo-pagina.css') }}">
+        <script src="{{ asset_v('vendor/popper/popper.min.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/puzzle/jquery-ui.min.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset_v('juegos/juegos/puzzle/estilo-pagina.css') }}">
 @endpush
 
 @section('juego')
-    <div class="container" style="padding: 0px !important;">
+    <div class="container" role="main" id="contenido-principal" tabindex="-1" style="padding: 0px !important;">
 
         <div class="puzzle-container">
             <div class="contenedor_puzzle">
@@ -60,17 +60,17 @@
                         <h3>Selecciona el nivel de dificultad</h3>
                         <br>
                         <div class="row" style="width: 100%;">
-                            <div class="col-md-4" id="nivel1" onclick="seleccionar_nivel(4)">
+                            <div class="col-md-4" id="nivel1" role="button" tabindex="0" aria-label="Nivel 1" onclick="seleccionar_nivel(4)">
                                 <div class="card_nivel" style="background-image: url({{ asset('juegos/juegos/puzzle/img/1.png') }});">
 
                                 </div>
                             </div>
-                            <div class="col-md-4" id="nivel2" onclick="seleccionar_nivel(6)">
+                            <div class="col-md-4" id="nivel2" role="button" tabindex="0" aria-label="Nivel 2" onclick="seleccionar_nivel(6)">
                                 <div class="card_nivel" style="background-image: url({{ asset('juegos/juegos/puzzle/img/2.png') }});">
 
                                 </div>
                             </div>
-                            <div class="col-md-4" id="nivel3" onclick="seleccionar_nivel(8)">
+                            <div class="col-md-4" id="nivel3" role="button" tabindex="0" aria-label="Nivel 3" onclick="seleccionar_nivel(8)">
                                 <div class="card_nivel" style="background-image: url({{ asset('juegos/juegos/puzzle/img/3.png') }});">
 
                                 </div>
@@ -103,5 +103,5 @@
 @push('pie')
         @include('juegos.partials.terminar-js')
         @include('juegos.partials.pantalla-js')
-        <script src="{{ asset('juegos/juegos/puzzle/script.js') }}"></script>
+        <script src="{{ asset_v('juegos/juegos/puzzle/script.js') }}"></script>
 @endpush

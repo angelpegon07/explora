@@ -1,5 +1,8 @@
-// Inicializar AOS (Animate On Scroll)
+// Inicializar AOS (Animate On Scroll).
+// Fase 17F-C: `disable` es la opción documentada de AOS para no animar; con `prefers-reduced-motion: reduce` AOS no
+// aplica ninguna animación y los elementos quedan visibles en su sitio.
 AOS.init({
+    disable: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     duration: 800,
     once: false,
     offset: 100,

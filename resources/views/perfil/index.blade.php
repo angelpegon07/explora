@@ -19,23 +19,27 @@
 @section('titulo', 'Mi Perfil')
 
 @section('cabecera')
-    <link rel="stylesheet" type="text/css" href="{{ asset('css/style.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ asset('css/map.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ asset('mapplic/mapplic.css') }}">
-    <link rel="stylesheet" href="{{ asset('bootstrap/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('fontawesome/css/all.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/chat.css') }}">
-    <link rel="stylesheet" href="{{ asset('mapplic/menu.css') }}">
-    <link rel="stylesheet" href="{{ asset('mapplic/quiz.css') }}">
-    <link rel="stylesheet" href="{{ asset('sweetalert/sweetalert2.min.css') }}">
-    <script src="{{ asset('sweetalert/sweetalert2.all.min.js') }}"></script>
-    <link rel="stylesheet" href="{{ asset('css/general.css') }}">
-    <link rel="stylesheet" href="{{ asset('miPerfil/style.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset_v('css/style.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset_v('css/map.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset_v('mapplic/mapplic.css') }}">
+    <link rel="stylesheet" href="{{ asset_v('bootstrap/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset_v('vendor/fontawesome/css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ asset_v('css/chat.css') }}">
+    <link rel="stylesheet" href="{{ asset_v('mapplic/menu.css') }}">
+    <link rel="stylesheet" href="{{ asset_v('mapplic/quiz.css') }}">
+    <link rel="stylesheet" href="{{ asset_v('vendor/sweetalert2/sweetalert2.min.css') }}">
+    <script src="{{ asset_v('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset_v('css/general.css') }}">
+    <link rel="stylesheet" href="{{ asset_v('miPerfil/style.css') }}">
 @endsection
 
 @section('contenido')
-    <div class="container-fluid">
-        <div class="row">
+    {{-- Fase 17F-C: encabezado de nivel 1 solo para lectores de pantalla (la página no muestra un título visible). --}}
+    <h1 class="sr-only">Mi perfil</h1>
+
+    {{-- Fase 17F-C: el contenedor raíz es el landmark principal (sin envolver en <main>). --}}
+    <div class="container-fluid" role="main">
+        <div class="row" id="contenido-principal" tabindex="-1">
             <!-- Menú lateral -->
             <div class="col-md-3 pt-4" style="background-color: #007bff; height: 100vh;">
                 <div class="text-center">
@@ -164,12 +168,12 @@
 @endsection
 
 @section('scripts_pie')
-    <script type="text/javascript" src="{{ asset('bootstrap/jquery.min.js') }}"></script>
+    <script type="text/javascript" src="{{ asset_v('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
     {{-- explora-api.js también corre sin sesión: su GET /api/sesion deja limpia la caché de localStorage de una sesión ya caducada. --}}
-    <script src="{{ asset('js/explora-api.js') }}"></script>
+    <script src="{{ asset_v('js/explora-api.js') }}"></script>
     @if ($datos !== null)
-    <script src="{{ asset('bootstrap/bootstrap.min.js') }}"></script>
-    <script src="{{ asset('miPerfil/script.js') }}"></script>
-    <script src="{{ asset('miPerfil/cerrar-sesion.js') }}"></script>
+    <script src="{{ asset_v('bootstrap/bootstrap.min.js') }}"></script>
+    <script src="{{ asset_v('miPerfil/script.js') }}"></script>
+    <script src="{{ asset_v('miPerfil/cerrar-sesion.js') }}"></script>
     @endif
 @endsection

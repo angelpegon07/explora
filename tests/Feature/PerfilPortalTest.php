@@ -376,7 +376,7 @@ class PerfilPortalTest extends TestCase
             $this->assertMatchesRegularExpression('#^(https?://|\#|/$)#i', $u, "URL no absoluta en el portal: $u");
         }
         $this->assertStringContainsString(asset('juegos/juegos/laberinto').'/', $html);
-        $this->assertStringContainsString(asset('juegos/js/anio-pie.js'), $html);
+        $this->assertStringContainsString(asset('juegos/js/anio-pie.js').'?v=', $html);
     }
 
     // ----------------------------------------------------------------------------- redirecciones y plantillas
